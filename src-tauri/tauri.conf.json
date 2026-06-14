@@ -43,9 +43,9 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "YOUR_PUBLIC_KEY_PLACEHOLDER",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY4OUM2RDZFMjAzNEQxQzgKUldUSTBUUWdibTJjYUFCYXcxQUhUSHlMVHhXMkV3Um1jbDVabXg0dTd2S3pSYjlTYlVqaUdwRXUK",
       "endpoints": [
-        "https://your-server.com/updater/{{target}}-{{arch}}.json"
+        "https://raw.githubusercontent.com/focalsalt/FocalCraft-Launcher/refs/heads/main/updater.json"
       ]
     }
   }
