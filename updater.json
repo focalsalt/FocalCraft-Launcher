@@ -3,9 +3,13 @@
   "notes": "新版本發布！\n- 實作了自動更新功能",
   "pub_date": "2026-06-14T10:13:00Z",
   "platforms": {
-    "windows-x86_64": {
+    "windows-msi-x86_64": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbERkSEhSbjlHc0l4VjFVd243aTZ0NUZ6WCtNSFBvWUV6ckJRKzF1aUN5QktJeWN0MXp5VnFZV1haQ2dseXg0b2NUWlFQYWJoRUxscmZYMkxYWExiQ1piYVJOYVRRWFEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNDQyMjMzCWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4xLjBfeDY0X2VuLVVTLm1zaQpLaElhT0p5SWxFcFVPWEVTcm9COWpQU3hQVWNRTDZlTWs4aU1kKy9PdXdtMUtHWGN5ak10WjR2M3pxUWN4S1QzUHVqbkVVdldacVJCOW1hQ1hRSWpBZz09Cg==",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.0/focal-craft-launcher_1.1.0_x64_en-US.msi.zip"
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.0/Focal.Craft.Launcher_1.1.0_x64_en-US.msi"
+    },
+    "windows-setup-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbERkSEhSbjlHc09xdE1pbTl5Z1puNUUxblVVZXNCcGZEZGNQWFp5R3RYVmJ6ZThSVWNtYWUwMlJKVDRRaU5vTmd6YXZmaVh0SEpkWU5oMjVFcnlPSWwvU1pNbmpkekFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNDQyMjMzCWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4xLjBfeDY0LXNldHVwLmV4ZQpTVEVQQlAycWRQSlB2dkNRcXdoSmVZMUVuaTFsVnVrTlZqK045S0NabzlBZi9KaDhjY01zdi9FeTRuajN6QjM2TzB2OEovRTFkb3NISXEyalM5RHRBQT09Cg==",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.0/Focal.Craft.Launcher_1.1.0_x64-setup.exe"
     }
   }
 }
