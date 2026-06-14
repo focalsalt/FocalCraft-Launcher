@@ -1,0 +1,1406 @@
+import { useState, useEffect, useRef } from 'react';
+import { useInstanceStore, getInitialInstanceState } from '../../store/instanceStore';
+import { useAppStore } from '../../store/appStore';
+import { useAccountStore } from '../../store/accountStore';
+import { useSettingsStore } from '../../store/settingsStore';
+import { invoke, convertFileSrc } from '@tauri-apps/api/core';
+import { getInstanceIconSrc } from '../../utils/versionUtils';
+import { listen } from '@tauri-apps/api/event';
+import { Play, Loader, FolderOpen, Square } from 'lucide-react';
+import { CustomConfirmModal } from '../../components/common/CustomConfirmModal';
+import { ServerEditModal } from './ServerEditModal';
+import { ModrinthDownloadModal } from './ModrinthDownloadModal';
+import { IconEditModal } from './IconEditModal';
+import { VersionEditModal } from './VersionEditModal';
+
+import { EditTab } from './tabs/EditTab';
+import { LogTab } from './tabs/LogTab';
+import { ModsTab } from './tabs/ModsTab';
+import { ResourcePacksTab } from './tabs/ResourcePacksTab';
+import { ShaderPacksTab } from './tabs/ShaderPacksTab';
+import { WorldsTab } from './tabs/WorldsTab';
+import { ServersTab } from './tabs/ServersTab';
+import { SettingsTab } from './tabs/SettingsTab';
+import { ModpackUpdateTab } from './tabs/ModpackUpdateTab';
+import styles from './InstanceDetail.module.css';
+
+// Stable empty array — prevents Zustand v5 / React 19 tearing-detection from
+// creating a new `[]` reference on every selector call when there are no logs,
+// which would cause "Maximum update depth exceeded" due to infinite re-renders.
+const EMPTY_LOGS: string[] = [];
+
+interface Props {
+  instanceId: string;
+}
+
+interface ModItem {
+  fileName: string;
+  name: string;
+  version: string;
+  environment: string;
+  sha1: string;
+  enabled: boolean;
+}
+
+interface ResourcePackItem {
+  fileName: string;
+  name: string;
+  description: string;
+  packFormat: number;
+  gameVersion: string;
+  sha1: string;
+}
+
+interface WorldItem {
+  folderName: string;
+  name: string;
+  sizeBytes: number;
+  datapacks: string[];
+}
+
+interface ServerItem {
+  name: string;
+  ip: string;
+  acceptTextures?: number;
+}
+
+
+
+export function InstanceDetail({ instanceId }: Props) {
+  const instances = useInstanceStore((state) => state.instances);
+  const updateInstanceSettings = useInstanceStore((state) => state.updateInstanceSettings);
+  const updateInstanceConfig = useInstanceStore((state) => state.updateInstanceConfig);
+  const deleteInstance = useInstanceStore((state) => state.deleteInstance);
+  const launchInstance = useInstanceStore((state) => state.launchInstance);
+  const instanceStates = useInstanceStore((state) => state.instanceStates);
+  const loadInstances = useInstanceStore((state) => state.loadInstances);
+  const watchInstanceFolders = useInstanceStore((state) => state.watchInstanceFolders);
+  const unwatchInstanceFolders = useInstanceStore((state) => state.unwatchInstanceFolders);
+  const setLogs = useInstanceStore((state) => state.setLogs);
+  const clearLogs = useInstanceStore((state) => state.clearLogs);
+  const killGame = useInstanceStore((state) => state.killGame);
+  const addNotification = useAppStore((state) => state.addNotification);
+  const setCurrentView = useAppStore((state) => state.setCurrentView);
+  const activeTab = useAppStore((state) => state.activeDetailTab);
+  const setActiveTab = useAppStore((state) => state.setActiveDetailTab);
+  const accounts = useAccountStore((state) => state.accounts);
+  const selectedAccountId = useAccountStore((state) => state.selectedAccountId);
+  const settingsConfig = useSettingsStore((state) => state.config);
+
+  const instance = instances.find(i => i && i.id === instanceId);
+
+  // Synchronized via appStore
+
+  // Basic states
+  const [baseDir, setBaseDir] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+
+  // Version/Loader Edit Modal States
+  const [isEditingVersion, setIsEditingVersion] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const prevTabRef = useRef(activeTab);
+
+
+  // Detailed settings states (moved from original)
+  const [jvmArgs, setJvmArgs] = useState('');
+  const [maxMemory, setMaxMemory] = useState(4096);
+  const [customJava, setCustomJava] = useState('');
+
+  // Tab content states
+  // Use a stable EMPTY_LOGS reference to avoid Zustand v5 tearing-detection
+  // triggering infinite re-renders when there are no logs for this instance.
+  const logs = useInstanceStore(state => state.instanceLogs[instanceId] ?? EMPTY_LOGS);
+  const [mods, setMods] = useState<ModItem[]>([]);
+  const [modsUpdates, setModsUpdates] = useState<Record<string, any>>({});
+  const [isCheckingModsUpdates, setIsCheckingModsUpdates] = useState(false);
+  const [resourcePacks, setResourcePacks] = useState<ResourcePackItem[]>([]);
+  const [rpUpdates, setRpUpdates] = useState<Record<string, any>>({});
+  const [isCheckingRpUpdates, setIsCheckingRpUpdates] = useState(false);
+  const [shaderPacks, setShaderPacks] = useState<ResourcePackItem[]>([]);
+  const [activeWorldForDatapacks, setActiveWorldForDatapacks] = useState<WorldItem | null>(null);
+  const [datapacks, setDatapacks] = useState<ResourcePackItem[]>([]);
+  const [worlds, setWorlds] = useState<WorldItem[]>([]);
+  const [servers, setServers] = useState<ServerItem[]>([]);
+  const [isCheckingModpackUpdate, setIsCheckingModpackUpdate] = useState(false);
+  const [latestModpackVersion, setLatestModpackVersion] = useState<any>(null);
+
+  // Lists loading state
+  const [loadingList, setLoadingList] = useState(false);
+
+  // Screenshots states
+  const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [loadingScreenshots, setLoadingScreenshots] = useState(false);
+  const [activeScreenshotIndex, setActiveScreenshotIndex] = useState(0);
+  const prevActiveRef = useRef(activeScreenshotIndex);
+  const [isScreenshotZoomed, setIsScreenshotZoomed] = useState(false);
+
+  useEffect(() => {
+    prevActiveRef.current = activeScreenshotIndex;
+  }, [activeScreenshotIndex]);
+
+  useEffect(() => {
+    setIsScreenshotZoomed(false);
+  }, [activeScreenshotIndex]);
+
+  // Modal open states
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isConfirmDeleteWorldOpen, setIsConfirmDeleteWorldOpen] = useState(false);
+  const [targetDeleteWorld, setTargetDeleteWorld] = useState<string | null>(null);
+  const [isConfirmKillGameOpen, setIsConfirmKillGameOpen] = useState(false);
+
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = useState<{
+    type: 'mod' | 'resourcepack' | 'shaderpack' | 'datapack' | 'server' | 'modpack_update' | 'screenshot';
+    fileName?: string;
+    serverIndex?: number;
+    serverName?: string;
+  } | null>(null);
+
+  const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [editingServer, setEditingServer] = useState<ServerItem | null>(null);
+  const [editingServerIndex, setEditingServerIndex] = useState<number | null>(null);
+
+  const [isModrinthModalOpen, setIsModrinthModalOpen] = useState(false);
+  const [modrinthModalType, setModrinthModalType] = useState<'mod' | 'resourcepack' | 'shader' | 'datapack'>('mod');
+  const [isIconModalOpen, setIsIconModalOpen] = useState(false);
+
+  const logConsoleRef = useRef<HTMLDivElement>(null);
+  const lastLoadIdRef = useRef(0);
+
+  // Fetch app base dir on mount
+  useEffect(() => {
+    invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
+  }, []);
+
+  // Sync settings when instance changes — depend on stable primitives, NOT the
+  // whole `instance` object (find() returns a new ref every render → infinite loop)
+  const instanceId_dep   = instance?.id;
+  const instanceName_dep = instance?.name;
+  const instanceJvm_dep  = instance?.jvmArgs;
+  const instanceMem_dep  = instance?.maxMemory;
+  const instanceJava_dep = instance?.javaPath;
+  useEffect(() => {
+    if (instance) {
+      setEditedName(instance.name || '');
+      setJvmArgs(instance.jvmArgs || '');
+      setMaxMemory(instance.maxMemory || 4096);
+      setCustomJava(instance.javaPath || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instanceId_dep, instanceName_dep, instanceJvm_dep, instanceMem_dep, instanceJava_dep]);
+
+
+
+  // 監聽本機檔案變動以自動重新載入
+  useEffect(() => {
+    let active = true;
+    let unlistenFn: (() => void) | undefined;
+
+    const setupWatcher = async () => {
+      // 1. 開始監聽
+      await watchInstanceFolders(instanceId);
+      if (!active) return;
+
+      // 2. 監聽事件
+      const unlisten = await listen<{ folder: string; instanceId: string }>('folder-change', async (event) => {
+        if (event.payload.instanceId !== instanceId) return;
+        
+        console.log(`Received folder change event: ${event.payload.folder}`);
+        const loadId = ++lastLoadIdRef.current;
+        
+        if (event.payload.folder === 'mods') {
+          try {
+            const list = await invoke<ModItem[]>('get_installed_mods', { instanceId });
+            if (loadId === lastLoadIdRef.current) {
+              setMods(list);
+              setModsUpdates({});
+            }
+          } catch (err) {
+            console.error('Failed to reload mods:', err);
+          }
+        } else if (event.payload.folder === 'saves') {
+          try {
+            const list = await invoke<WorldItem[]>('get_installed_worlds', { instanceId });
+            if (loadId === lastLoadIdRef.current) {
+              setWorlds(list);
+            }
+          } catch (err) {
+            console.error('Failed to reload worlds:', err);
+          }
+        } else if (event.payload.folder === 'screenshots') {
+          loadScreenshots(loadId);
+        } else if (event.payload.folder === 'datapacks') {
+          if (activeWorldForDatapacks) {
+            refreshDatapacks(activeWorldForDatapacks.folderName);
+          }
+        }
+      });
+
+      if (!active) {
+        unlisten();
+      } else {
+        unlistenFn = unlisten;
+      }
+    };
+
+    setupWatcher();
+
+    return () => {
+      active = false;
+      unwatchInstanceFolders();
+      if (unlistenFn) {
+        unlistenFn();
+      }
+    };
+  }, [instanceId, activeWorldForDatapacks]);
+
+  // Load active tab data
+  useEffect(() => {
+    if (!instance) return;
+    loadTabData();
+  }, [activeTab, instanceId]);
+
+  // Trigger animation when tab changes, then clear after transition
+  useEffect(() => {
+    if (prevTabRef.current !== activeTab) {
+      prevTabRef.current = activeTab;
+      setIsAnimating(true);
+      const timer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab]);
+
+  // Auto-scroll logs
+  useEffect(() => {
+    if (logConsoleRef.current) {
+      logConsoleRef.current.scrollTop = logConsoleRef.current.scrollHeight;
+    }
+  }, [logs, activeTab]);
+
+
+
+  useEffect(() => {
+    if (activeWorldForDatapacks) {
+      refreshDatapacks(activeWorldForDatapacks.folderName);
+    } else {
+      setDatapacks([]);
+    }
+  }, [activeWorldForDatapacks]);
+
+  if (!instance) {
+    return <div className={styles.notFound}>找不到該實例</div>;
+  }
+
+  const instState = instanceStates[instance.id] || getInitialInstanceState();
+  const isDownloading = instState.isDownloading;
+  const isLaunching = instState.isLaunching;
+  const isRunning = instState.isRunning;
+  const isCrashed = instState.isCrashed;
+  const downloadProgress = instState.downloadProgress;
+  const downloadStatusText = instState.downloadStatusText;
+  const launchPhase = instState.launchPhase;
+
+  const loadScreenshots = async (loadId?: number) => {
+    setLoadingScreenshots(true);
+    try {
+      const list = await invoke<string[]>('get_screenshots', { instanceId });
+      if (loadId === undefined || loadId === lastLoadIdRef.current) {
+        setScreenshots(list);
+        setActiveScreenshotIndex(0);
+      }
+    } catch (err) {
+      console.error('Failed to load screenshots:', err);
+    } finally {
+      if (loadId === undefined || loadId === lastLoadIdRef.current) {
+        setLoadingScreenshots(false);
+      }
+    }
+  };
+
+  const handleOpenActiveScreenshot = async () => {
+    const activePath = screenshots[activeScreenshotIndex];
+    if (!activePath) return;
+    try {
+      await invoke('open_in_browser', { url: activePath });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCopyActiveScreenshot = async () => {
+    const activePath = screenshots[activeScreenshotIndex];
+    if (!activePath) return;
+    try {
+      const response = await fetch(convertFileSrc(activePath));
+      const blob = await response.blob();
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ]);
+      addNotification({
+        type: 'success',
+        title: '已複製圖片',
+        message: '螢幕截圖已成功複製到剪貼簿！'
+      });
+    } catch (err) {
+      console.error('Failed to copy screenshot:', err);
+      try {
+        await navigator.clipboard.writeText(activePath);
+        addNotification({
+          type: 'info',
+          title: '已複製路徑',
+          message: '複製圖片失敗，已將螢幕截圖檔案路徑複製到剪貼簿！'
+        });
+      } catch (e) {
+        addNotification({ type: 'error', title: '複製失敗', message: String(e) });
+      }
+    }
+  };
+
+  const handleDeleteActiveScreenshotClick = () => {
+    const activePath = screenshots[activeScreenshotIndex];
+    if (!activePath) return;
+    const fileName = activePath.substring(Math.max(activePath.lastIndexOf('/'), activePath.lastIndexOf('\\')) + 1);
+    setConfirmDeleteTarget({ type: 'screenshot', fileName });
+  };
+
+  const refreshDatapacks = async (worldFolder: string) => {
+    if (!instance) return;
+    setLoadingList(true);
+    try {
+      const list = await invoke<ResourcePackItem[]>('get_installed_datapacks', {
+        instanceId: instance.id,
+        worldFolder
+      });
+      setDatapacks(list);
+    } catch (err) {
+      console.error('Failed to load datapacks:', err);
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+
+
+  const loadTabData = async () => {
+    if (!instance) return;
+    const loadId = ++lastLoadIdRef.current;
+    setLoadingList(true);
+    try {
+      if (activeTab === 'log') {
+        const isCurrentlyActive = isLaunching || isRunning;
+        if (!isCurrentlyActive) {
+          const history = await invoke<string>('read_latest_log', { instanceId });
+          if (loadId === lastLoadIdRef.current) {
+            setLogs(instanceId, history ? history.split('\n') : []);
+          }
+        }
+      } else if (activeTab === 'edit') {
+        loadScreenshots(loadId);
+      } else if (activeTab === 'mods') {
+        const list = await invoke<ModItem[]>('get_installed_mods', { instanceId });
+        if (loadId === lastLoadIdRef.current) {
+          setMods(list);
+          setModsUpdates({});
+        }
+      } else if (activeTab === 'resourcepacks') {
+        const list = await invoke<ResourcePackItem[]>('get_installed_resourcepacks', { instanceId });
+        if (loadId === lastLoadIdRef.current) {
+          setResourcePacks(list);
+          setRpUpdates({});
+        }
+      } else if (activeTab === 'shaderpacks') {
+        const list = await invoke<ResourcePackItem[]>('get_installed_shaderpacks', { instanceId });
+        if (loadId === lastLoadIdRef.current) setShaderPacks(list);
+      } else if (activeTab === 'worlds') {
+        const list = await invoke<WorldItem[]>('get_installed_worlds', { instanceId });
+        if (loadId === lastLoadIdRef.current) setWorlds(list);
+      } else if (activeTab === 'servers') {
+        const list = await invoke<ServerItem[]>('get_servers', { instanceId });
+        if (loadId === lastLoadIdRef.current) setServers(list);
+      } else if (activeTab === 'modpack_update' && instance.modrinthProjectId) {
+        setIsCheckingModpackUpdate(true);
+        const res = await fetch(`https://api.modrinth.com/v2/project/${instance.modrinthProjectId}/version`, {
+          headers: {
+            'User-Agent': 'focal-craft-launcher'
+          }
+        });
+        if (res.ok) {
+          const versions = await res.json();
+          // Filter versions supporting current game version
+          const valid = versions.filter((v: any) =>
+            v.game_versions.includes(instance.version) &&
+            v.files.some((f: any) => f.filename.endsWith('.mrpack'))
+          );
+          if (loadId === lastLoadIdRef.current && valid.length > 0) {
+            setLatestModpackVersion(valid[0]);
+          }
+        }
+        if (loadId === lastLoadIdRef.current) setIsCheckingModpackUpdate(false);
+      }
+    } catch (err) {
+      console.error('Failed to load tab data:', err);
+    } finally {
+      if (loadId === lastLoadIdRef.current) {
+        setLoadingList(false);
+      }
+    }
+  };
+
+  // Launch Play Button Handlers
+  const handlePlay = async () => {
+    if (isLaunching || isRunning) return;
+
+    if (!selectedAccountId) {
+      addNotification({
+        type: 'warning',
+        title: '無法啟動遊戲',
+        message: '請先登入微軟帳號！'
+      });
+      return;
+    }
+
+    const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+    if (!selectedAccount) {
+      addNotification({
+        type: 'error',
+        title: '無法啟動遊戲',
+        message: '找不到已選取的帳號資訊，請重新登入！'
+      });
+      return;
+    }
+
+    addNotification({
+      type: 'info',
+      title: '啟動中',
+      message: `準備啟動 ${instance.name}...`
+    });
+
+    const accountJson = JSON.stringify({
+      id: selectedAccount.id,
+      mcId: selectedAccount.mcId,
+      mcAccessToken: selectedAccount.mcAccessToken
+    });
+
+    // Start launching (which synchronously sets launchingInstanceId)
+    const launchPromise = launchInstance(instance.id, accountJson);
+
+    // Switch tab and clear logs
+    setActiveTab('log');
+    clearLogs(instance.id);
+
+    try {
+      await launchPromise;
+    } catch (error: any) {
+      // Error is handled in store
+    }
+  };
+
+  // Open directory
+  const handleOpenFolder = async (folderType?: string) => {
+    try {
+      const instsDir = settingsConfig.instancesPath || `${baseDir}/instances`;
+      let targetPath = `${instsDir}/${instance.id}`;
+      if (folderType) {
+        targetPath = `${targetPath}/minecraft/${folderType}`;
+      }
+      await invoke('open_in_browser', { url: targetPath });
+    } catch (error: any) {
+      addNotification({
+        type: 'error',
+        title: '無法開啟資料夾',
+        message: String(error)
+      });
+    }
+  };
+
+  // 1. Edit Name Inline
+  const handleSaveName = async () => {
+    setIsEditingName(false);
+    if (!editedName.trim() || editedName === instance.name) return;
+    try {
+      await updateInstanceConfig(
+        instance.id,
+        editedName.trim(),
+        instance.version,
+        instance.modloader,
+        instance.loaderVersion,
+        instance.modrinthProjectId || undefined,
+        instance.modrinthVersionId || undefined
+      );
+      addNotification({
+        type: 'success',
+        title: '名稱已變更',
+        message: `實例已重新命名為 ${editedName.trim()}`
+      });
+    } catch (err: any) {
+      addNotification({ type: 'error', title: '更名失敗', message: String(err) });
+      setEditedName(instance.name);
+    }
+  };
+
+  // 2. Icon config
+  const handleIconClick = () => {
+    setIsIconModalOpen(true);
+  };
+
+  const handleSelectLocalIcon = async () => {
+    try {
+      const path = await invoke<string>('select_single_file', {
+        title: "選擇實例圖示圖片",
+        filter: "圖片檔案 (*.png;*.jpg;*.jpeg;*.webp)|*.png;*.jpg;*.jpeg;*.webp"
+      });
+      if (path === 'CANCELLED') return;
+      await invoke('update_instance_icon', { id: instance.id, filePath: path });
+      await loadInstances();
+      addNotification({ type: 'success', title: '圖示更新成功', message: '本機圖示已更新！' });
+      setIsIconModalOpen(false);
+    } catch (err) {
+      addNotification({ type: 'error', title: '更新圖示失敗', message: String(err) });
+    }
+  };
+
+  const handleSelectUrlIcon = async (url: string) => {
+    try {
+      await invoke('update_instance_icon_url', { id: instance.id, url });
+      await loadInstances();
+      addNotification({ type: 'success', title: '圖示更新成功', message: '網路圖示已設定！' });
+      setIsIconModalOpen(false);
+    } catch (err) {
+      addNotification({ type: 'error', title: '設定圖示網址失敗', message: String(err) });
+    }
+  };
+
+  const handleSelectEmojiIcon = async (emoji: string) => {
+    try {
+      await invoke('update_instance_icon_value', { id: instance.id, value: emoji });
+      await loadInstances();
+      addNotification({ type: 'success', title: '圖示更新成功', message: '內建圖示已套用！' });
+      setIsIconModalOpen(false);
+    } catch (err) {
+      addNotification({ type: 'error', title: '設定內建圖示失敗', message: String(err) });
+    }
+  };
+
+  const handleClearIcon = async () => {
+    try {
+      await invoke('update_instance_icon_value', { id: instance.id, value: null });
+      await loadInstances();
+      addNotification({ type: 'success', title: '圖示重設成功', message: '圖示已恢復為預設！' });
+      setIsIconModalOpen(false);
+    } catch (err) {
+      addNotification({ type: 'error', title: '重設圖示失敗', message: String(err) });
+    }
+  };
+
+  const getIconSrc = () => {
+    return getInstanceIconSrc(instance, baseDir, settingsConfig.instancesPath);
+  };
+
+  // 3. Edit Version & Loader Modal Handlers
+  const handleOpenEditVersion = () => {
+    setIsEditingVersion(true);
+  };
+
+  const handleToggleMod = async (mod: ModItem, enabled: boolean) => {
+    try {
+      await invoke('toggle_mod', {
+        instanceId: instance.id,
+        fileName: mod.fileName,
+        enabled
+      });
+      addNotification({
+        type: 'success',
+        title: enabled ? '已啟用模組' : '已停用模組',
+        message: `模組 ${mod.name} 狀態已變更`
+      });
+      // Refresh the mods list
+      const list = await invoke<ModItem[]>('get_installed_mods', { instanceId });
+      setMods(list);
+    } catch (err: any) {
+      addNotification({ type: 'error', title: '變更模組狀態失敗', message: String(err) });
+    }
+  };
+
+  // 4. Mod check updates
+  const handleCheckModsUpdates = async () => {
+    if (mods.length === 0) return;
+    setIsCheckingModsUpdates(true);
+    try {
+      const hashes = mods.map(m => m.sha1).filter(h => h !== '');
+      const res = await fetch('https://api.modrinth.com/v2/version_files/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'focal-craft-launcher' },
+        body: JSON.stringify({
+          hashes,
+          algorithm: 'sha1',
+          loaders: [instance.modloader.toLowerCase()],
+          game_versions: [instance.version],
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const filteredData: Record<string, any> = {};
+        const localHashesSet = new Set(hashes);
+        
+        Object.entries(data).forEach(([key, val]: [string, any]) => {
+          if (val && val.files) {
+            const hasSameHash = val.files.some((f: any) => f.hashes?.sha1 && localHashesSet.has(f.hashes.sha1));
+            if (!hasSameHash) {
+              filteredData[key] = val;
+            }
+          }
+        });
+
+        setModsUpdates(filteredData);
+        addNotification({
+          type: 'success',
+          title: '檢查模組更新完成',
+          message: `共偵測到 ${Object.keys(filteredData).length} 個模組有可用更新！`
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCheckingModsUpdates(false);
+    }
+  };
+
+  const handleUpdateMod = async (mod: ModItem, updateObj: any) => {
+    try {
+      const file = updateObj.files.find((f: any) => f.primary) || updateObj.files[0];
+      if (!file) return;
+
+      addNotification({ type: 'info', title: '更新中', message: `正在下載新版 ${mod.name}...` });
+
+      await invoke('download_and_replace_file', {
+        instanceId: instance.id,
+        folderName: 'mods',
+        downloadUrl: file.url,
+        newFilename: file.filename,
+        oldFilename: mod.fileName
+      });
+
+      addNotification({ type: 'success', title: '更新成功', message: `${mod.name} 已更新到最新版本！` });
+      loadTabData();
+    } catch (err) {
+      addNotification({ type: 'error', title: '模組更新失敗', message: String(err) });
+    }
+  };
+
+  const handleDeleteMod = (fileName: string) => {
+    setConfirmDeleteTarget({ type: 'mod', fileName });
+  };
+
+  const handleImportMods = async () => {
+    try {
+      const paths = await invoke<string[]>('select_multiple_files', {
+        title: "選擇匯入的模組",
+        filter: "Java Archive (*.jar)|*.jar"
+      });
+      if (paths && paths !== ('CANCELLED' as any)) {
+        await invoke('import_files', { instanceId: instance.id, folderName: 'mods', filePaths: paths });
+        loadTabData();
+      }
+    } catch (err) {
+      if (err !== 'CANCELLED') console.error(err);
+    }
+  };
+
+  // 5. Resource pack updates
+  const handleCheckRpUpdates = async () => {
+    if (resourcePacks.length === 0) return;
+    setIsCheckingRpUpdates(true);
+    try {
+      const hashes = resourcePacks.map(rp => rp.sha1).filter(h => h !== '');
+      const res = await fetch('https://api.modrinth.com/v2/version_files/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'focal-craft-launcher' },
+        body: JSON.stringify({
+          hashes,
+          algorithm: 'sha1',
+          loaders: [],
+          game_versions: [instance.version],
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const filteredData: Record<string, any> = {};
+        const localHashesSet = new Set(hashes);
+        
+        Object.entries(data).forEach(([key, val]: [string, any]) => {
+          if (val && val.files) {
+            const hasSameHash = val.files.some((f: any) => f.hashes?.sha1 && localHashesSet.has(f.hashes.sha1));
+            if (!hasSameHash) {
+              filteredData[key] = val;
+            }
+          }
+        });
+
+        setRpUpdates(filteredData);
+        addNotification({
+          type: 'success',
+          title: '檢查資源包更新完成',
+          message: `共偵測到 ${Object.keys(filteredData).length} 個資源包有可用更新！`
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCheckingRpUpdates(false);
+    }
+  };
+
+  const handleUpdateRp = async (rp: ResourcePackItem, updateObj: any) => {
+    try {
+      const file = updateObj.files.find((f: any) => f.primary) || updateObj.files[0];
+      if (!file) return;
+
+      addNotification({ type: 'info', title: '更新中', message: `正在下載新版 ${rp.name}...` });
+
+      await invoke('download_and_replace_file', {
+        instanceId: instance.id,
+        folderName: 'resourcepacks',
+        downloadUrl: file.url,
+        newFilename: file.filename,
+        oldFilename: rp.fileName
+      });
+
+      addNotification({ type: 'success', title: '更新成功', message: `${rp.name} 已更新到最新版本！` });
+      loadTabData();
+    } catch (err) {
+      addNotification({ type: 'error', title: '資源包更新失敗', message: String(err) });
+    }
+  };
+
+  const handleDeleteRp = (fileName: string) => {
+    setConfirmDeleteTarget({ type: 'resourcepack', fileName });
+  };
+
+  const handleDeleteSp = (fileName: string) => {
+    setConfirmDeleteTarget({ type: 'shaderpack', fileName });
+  };
+
+  const handleImportSps = async () => {
+    try {
+      const paths = await invoke<string[]>('select_multiple_files', {
+        title: "選擇匯入的光影包",
+        filter: "光影包檔案 (*.zip)|*.zip"
+      });
+      if (paths && paths !== ('CANCELLED' as any)) {
+        await invoke('import_files', { instanceId: instance.id, folderName: 'shaderpacks', filePaths: paths });
+        const list = await invoke<ResourcePackItem[]>('get_installed_shaderpacks', { instanceId });
+        setShaderPacks(list);
+      }
+    } catch (err) {
+      if (err !== 'CANCELLED') console.error(err);
+    }
+  };
+
+  const handleImportRps = async () => {
+    try {
+      const paths = await invoke<string[]>('select_multiple_files', {
+        title: "選擇匯入的資源包",
+        filter: "Resource Pack Zip (*.zip)|*.zip"
+      });
+      if (paths && paths !== ('CANCELLED' as any)) {
+        await invoke('import_files', { instanceId: instance.id, folderName: 'resourcepacks', filePaths: paths });
+        loadTabData();
+      }
+    } catch (err) {
+      if (err !== 'CANCELLED') console.error(err);
+    }
+  };
+
+  // 6. World Save handlers
+  const handleImportWorld = async () => {
+    try {
+      const path = await invoke<string>('select_single_file', {
+        title: "選擇世界存檔壓縮檔 (.zip)",
+        filter: "World Backup (*.zip)|*.zip"
+      });
+      if (path && path !== 'CANCELLED') {
+        addNotification({ type: 'info', title: '匯入世界中', message: '正在解壓縮世界存檔檔案...' });
+        await invoke('import_world_zip', { instanceId: instance.id, zipPath: path });
+        addNotification({ type: 'success', title: '世界存檔匯入完成', message: '新存檔已可於單人遊戲中遊玩！' });
+        loadTabData();
+      }
+    } catch (err) {
+      if (err !== 'CANCELLED') addNotification({ type: 'error', title: '世界存檔匯入失敗', message: String(err) });
+    }
+  };
+
+  const handleDeleteWorldClick = (folderName: string) => {
+    setTargetDeleteWorld(folderName);
+    setIsConfirmDeleteWorldOpen(true);
+  };
+
+  const handleConfirmDeleteWorld = async () => {
+    if (!targetDeleteWorld) return;
+    setIsConfirmDeleteWorldOpen(false);
+    try {
+      await invoke('delete_instance_file', {
+        instanceId: instance.id,
+        folderName: 'saves',
+        fileName: targetDeleteWorld
+      });
+      addNotification({ type: 'success', title: '世界已刪除', message: `已刪除存檔資料夾: ${targetDeleteWorld}` });
+      loadTabData();
+    } catch (err) {
+      addNotification({ type: 'error', title: '刪除世界失敗', message: String(err) });
+    } finally {
+      setTargetDeleteWorld(null);
+    }
+  };
+
+  const handleImportDatapacks = async () => {
+    if (!activeWorldForDatapacks) return;
+    try {
+      const paths = await invoke<string[]>('select_multiple_files', {
+        title: "選擇匯入的資料包",
+        filter: "資料包壓縮檔 (*.zip)|*.zip"
+      });
+      if (paths && paths !== ('CANCELLED' as any)) {
+        await invoke('import_files', {
+          instanceId: instance.id,
+          folderName: `saves/${activeWorldForDatapacks.folderName}/datapacks`,
+          filePaths: paths
+        });
+        refreshDatapacks(activeWorldForDatapacks.folderName);
+      }
+    } catch (err) {
+      if (err !== 'CANCELLED') console.error(err);
+    }
+  };
+
+  const handleOpenDatapacksFolder = async () => {
+    if (!activeWorldForDatapacks) return;
+    try {
+      const instsDir = settingsConfig.instancesPath || `${baseDir}/instances`;
+      const targetPath = `${instsDir}/${instance.id}/minecraft/saves/${activeWorldForDatapacks.folderName}/datapacks`;
+      await invoke('open_in_browser', { url: targetPath });
+    } catch (error: any) {
+      addNotification({
+        type: 'error',
+        title: '無法開啟資料夾',
+        message: String(error)
+      });
+    }
+  };
+
+  const handleDeleteDpClick = (fileName: string) => {
+    setConfirmDeleteTarget({ type: 'datapack', fileName });
+  };
+
+  // 7. Server list handlers
+  const handleOpenServerModal = (server: ServerItem | null, index: number | null) => {
+    setEditingServer(server);
+    setEditingServerIndex(index);
+    setIsServerModalOpen(true);
+  };
+
+  const handleSaveServer = async (name: string, ip: string, acceptTextures: number) => {
+    setIsServerModalOpen(false);
+    try {
+      const updatedServers = [...servers];
+      if (editingServerIndex !== null) {
+        // Edit mode
+        updatedServers[editingServerIndex] = { name, ip, acceptTextures };
+      } else {
+        // Add mode
+        updatedServers.push({ name, ip, acceptTextures });
+      }
+
+      await invoke('save_servers', { instanceId: instance.id, servers: updatedServers });
+      loadTabData();
+    } catch (err) {
+      addNotification({ type: 'error', title: '儲存伺服器失敗', message: String(err) });
+    }
+  };
+
+  const handleDeleteServer = (index: number) => {
+    const srv = servers[index];
+    setConfirmDeleteTarget({ type: 'server', serverIndex: index, serverName: srv ? srv.name : `伺服器 #${index + 1}` });
+  };
+
+  // 8. Detailed Settings handlers
+  const handleSaveSettings = async () => {
+    try {
+      await updateInstanceSettings(instance.id, jvmArgs, maxMemory, customJava.trim() || undefined);
+      addNotification({
+        type: 'success',
+        title: '設定已儲存',
+        message: `實例 ${instance.name} 的設定已更新`
+      });
+    } catch (error: any) {
+      addNotification({
+        type: 'error',
+        title: '儲存失敗',
+        message: String(error)
+      });
+    }
+  };
+
+  const handleDeleteInstance = async () => {
+    setIsConfirmDeleteOpen(false);
+    try {
+      await deleteInstance(instance.id);
+      addNotification({
+        type: 'success',
+        title: '實例已刪除',
+        message: `實例 ${instance.name} 已成功刪除`
+      });
+      setCurrentView('instances_overview');
+    } catch (error: any) {
+      addNotification({
+        type: 'error',
+        title: '刪除失敗',
+        message: String(error)
+      });
+    }
+  };
+
+  // 9. Modpack update handlers
+  const handleUpdateModpackClick = () => {
+    setConfirmDeleteTarget({ type: 'modpack_update' });
+  };
+
+  const executeModpackUpdate = async () => {
+    if (!latestModpackVersion) return;
+    try {
+      addNotification({ type: 'info', title: '更新整合包', message: '正在清除舊模組檔案並下載新版整合包...' });
+
+      const file = latestModpackVersion.files.find((f: any) => f.filename.endsWith('.mrpack'));
+      if (!file) throw new Error('此版本缺少相容的 .mrpack 檔案');
+
+      // Download pack file
+      const localPath = await invoke<string>('download_mrpack', { url: file.url });
+
+      // Clean old mods
+      await invoke('delete_instance_file', { instanceId: instance.id, folderName: '', fileName: 'minecraft/mods' });
+
+      // Re-import mrpack files
+      await invoke('import_mrpack', { instanceId: instance.id, filePath: localPath });
+
+      // Update modpack config
+      await updateInstanceConfig(
+        instance.id,
+        instance.name,
+        instance.version,
+        instance.modloader,
+        instance.loaderVersion,
+        instance.modrinthProjectId || undefined,
+        latestModpackVersion.id
+      );
+
+      addNotification({ type: 'success', title: '整合包更新完成', message: '整合包已成功升級！' });
+      setActiveTab('edit');
+    } catch (err: any) {
+      addNotification({ type: 'error', title: '整合包更新失敗', message: err.message || String(err) });
+    }
+  };
+
+  const renderPlayButton = (position: 'center' | 'right') => {
+    const isBtnDisabled = isLaunching || isRunning || isDownloading;
+
+    const phaseText = isRunning
+      ? '遊戲執行中'
+      : launchPhase === 'java_check'
+        ? '正在偵測 Java...'
+        : launchPhase === 'java_download'
+          ? `下載 Java (${Math.round(downloadProgress)}%)`
+          : launchPhase === 'files' || isDownloading
+            ? `準備遊戲檔案 (${Math.round(downloadProgress)}%)`
+            : launchPhase === 'launching'
+              ? '正在啟動...'
+              : '啟動遊戲';
+
+    const showProgress = (isLaunching || isDownloading) && !isRunning;
+
+    return (
+      <div className={`${styles.playBtnWrapper} ${position === 'right' ? styles.playBtnWrapperRight : styles.playBtnWrapperCenter}`}>
+        {showProgress && (
+          <div className={styles.launchProgressBar}>
+            <div
+              className={styles.launchProgressFill}
+              style={{ width: `${Math.max(5, Math.round(downloadProgress))}%` }}
+            />
+          </div>
+        )}
+        <div className={styles.playBtnGroup}>
+          {isRunning && (
+            <button
+              className={styles.terminateBtn}
+              onClick={() => setIsConfirmKillGameOpen(true)}
+            >
+              <Square size={20} fill="white" />
+              <span>終止遊戲</span>
+            </button>
+          )}
+          <button
+            className={`${styles.playBtn} ${isBtnDisabled ? styles.playBtnActive : ''}`}
+            onClick={handlePlay}
+            disabled={isBtnDisabled}
+          >
+            {isBtnDisabled && !isRunning ? <Loader className="animate-spin" size={20} /> : <Play size={20} fill="white" />}
+            <span>{phaseText}</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.background}></div>
+
+      <div className={styles.content}>
+        {/* Main Panel Content area */}
+        <div className={`${styles.mainPanel} ${isAnimating ? styles.animating : ''}`}>
+          {/* Launch Progress HUD Overlay */}
+          {(isLaunching || isDownloading) && (
+            <div className={styles.hudOverlay}>
+              <div className={styles.hudCard}>
+                <div className={styles.hudHeader}>
+                  <Loader className={`${styles.hudSpinner} animate-spin`} size={24} />
+                  <span className={styles.hudTitle}>
+                    {isDownloading ? '正在下載與準備資源...' : '正在準備啟動遊戲...'}
+                  </span>
+                </div>
+                <div className={styles.hudDetail}>
+                  {downloadStatusText || '正在初始化階段...'}
+                </div>
+                <div className={styles.hudProgressContainer}>
+                  <div className={styles.hudProgressBar}>
+                    <div
+                      className={styles.hudProgressFill}
+                      style={{ width: `${Math.max(3, Math.min(100, downloadProgress))}%` }}
+                    />
+                  </div>
+                  <span className={styles.hudPercent}>{Math.round(downloadProgress)}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'edit' && (
+            <EditTab
+              instance={instance}
+              getIconSrc={getIconSrc}
+              handleIconClick={handleIconClick}
+              isEditingName={isEditingName}
+              setIsEditingName={setIsEditingName}
+              editedName={editedName}
+              setEditedName={setEditedName}
+              handleSaveName={handleSaveName}
+              handleOpenEditVersion={handleOpenEditVersion}
+              loadingScreenshots={loadingScreenshots}
+              screenshots={screenshots}
+              isScreenshotZoomed={isScreenshotZoomed}
+              setIsScreenshotZoomed={setIsScreenshotZoomed}
+              activeScreenshotIndex={activeScreenshotIndex}
+              setActiveScreenshotIndex={setActiveScreenshotIndex}
+              handleOpenActiveScreenshot={handleOpenActiveScreenshot}
+              handleCopyActiveScreenshot={handleCopyActiveScreenshot}
+              handleDeleteActiveScreenshotClick={handleDeleteActiveScreenshotClick}
+              prevActiveRef={prevActiveRef}
+              convertFileSrc={convertFileSrc}
+            />
+          )}
+
+          {activeTab === 'log' && (
+            <LogTab
+              logs={logs}
+              logConsoleRef={logConsoleRef}
+              instanceId={instanceId}
+              runningInstanceId={isRunning ? instanceId : null}
+              crashedInstanceId={isCrashed ? instanceId : null}
+              onClearLogs={() => clearLogs(instanceId)}
+            />
+          )}
+
+          {activeTab === 'mods' && (
+            <ModsTab
+              mods={mods}
+              modsUpdates={modsUpdates}
+              isCheckingModsUpdates={isCheckingModsUpdates}
+              loadingList={loadingList}
+              handleImportMods={handleImportMods}
+              setModrinthModalType={setModrinthModalType}
+              setIsModrinthModalOpen={setIsModrinthModalOpen}
+              handleCheckModsUpdates={handleCheckModsUpdates}
+              handleOpenFolder={handleOpenFolder}
+              handleToggleMod={handleToggleMod}
+              handleUpdateMod={handleUpdateMod}
+              handleDeleteMod={handleDeleteMod}
+            />
+          )}
+
+          {activeTab === 'resourcepacks' && (
+            <ResourcePacksTab
+              resourcePacks={resourcePacks}
+              rpUpdates={rpUpdates}
+              isCheckingRpUpdates={isCheckingRpUpdates}
+              loadingList={loadingList}
+              handleImportRps={handleImportRps}
+              setModrinthModalType={setModrinthModalType}
+              setIsModrinthModalOpen={setIsModrinthModalOpen}
+              handleCheckRpUpdates={handleCheckRpUpdates}
+              handleOpenFolder={handleOpenFolder}
+              handleUpdateRp={handleUpdateRp}
+              handleDeleteRp={handleDeleteRp}
+            />
+          )}
+
+          {activeTab === 'shaderpacks' && (
+            <ShaderPacksTab
+              shaderPacks={shaderPacks}
+              loadingList={loadingList}
+              handleImportSps={handleImportSps}
+              setModrinthModalType={setModrinthModalType}
+              setIsModrinthModalOpen={setIsModrinthModalOpen}
+              handleOpenFolder={handleOpenFolder}
+              handleDeleteSp={handleDeleteSp}
+            />
+          )}
+
+          {activeTab === 'worlds' && (
+            <WorldsTab
+              worlds={worlds}
+              datapacks={datapacks}
+              activeWorldForDatapacks={activeWorldForDatapacks}
+              setActiveWorldForDatapacks={setActiveWorldForDatapacks}
+              loadingList={loadingList}
+              handleImportWorld={handleImportWorld}
+              handleOpenFolder={handleOpenFolder}
+              handleDeleteWorldClick={handleDeleteWorldClick}
+              handleImportDatapacks={handleImportDatapacks}
+              setModrinthModalType={setModrinthModalType}
+              setIsModrinthModalOpen={setIsModrinthModalOpen}
+              handleOpenDatapacksFolder={handleOpenDatapacksFolder}
+              handleDeleteDpClick={handleDeleteDpClick}
+              formatSize={formatSize}
+            />
+          )}
+
+          {activeTab === 'servers' && (
+            <ServersTab
+              servers={servers}
+              loadingList={loadingList}
+              handleOpenServerModal={handleOpenServerModal}
+              handleDeleteServer={handleDeleteServer}
+            />
+          )}
+
+          {activeTab === 'settings' && (
+            <SettingsTab
+              maxMemory={maxMemory}
+              setMaxMemory={setMaxMemory}
+              customJava={customJava}
+              setCustomJava={setCustomJava}
+              jvmArgs={jvmArgs}
+              setJvmArgs={setJvmArgs}
+              handleSaveSettings={handleSaveSettings}
+              handleOpenFolder={handleOpenFolder}
+              setIsConfirmDeleteOpen={setIsConfirmDeleteOpen}
+            />
+          )}
+
+          {activeTab === 'modpack_update' && (
+            <ModpackUpdateTab
+              isCheckingModpackUpdate={isCheckingModpackUpdate}
+              latestModpackVersion={latestModpackVersion}
+              instance={instance}
+              handleUpdateModpackClick={handleUpdateModpackClick}
+            />
+          )}
+        </div>
+
+        {/* Bottom bar with left action and right play button */}
+        <div className={styles.bottomBar}>
+          <div className={styles.bottomLeftActions}>
+            {activeTab === 'edit' && (
+              <button className={styles.actionBtn} onClick={() => handleOpenFolder()}>
+                <FolderOpen size={16} />
+                <span>開啟實例資料夾</span>
+              </button>
+            )}
+          </div>
+          <div className={styles.bottomRightActions}>
+            {renderPlayButton('right')}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Confirmation and selection modals */}
+      <CustomConfirmModal
+        isOpen={isConfirmDeleteOpen}
+        title="刪除實例警告"
+        message={`您確定要刪除實例 "${instance.name}" 嗎？此動作將無法還原，並會永久刪除此實例下所有的存檔、設定與檔案！`}
+        onConfirm={handleDeleteInstance}
+        onCancel={() => setIsConfirmDeleteOpen(false)}
+      />
+
+      <CustomConfirmModal
+        isOpen={isConfirmDeleteWorldOpen}
+        title="刪除存檔世界"
+        message={`您確定要永久刪除世界存檔 "${targetDeleteWorld}" 嗎？此刪除動作無法復原！`}
+        onConfirm={handleConfirmDeleteWorld}
+        onCancel={() => { setIsConfirmDeleteWorldOpen(false); setTargetDeleteWorld(null); }}
+      />
+
+      <CustomConfirmModal
+        isOpen={isConfirmKillGameOpen}
+        title="強制終止遊戲警告"
+        message="您確定要強制終止正在執行中的 Minecraft 遊戲進程嗎？這可能會導致未儲存的世界存檔損毀或進度流失！"
+        onConfirm={() => {
+          killGame(instance.id);
+          setIsConfirmKillGameOpen(false);
+        }}
+        onCancel={() => setIsConfirmKillGameOpen(false)}
+      />
+
+      <ServerEditModal
+        isOpen={isServerModalOpen}
+        server={editingServer}
+        onSave={handleSaveServer}
+        onCancel={() => setIsServerModalOpen(false)}
+      />
+
+      <ModrinthDownloadModal
+        isOpen={isModrinthModalOpen}
+        instanceId={instance.id}
+        projectType={modrinthModalType}
+        gameVersion={instance.version}
+        loader={instance.modloader}
+        datapackWorldFolder={activeWorldForDatapacks?.folderName}
+        onDownloadComplete={() => {
+          if (modrinthModalType === 'datapack' && activeWorldForDatapacks) {
+            refreshDatapacks(activeWorldForDatapacks.folderName);
+          } else if (modrinthModalType === 'shader') {
+            invoke<ResourcePackItem[]>('get_installed_shaderpacks', { instanceId }).then(setShaderPacks).catch(console.error);
+          } else {
+            loadTabData();
+          }
+          addNotification({ type: 'success', title: '下載完成', message: '已成功下載檔案到實例中！' });
+        }}
+        onClose={() => setIsModrinthModalOpen(false)}
+      />
+
+      {confirmDeleteTarget && (
+        <CustomConfirmModal
+          isOpen={!!confirmDeleteTarget}
+          title={
+            confirmDeleteTarget.type === 'mod' ? '刪除模組' :
+            confirmDeleteTarget.type === 'resourcepack' ? '刪除資源包' :
+            confirmDeleteTarget.type === 'shaderpack' ? '刪除光影包' :
+            confirmDeleteTarget.type === 'datapack' ? '刪除資料包' :
+            confirmDeleteTarget.type === 'server' ? '刪除伺服器連線' :
+            confirmDeleteTarget.type === 'screenshot' ? '刪除螢幕截圖' :
+            '更新整合包'
+          }
+          message={
+            confirmDeleteTarget.type === 'mod' ? `您確定要刪除模組 "${confirmDeleteTarget.fileName}" 嗎？` :
+            confirmDeleteTarget.type === 'resourcepack' ? `您確定要刪除資源包 "${confirmDeleteTarget.fileName}" 嗎？` :
+            confirmDeleteTarget.type === 'shaderpack' ? `您確定要刪除光影包 "${confirmDeleteTarget.fileName}" 嗎？` :
+            confirmDeleteTarget.type === 'datapack' ? `您確定要刪除世界資料包 "${confirmDeleteTarget.fileName}" 嗎？` :
+            confirmDeleteTarget.type === 'server' ? `您確定要刪除伺服器連線紀錄 "${confirmDeleteTarget.serverName}" 嗎？` :
+            confirmDeleteTarget.type === 'screenshot' ? `您確定要刪除螢幕截圖 "${confirmDeleteTarget.fileName}" 嗎？` :
+            `確認要將此整合包更新至版本 ${latestModpackVersion?.version_number} 嗎？\n更新將會清空並更替目前的模組目錄。`
+          }
+          onConfirm={async () => {
+            const target = confirmDeleteTarget;
+            setConfirmDeleteTarget(null);
+            
+            if (target.type === 'mod' && target.fileName) {
+              try {
+                await invoke('delete_instance_file', { instanceId: instance.id, folderName: 'mods', fileName: target.fileName });
+                loadTabData();
+              } catch (err) {
+                addNotification({ type: 'error', title: '刪除模組失敗', message: String(err) });
+              }
+            } else if (target.type === 'resourcepack' && target.fileName) {
+              try {
+                await invoke('delete_instance_file', { instanceId: instance.id, folderName: 'resourcepacks', fileName: target.fileName });
+                loadTabData();
+              } catch (err) {
+                addNotification({ type: 'error', title: '刪除資源包失敗', message: String(err) });
+              }
+            } else if (target.type === 'shaderpack' && target.fileName) {
+              try {
+                await invoke('delete_instance_file', { instanceId: instance.id, folderName: 'shaderpacks', fileName: target.fileName });
+                const list = await invoke<ResourcePackItem[]>('get_installed_shaderpacks', { instanceId });
+                setShaderPacks(list);
+              } catch (err) {
+                addNotification({ type: 'error', title: '刪除光影包失敗', message: String(err) });
+              }
+            } else if (target.type === 'datapack' && target.fileName && activeWorldForDatapacks) {
+              try {
+                await invoke('delete_instance_file', {
+                  instanceId: instance.id,
+                  folderName: `saves/${activeWorldForDatapacks.folderName}/datapacks`,
+                  fileName: target.fileName
+                });
+                refreshDatapacks(activeWorldForDatapacks.folderName);
+              } catch (err) {
+                addNotification({ type: 'error', title: '刪除資料包失敗', message: String(err) });
+              }
+            } else if (target.type === 'server' && target.serverIndex !== undefined) {
+              try {
+                const updatedServers = servers.filter((_, i) => i !== target.serverIndex);
+                await invoke('save_servers', { instanceId: instance.id, servers: updatedServers });
+                loadTabData();
+              } catch (err) {
+                addNotification({ type: 'error', title: '刪除伺服器失敗', message: String(err) });
+              }
+            } else if (target.type === 'screenshot' && target.fileName) {
+              try {
+                await invoke('delete_instance_file', { instanceId: instance.id, folderName: 'screenshots', fileName: target.fileName });
+                loadScreenshots();
+              } catch (err) {
+                addNotification({ type: 'error', title: '刪除截圖失敗', message: String(err) });
+              }
+            } else if (target.type === 'modpack_update') {
+              executeModpackUpdate();
+            }
+          }}
+          onCancel={() => setConfirmDeleteTarget(null)}
+        />
+      )}
+
+      <IconEditModal
+        isOpen={isIconModalOpen}
+        currentIcon={instance.icon || null}
+        onSelectLocal={handleSelectLocalIcon}
+        onSelectUrl={handleSelectUrlIcon}
+        onSelectEmoji={handleSelectEmojiIcon}
+        onClear={handleClearIcon}
+        onCancel={() => setIsIconModalOpen(false)}
+      />
+
+      {/* Extract version edit modal */}
+      <VersionEditModal
+        isOpen={isEditingVersion}
+        onClose={() => setIsEditingVersion(false)}
+        instance={instance}
+        onSaveComplete={async () => {
+          setIsEditingVersion(false);
+          await loadInstances();
+        }}
+      />
+
+    </div>
+  );
+}

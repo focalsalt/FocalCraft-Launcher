@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FocalCraft Launcher</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #0e1a10;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #0e1a10 0%, #111111 60%, #0e1a10 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      z-index: 9999;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    #splash.fade-out {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .splash-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      animation: splashIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .splash-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #3bb44a 0%, #2d8f3d 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 8px 32px rgba(59, 180, 74, 0.4),
+        0 0 0 1px rgba(59, 180, 74, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .splash-icon::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    .splash-icon svg {
+      width: 44px;
+      height: 44px;
+      color: white;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    }
+
+    .splash-title {
+      font-size: 26px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 0%, #a5d6a7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .splash-subtitle {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.35);
+      letter-spacing: 0.5px;
+      margin-top: -8px;
+    }
+
+    .splash-loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      animation: splashIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    }
+
+    .splash-bar-track {
+      width: 200px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .splash-bar-fill {
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, #3bb44a, #7de88a);
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(59, 180, 74, 0.6);
+      animation: loadingPulse 1.4s ease-in-out infinite;
+    }
+
+    .splash-text {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.3px;
+    }
+
+    @keyframes splashIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes shimmer {
+      from { left: -100%; }
+      to { left: 200%; }
+    }
+
+    @keyframes loadingPulse {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(200%); }
+      100% { transform: translateX(-100%); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Splash screen shown before React loads -->
+  <div id="splash">
+    <div class="splash-logo">
+      <div class="splash-icon">
+        <!-- Pickaxe/Craft icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 2.5c0 1.5-1.5 7-1.5 7h-2S9 4 9 2.5a2.5 2.5 0 0 1 5 0Z"/>
+          <path d="M8.5 12.5A4.5 4.5 0 0 0 11 21h2a4.5 4.5 0 0 0 2.5-8.5"/>
+          <path d="M11 10v4"/>
+          <path d="M13 10v4"/>
+        </svg>
+      </div>
+      <div class="splash-title">FocalCraft</div>
+      <div class="splash-subtitle">Minecraft Launcher</div>
+    </div>
+    <div class="splash-loader">
+      <div class="splash-bar-track">
+        <div class="splash-bar-fill"></div>
+      </div>
+      <div class="splash-text">正在載入...</div>
+    </div>
+  </div>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  <script>
+    // Hide splash screen once React has mounted
+    window.__hideSplash = function () {
+      var splash = document.getElementById('splash');
+      if (splash) {
+        splash.classList.add('fade-out');
+        setTimeout(function () {
+          splash.style.display = 'none';
+        }, 550);
+      }
+    };
+  </script>
+</body>
+
+</html>

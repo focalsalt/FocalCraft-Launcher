@@ -1,0 +1,138 @@
+/* LaunchHUD - Glassmorphic floating progress banner */
+.hud {
+  position: fixed;
+  bottom: -120px;
+  right: 24px;
+  z-index: 9000;
+  width: 300px;
+  background: rgba(20, 24, 38, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 4px 0 0 rgba(99, 179, 237, 0.25) inset;
+  transition: bottom 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+.visible {
+  bottom: 24px;
+}
+
+.hudContent {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hudHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hudIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: rgba(99, 179, 237, 0.12);
+  border-radius: 50%;
+  border: 1px solid rgba(99, 179, 237, 0.2);
+}
+
+.spinnerIcon {
+  color: rgb(99, 179, 237);
+  animation: spin 1s linear infinite;
+}
+
+.doneIcon {
+  color: rgb(100, 220, 100);
+}
+
+.hudText {
+  flex: 1;
+  min-width: 0;
+}
+
+.hudTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e4e4e7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hudStatus {
+  font-size: 11.5px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hudPercent {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(99, 179, 237);
+  flex-shrink: 0;
+}
+
+.hudRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cancelBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.cancelBtn:hover {
+  background: rgba(220, 60, 60, 0.2);
+  border-color: rgba(220, 60, 60, 0.4);
+  color: rgb(255, 120, 120);
+  transform: scale(1.1);
+}
+
+.progressBar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, rgb(99, 179, 237), rgb(150, 210, 255));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(99, 179, 237, 0.5);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

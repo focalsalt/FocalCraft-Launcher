@@ -1,0 +1,50 @@
+name: "Publish Release"
+
+on:
+  push:
+    tags:
+      - "v*" # 當推送 v 開頭的標籤（例如 v1.1.0）時觸發
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write # 允許建立 Release 並上傳資源
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "windows-latest" # Windows 平台編譯
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies (Frontend)
+        run: npm install
+
+      - name: Build and Publish Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # 編譯時金鑰注入 (與 Rust option_env! 對接)
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+        with:
+          tagName: v__VERSION__ # 自動帶入 tauri.conf.json 的版本號，例如 v1.1.0
+          releaseName: "Focal Craft Launcher v__VERSION__"
+          releaseBody: "請下載下方安裝包進行更新。若您已安裝舊版本，可於啟動器內直接執行自動更新。"
+          releaseDraft: true # 先建立為草稿，確認無誤後再手動發布
+          prerelease: false

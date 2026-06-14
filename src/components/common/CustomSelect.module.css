@@ -1,0 +1,77 @@
+.customSelectContainer {
+  position: relative;
+  width: 100%;
+  user-select: none;
+}
+
+.customSelectTrigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  border-radius: var(--border-radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+  text-align: left;
+}
+
+.customSelectTrigger:hover:not(.disabled) {
+  border-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.customSelectTrigger:focus {
+  outline: none;
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(59, 180, 74, 0.15);
+}
+
+.customSelectTrigger.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.customSelectDropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background-color: rgba(25, 25, 25, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 1000; /* Higher z-index for overlay portals */
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.customSelectOption {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.customSelectOption:hover {
+  background-color: rgba(59, 180, 74, 0.1);
+  color: var(--text-primary);
+}
+
+.customSelectOption.selected {
+  background-color: rgba(59, 180, 74, 0.15);
+  color: var(--accent-green);
+  font-weight: 600;
+}

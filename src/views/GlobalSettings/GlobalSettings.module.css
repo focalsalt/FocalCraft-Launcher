@@ -1,0 +1,336 @@
+.container {
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #111111 0%, #162812 100%);
+  z-index: -1;
+  transition: background 0.5s ease;
+}
+
+.content {
+  flex: 1;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto 16px auto;
+}
+
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 24px;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.card {
+  background-color: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: #a5d6a7;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inputGroup {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.input,
+.textarea,
+.numInput {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: var(--border-radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  transition: all var(--transition-fast);
+}
+
+.input {
+  flex: 1;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: monospace;
+}
+
+.input:focus,
+.textarea:focus,
+.numInput:focus {
+  outline: none;
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(59, 180, 74, 0.15);
+}
+
+.btnIcon,
+.btnIconSec {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--border-radius-md);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.btnIcon {
+  background-color: var(--accent-green);
+  color: white;
+}
+
+.btnIcon:hover {
+  background-color: var(--accent-green-hover);
+  box-shadow: 0 0 8px rgba(59, 180, 74, 0.3);
+}
+
+.btnIconSec {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.btnIconSec:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.helpText {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.sliderGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  cursor: pointer;
+  transition: transform 0.1s, background-color var(--transition-fast);
+  box-shadow: 0 0 6px rgba(59, 180, 74, 0.5);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: var(--accent-green-hover);
+  transform: scale(1.2);
+}
+
+.numInput {
+  width: 100px;
+  text-align: center;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 20px;
+}
+
+.saveBtn {
+  background-color: var(--accent-green);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: var(--border-radius-md);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 12px rgba(59, 180, 74, 0.25);
+}
+
+.saveBtn:hover {
+  background-color: var(--accent-green-hover);
+  box-shadow: 0 4px 16px rgba(59, 180, 74, 0.4);
+  transform: translateY(-1px);
+}
+
+.saveBtn:active {
+  transform: translateY(0);
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--accent-green);
+  gap: 16px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.migrationOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.migrationBox {
+  background-color: rgba(25, 25, 25, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-lg);
+  padding: 40px;
+  width: 480px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.migrationBox h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.migrationBox p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* About & Update styles */
+.aboutRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.aboutInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.appName {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+}
+
+.appVersion {
+  font-size: 13px;
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+.appDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
