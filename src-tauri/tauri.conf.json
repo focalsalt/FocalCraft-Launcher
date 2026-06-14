@@ -43,7 +43,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkxNjYyOEZCRTU2RDQ5RApSV1NkMUZhK2oySVdDUXUvNUQ5czVIYVVMOVYzSXpjM3NRcVo4Z0QycWFPdGdsd1FLNDFhb0hjUAo=",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwNDY3RjQ2QzdEMTBENjUKUldSbERkSEhSbjlHc0hyNjB2ZXlud2J1MTZFWDFaTFdqYnBoeFBPRTA0Q0tMWlZ0ZzdManBDbkYK",
       "endpoints": [
         "https://raw.githubusercontent.com/focalsalt/FocalCraft-Launcher/refs/heads/main/updater.json"
       ]
