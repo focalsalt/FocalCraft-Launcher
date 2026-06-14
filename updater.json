@@ -1,0 +1,11 @@
+{
+  "version": "1.1.0",
+  "notes": "新版本發布！\n- 實作了自動更新功能",
+  "pub_date": "2026-06-14T10:13:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "填入 GitHub Actions 編譯 Release 產生的 .msi.zip.sig 簽章內容",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.0/focal-craft-launcher_1.1.0_x64_en-US.msi.zip"
+    }
+  }
+}
