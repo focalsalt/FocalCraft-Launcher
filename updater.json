@@ -1,15 +1,15 @@
 {
-  "version": "1.1.1",
-  "notes": "新版本發布！\n- 修復了自動更新功能\n- 提升了帳戶資料的加密性",
-  "pub_date": "2026-06-14T10:13:00Z",
+  "version": "1.1.2",
+  "notes": "新版本發布！\n- 自動檢查更新！",
+  "pub_date": "2026-06-16T10:13:00Z",
   "platforms": {
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcmdpT3VPRVpZZnBOME1VWFBtTXhocHNURkw3RDR5WHJUZTJtcThnS1QyWWFKMHdiZDNmRjYzQnFPbzdRdVlHaEphV1FYaitESk1FV2tNYy9xRDZKSmdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNTQzNzc5CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4xLjFfeDY0X2VuLVVTLm1zaQo4TTlybWd4USs3TEQyZHVLY2VwQ3RvNjNxb1FmN2Jxcm45R1VhV2FNNFJLU3VSTG1EeERueDhXdWZOZG9UcGtMRERtRlpWTjg2VDVJbmR1VzAzMkFCQT09Cg==",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.1/Focal.Craft.Launcher_1.1.1_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcm5yVi9lMlV6alJFWVBUUStncHY2TVY0SGFnakMrRVpNNkhZOWNwOVpqSk4vMy9Tb0VUcDZwdE5kNm1ZSVBlUmVqZjIweW5ZN2NCWmN1RFdvSHY5ZXdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNTQ3Mzk4CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4xLjJfeDY0X2VuLVVTLm1zaQpzVEF0U2MwMG13TFZyamRnQms1UFFoOHdoRVZ6UE9NWnlmQTFwb1lyVXZXazlTdyswYit5cnRzamNyaThHY2Z1bkpCRzB4S2ZDT2RIdEtHYzFIUUtDUT09Cg==",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.2/Focal.Craft.Launcher_x64_en-US.msi"
     },
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcm8ycnRrKzBNLy9FUTJTTXUyQWJOWkY1NEhXeHdUME9nNUF3akhVSVBzRllxYndVRlRGc0tRMkNzeTRoRG94Zk9Xbis1ZHNXU0pqaU8vRXQ3UUJVQ3dzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNTQzNzc5CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4xLjFfeDY0LXNldHVwLmV4ZQpOK2RhK3RhbXkySkpraUgybFZMd2h1RzIvQzc4YWpKUUdtcjEybXMvSG1lVGUzVlZ3VmR5MG5QY2xjZnJXQlNJR1RNWFNSeXowc20vVHlpcXQxc2pBZz09Cg==",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.1/Focal.Craft.Launcher_1.1.1_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcnJxck9YQThSRzgzTEhZSFlmRVlXbDBmSDlVY3NlUE8wVldzWFROY2NHWCtrVkhIQ2lCK1FkSGk2WGlta1VFQ2xubkl5NGdZS2YxV2NqM2FFMC9FVFF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNTQ3Mzk4CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4xLjJfeDY0LXNldHVwLmV4ZQpvVERpVTFTcjZkMzFnTDJ5SkNBQ3d0U2VPUWo1RSswaHM0QTlNcENQbzFNanZiZGlUQW1YazlxVk1XcmRhbzNGUm5kU0RoQXdrQlZacmlMaVcwQldDZz09Cg==",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.2/Focal.Craft.Launcher_x64-setup.exe"
     }
   }
 }
