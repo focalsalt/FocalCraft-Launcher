@@ -13,6 +13,57 @@ import { getVersion } from '@tauri-apps/api/app';
 import { marked } from 'marked';
 import styles from './Sidebar.module.css';
 
+function isVersionGreater(v1: string, v2: string): boolean {
+  const clean1 = v1.replace(/^v/, '');
+  const clean2 = v2.replace(/^v/, '');
+  
+  const parts1 = clean1.split('.').map(Number);
+  const parts2 = clean2.split('.').map(Number);
+  
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return true;
+    if (p1 < p2) return false;
+  }
+  return false;
+}
+
+function filterChangelog(body: string, currentVersion: string): string {
+  if (!body) return '';
+  const headerRegex = /^(#{1,6})\s+v?(\d+\.\d+\.\d+)/gm;
+  const sections: { version: string; content: string }[] = [];
+  let lastIndex = 0;
+  let match;
+  let currentVer = '';
+  
+  while ((match = headerRegex.exec(body)) !== null) {
+    const matchIndex = match.index;
+    if (currentVer) {
+      sections.push({
+        version: currentVer,
+        content: body.slice(lastIndex, matchIndex)
+      });
+    }
+    currentVer = match[2];
+    lastIndex = matchIndex;
+  }
+  
+  if (currentVer) {
+    sections.push({
+      version: currentVer,
+      content: body.slice(lastIndex)
+    });
+  }
+  
+  if (sections.length === 0) return body;
+  
+  const filteredSections = sections.filter(sec => isVersionGreater(sec.version, currentVersion));
+  if (filteredSections.length === 0) return body;
+  
+  return filteredSections.map(sec => sec.content).join('\n\n').trim();
+}
+
 export function Sidebar() {
   const { currentView, setCurrentView, addNotification } = useAppStore();
 
@@ -102,6 +153,62 @@ export function Sidebar() {
     invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
     getVersion().then(setAppVersion).catch(console.error);
   }, []);
+
+  const checkUpdateRef = useRef(handleCheckUpdate);
+  useEffect(() => {
+    checkUpdateRef.current = handleCheckUpdate;
+  });
+
+  useEffect(() => {
+    // 啟動時自動檢查更新（靜音模式，只有有更新時才彈窗提示）
+    checkUpdateRef.current(true);
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const getMsUntilNextSchedule = (): number => {
+      const now = new Date();
+      
+      // 今天 00:00
+      const time0 = new Date(now);
+      time0.setHours(0, 0, 0, 0);
+      
+      // 今天 12:00
+      const time12 = new Date(now);
+      time12.setHours(12, 0, 0, 0);
+      
+      // 明天 00:00
+      const timeNextDay0 = new Date(now);
+      timeNextDay0.setDate(now.getDate() + 1);
+      timeNextDay0.setHours(0, 0, 0, 0);
+      
+      const candidates = [time0, time12, timeNextDay0];
+      const futureCandidates = candidates.filter(t => t.getTime() > now.getTime());
+      
+      futureCandidates.sort((a, b) => a.getTime() - b.getTime());
+      return futureCandidates[0].getTime() - now.getTime();
+    };
+
+    const scheduleNextCheck = () => {
+      const ms = getMsUntilNextSchedule();
+      timeoutId = setTimeout(async () => {
+        try {
+          await checkUpdateRef.current(true);
+        } catch (e) {
+          console.error('Scheduled update check failed:', e);
+        }
+        scheduleNextCheck();
+      }, ms);
+    };
+
+    scheduleNextCheck();
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, []);
+
 
   useEffect(() => {
     const updateIndicator = () => {
@@ -246,7 +353,7 @@ export function Sidebar() {
                 className={styles.updateNotes}
                 dangerouslySetInnerHTML={{ 
                   __html: updateInfo.body 
-                    ? (marked.parse(updateInfo.body) as string) 
+                    ? (marked.parse(filterChangelog(updateInfo.body, appVersion)) as string) 
                     : '<p>無更新日誌。</p>' 
                 }}
               />

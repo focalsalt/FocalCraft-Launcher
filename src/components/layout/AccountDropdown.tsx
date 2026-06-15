@@ -25,7 +25,7 @@ export function AccountDropdown() {
       return (
         <div className={`${styles.statusWrapper} ${styles.updating}`}>
           <Loader2 className={`${styles.statusIcon} ${styles.spin}`} size={12} />
-          <span>更新資訊中</span>
+          <span>驗證中</span>
         </div>
       );
     }
@@ -42,7 +42,7 @@ export function AccountDropdown() {
     return (
       <div className={`${styles.statusWrapper} ${styles.valid}`}>
         <span className={styles.onlineDot}>●</span>
-        <span>已驗證安全</span>
+        <span>線上</span>
       </div>
     );
   };
@@ -80,9 +80,9 @@ export function AccountDropdown() {
       <button className={styles.trigger} onClick={() => setIsOpen(!isOpen)}>
         <div className={styles.avatar}>
           {selectedAccount?.avatarUrl && !avatarLoadErrors[selectedAccount.id] ? (
-            <img 
-              src={selectedAccount.avatarUrl} 
-              alt="Avatar" 
+            <img
+              src={selectedAccount.avatarUrl}
+              alt="Avatar"
               onError={() => setAvatarLoadErrors(prev => ({ ...prev, [selectedAccount.id]: true }))}
             />
           ) : (
@@ -109,8 +109,8 @@ export function AccountDropdown() {
           {unselectedAccounts.length > 0 && (
             <>
               {unselectedAccounts.map(account => (
-                <button 
-                  key={account.id} 
+                <button
+                  key={account.id}
                   className={styles.menuItem}
                   onClick={() => {
                     selectAccount(account.id);
@@ -120,9 +120,9 @@ export function AccountDropdown() {
                   <div className={styles.otherAccount}>
                     <div className={`${styles.avatar} ${styles.smallAvatar}`}>
                       {account.avatarUrl && !avatarLoadErrors[account.id] ? (
-                        <img 
-                          src={account.avatarUrl} 
-                          alt="Avatar" 
+                        <img
+                          src={account.avatarUrl}
+                          alt="Avatar"
                           onError={() => setAvatarLoadErrors(prev => ({ ...prev, [account.id]: true }))}
                         />
                       ) : (
@@ -144,7 +144,7 @@ export function AccountDropdown() {
             <Plus size={16} />
             <span>新增帳號</span>
           </button>
-          
+
           {selectedAccount && (
             <button className={`${styles.menuItem} ${styles.dangerItem}`} onClick={handleLogoutClick}>
               <LogOut size={16} />
@@ -156,7 +156,7 @@ export function AccountDropdown() {
       {isLoginModalOpen && (
         <MicrosoftLoginModal onClose={() => setIsLoginModalOpen(false)} />
       )}
-      
+
       <CustomConfirmModal
         isOpen={isConfirmLogoutOpen}
         title="登出帳號警告"
