@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Focal Craft Launcher",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "identifier": "com.focal.mc-launcher",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -43,7 +43,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEIwNDY3RjQ2QzdEMTBENjUKUldSbERkSEhSbjlHc0hyNjB2ZXlud2J1MTZFWDFaTFdqYnBoeFBPRTA0Q0tMWlZ0ZzdManBDbkYK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEFFNDVGNEEwMTlFODQ3RTQKUldUa1IrZ1pvUFJGcms2SkNmMmpMbVc3TngwS2xqdTY3SGh0ZlpHSkE5OUlKaG5BZU0ybmpJVDQK",
       "endpoints": [
         "https://raw.githubusercontent.com/focalsalt/FocalCraft-Launcher/refs/heads/main/updater.json"
       ]

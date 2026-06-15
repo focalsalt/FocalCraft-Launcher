@@ -176,14 +176,60 @@ fn init_app_dirs() -> Result<String, String> {
     Ok(base_dir.to_string_lossy().into_owned())
 }
 
+#[cfg(target_os = "windows")]
+fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
+    windows_dpapi::encrypt_data(data, windows_dpapi::Scope::User)
+        .map_err(|e| format!("DPAPI 加密失敗: {:?}", e))
+}
+
+#[cfg(target_os = "windows")]
+fn decrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
+    windows_dpapi::decrypt_data(data, windows_dpapi::Scope::User)
+        .map_err(|e| format!("DPAPI 解密失敗: {:?}", e))
+}
+
+#[cfg(not(target_os = "windows"))]
+fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
+    Ok(data.to_vec())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn decrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
+    Ok(data.to_vec())
+}
+
 #[tauri::command]
 fn load_accounts() -> Result<String, String> {
     let appdata = std::env::var("APPDATA").map_err(|_| "無法取得 APPDATA 環境變數".to_string())?;
     let accounts_cfg = PathBuf::from(appdata)
         .join("focal-craft-launcher")
         .join("accounts.cfg");
+
     if accounts_cfg.exists() {
-        fs::read_to_string(&accounts_cfg).map_err(|e| format!("讀取 accounts.cfg 失敗: {}", e))
+        let bytes = fs::read(&accounts_cfg).map_err(|e| format!("讀取 accounts.cfg 失敗: {}", e))?;
+        
+        // 嘗試使用 DPAPI 解密
+        match decrypt_data(&bytes) {
+            Ok(decrypted_bytes) => {
+                String::from_utf8(decrypted_bytes).map_err(|e| format!("解析帳號字串為 UTF-8 失敗: {}", e))
+            }
+            Err(_) => {
+                // 如果解密失敗，可能這是舊版的明文字串，檢查是否為明文 JSON
+                if let Ok(plain_text) = String::from_utf8(bytes.clone()) {
+                    let trimmed = plain_text.trim();
+                    if trimmed.starts_with('[') && trimmed.ends_with(']') {
+                        // 這是舊的明文，自動為使用者加密存檔升級
+                        if let Err(e) = save_accounts(plain_text.clone()) {
+                            eprintln!("自動升級加密帳號設定檔失敗: {}", e);
+                        } else {
+                            println!("成功自動將帳號設定檔升級為 DPAPI 安全加密格式！");
+                        }
+                        return Ok(plain_text);
+                    }
+                }
+                Err("無法解密帳號設定檔，且非有效明文格式".to_string())
+            }
+        }
     } else {
         Ok("[]".to_string())
     }
@@ -195,7 +241,9 @@ fn save_accounts(accounts_json: String) -> Result<(), String> {
     let accounts_cfg = PathBuf::from(appdata)
         .join("focal-craft-launcher")
         .join("accounts.cfg");
-    fs::write(&accounts_cfg, accounts_json).map_err(|e| format!("寫入 accounts.cfg 失敗: {}", e))
+
+    let encrypted_bytes = encrypt_data(accounts_json.as_bytes())?;
+    fs::write(&accounts_cfg, encrypted_bytes).map_err(|e| format!("寫入 accounts.cfg 失敗: {}", e))
 }
 
 #[tauri::command]
@@ -922,3 +970,39 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dpapi_encryption_decryption() {
+        let test_data = b"Hello, DPAPI security!";
+        let encrypted = encrypt_data(test_data).expect("Encryption failed");
+        assert_ne!(test_data.to_vec(), encrypted);
+        let decrypted = decrypt_data(&encrypted).expect("Decryption failed");
+        assert_eq!(test_data.to_vec(), decrypted);
+    }
+
+    #[test]
+    fn test_load_accounts_migration() {
+        // This test will dry-run or verify loading.
+        // Let's call load_accounts. It will read accounts.cfg, migrate it, and return the plaintext.
+        let accounts = load_accounts().expect("load_accounts failed");
+        println!("Loaded accounts: {}", accounts);
+        assert!(accounts.starts_with('[') && accounts.ends_with(']'));
+
+        // If we read it again, it should decrypt successfully (migration completed).
+        let appdata = std::env::var("APPDATA").expect("No APPDATA");
+        let accounts_cfg = std::path::PathBuf::from(appdata)
+            .join("focal-craft-launcher")
+            .join("accounts.cfg");
+        let bytes = std::fs::read(&accounts_cfg).expect("Read failed");
+        
+        // The file should now be binary and NOT start with '[' (which is ascii 91)
+        if !bytes.is_empty() {
+            assert_ne!(bytes[0], b'[');
+        }
+    }
+}
+
