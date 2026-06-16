@@ -21,7 +21,7 @@ pub struct InstanceConfig {
     pub id: String,
     pub name: String,
     pub version: String,
-    pub modloader: String, // "Vanilla" | "Fabric" | "Forge" | "Quilt" | "NeoForge"
+    pub modloader: String, // 模組載入器類型："Vanilla" | "Fabric" | "Forge" | "Quilt" | "NeoForge"
     pub created_time: u64,
     pub last_played: Option<u64>,
     pub play_time: Option<u64>,
@@ -41,6 +41,7 @@ pub struct GlobalConfig {
     pub default_jvm_args: Option<String>,
     pub custom_java_path: Option<String>,
     pub instances_path: Option<String>,
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -178,7 +179,7 @@ pub struct Arguments {
     pub game: Option<Vec<serde_json::Value>>,
 }
 
-// Fabric API Structures
+// Fabric API 資料結構
 #[derive(Debug, Deserialize, Clone)]
 pub struct FabricLoaderInfo {
     pub loader: FabricLoader,
@@ -202,7 +203,7 @@ pub struct FabricLibrary {
     pub url: String,
 }
 
-// Modrinth API Structures
+// Modrinth API 資料結構
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ModpackInfo {
@@ -336,7 +337,7 @@ pub fn get_instances_dir() -> Result<PathBuf, String> {
 
 pub fn save_instance_config(cfg_file: &Path, cfg: &InstanceConfig) -> Result<(), String> {
     let mut cfg_to_save = cfg.clone();
-    cfg_to_save.id = String::new(); // Clear ID before writing to file
+    cfg_to_save.id = String::new(); // 寫入檔案前清除 ID
     let cfg_json = serde_json::to_string_pretty(&cfg_to_save)
         .map_err(|e| format!("序列化設定檔失敗: {}", e))?;
     fs::write(cfg_file, cfg_json).map_err(|e| format!("寫入設定檔失敗: {}", e))?;
@@ -357,24 +358,22 @@ pub async fn get_instances() -> Result<Vec<InstanceConfig>, String> {
     let mut list = vec![];
     let entries =
         fs::read_dir(instances_dir).map_err(|e| format!("無法讀取 instances 資料夾: {}", e))?;
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.is_dir() {
-                let cfg_file = path.join("instance.cfg");
-                if cfg_file.exists() {
-                    if let Ok(content) = fs::read_to_string(cfg_file) {
-                        if let Ok(mut cfg) = serde_json::from_str::<InstanceConfig>(&content) {
-                            cfg.id = path.file_name().unwrap().to_string_lossy().to_string();
-                            list.push(cfg);
-                        }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let cfg_file = path.join("instance.cfg");
+            if cfg_file.exists() {
+                if let Ok(content) = fs::read_to_string(cfg_file) {
+                    if let Ok(mut cfg) = serde_json::from_str::<InstanceConfig>(&content) {
+                        cfg.id = path.file_name().unwrap().to_string_lossy().to_string();
+                        list.push(cfg);
                     }
                 }
             }
         }
     }
 
-    // Sort list based on loaded order
+    // 根據載入的順序進行排序
     let order = load_instance_order().await.unwrap_or_default();
     list.sort_by(|a, b| {
         let pos_a = order
@@ -392,6 +391,7 @@ pub async fn get_instances() -> Result<Vec<InstanceConfig>, String> {
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn create_instance(
     id: String,
     name: String,
@@ -560,16 +560,14 @@ fn find_java_executables(dir: &Path, depth: u32, results: &mut std::collections:
         return;
     }
     if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if path.is_dir() {
-                    find_java_executables(&path, depth + 1, results);
-                } else if path.is_file() {
-                    if let Some(file_name) = path.file_name() {
-                        if file_name.to_ascii_lowercase() == "java.exe" {
-                            results.insert(path.to_string_lossy().to_string());
-                        }
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                find_java_executables(&path, depth + 1, results);
+            } else if path.is_file() {
+                if let Some(file_name) = path.file_name() {
+                    if file_name.eq_ignore_ascii_case("java.exe") {
+                        results.insert(path.to_string_lossy().to_string());
                     }
                 }
             }
@@ -582,7 +580,7 @@ fn create_command<S: AsRef<std::ffi::OsStr>>(program: S) -> Command {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        cmd.creation_flags(0x08000000); // 隱藏主控台視窗
     }
     cmd
 }
@@ -939,7 +937,7 @@ pub async fn install_instance_files(
     let vanilla_info: MinecraftVersionInfo = serde_json::from_str(&version_info_str)
         .map_err(|e| format!("解析版本 JSON 失敗: {}", e))?;
 
-    // Load base version JSON if inherits_from is present
+    // 若存在繼承版本，載入基礎版本的 JSON 設定檔
     let mut base_vanilla_info: Option<MinecraftVersionInfo> = None;
     if let Some(ref base_ver) = vanilla_info.inherits_from {
         let base_version_json_dir = versions_dir.join(base_ver);
@@ -977,7 +975,7 @@ pub async fn install_instance_files(
     let mut lib_queue: Vec<DownloadTask> = vec![]; // 遊戲 jar / libraries
     let mut asset_queue: Vec<DownloadTask> = vec![]; // assets 資源檔案
 
-    // Client Jar
+    // 客戶端 Jar 主程式
     if let Some(ref base_info) = base_vanilla_info {
         if let Some(ref downloads) = base_info.downloads {
             if let Some(ref client_jar) = downloads.client {
@@ -1009,7 +1007,7 @@ pub async fn install_instance_files(
         }
     }
 
-    // Vanilla Libraries (Combine both vanilla_info and base_vanilla_info libraries)
+    // 原生程式庫（合併當前與基礎版本的程式庫）
     let mut libraries_to_check = vanilla_info.libraries.clone();
     if let Some(ref base_info) = base_vanilla_info {
         libraries_to_check.extend(base_info.libraries.clone());
@@ -1060,7 +1058,7 @@ pub async fn install_instance_files(
     }
 
     // 4. Fabric Libraries & Custom Main Class (若選擇 Fabric)
-    if modloader.to_ascii_lowercase() == "fabric" {
+    if modloader.eq_ignore_ascii_case("fabric") {
         app.emit(
             "download-progress",
             ProgressPayload {
@@ -1114,7 +1112,7 @@ pub async fn install_instance_files(
         // 儲存 Fabric 專屬 libraries
         for flib in fabric_profile.libraries {
             // 解析 maven 名稱轉換成路徑
-            // e.g. "net.fabricmc:fabric-loader:0.14.22" -> "net/fabricmc/fabric-loader/0.14.22/fabric-loader-0.14.22.jar"
+            // 例如 "net.fabricmc:fabric-loader:0.14.22" -> "net/fabricmc/fabric-loader/0.14.22/fabric-loader-0.14.22.jar"
             if let Some(path) = maven_to_path(&flib.name) {
                 let dest = libraries_dir.join(Path::new(&path));
                 // Fabric API 沒有提供 SHA1/Size，我們填入空或估算
@@ -1419,8 +1417,8 @@ pub async fn install_instance_files(
     let versions_dir = mc_dir.join("versions");
     let loader_json = find_loader_json(&versions_dir);
 
-    let is_forge = modloader.to_ascii_lowercase() == "forge";
-    let is_neoforge = modloader.to_ascii_lowercase() == "neoforge";
+    let is_forge = modloader.eq_ignore_ascii_case("forge");
+    let is_neoforge = modloader.eq_ignore_ascii_case("neoforge");
 
     if (is_forge || is_neoforge) && loader_json.is_none() {
         app.emit(
@@ -1439,7 +1437,7 @@ pub async fn install_instance_files(
             return Err(format!("未指定 {} 版本", modloader));
         }
 
-        // Build installer download URL
+        // 建立安裝檔下載網址
         let query_version = vanilla_info.inherits_from.as_ref().unwrap_or(&version_id);
         let installer_url = if is_forge {
             format!(
@@ -1447,8 +1445,8 @@ pub async fn install_instance_files(
                 query_version, loader_ver, query_version, loader_ver
             )
         } else {
-            // NeoForge URL
-            // For MC 1.20.1, NeoForge was named "forge" and version is like "1.20.1-47.1.80"
+            // NeoForge 下載網址
+            // 對於 MC 1.20.1，NeoForge 命名為 "forge" 且版本號類似 "1.20.1-47.1.80"
             if query_version == "1.20.1" {
                 format!(
                     "https://maven.neoforged.net/releases/net/neoforged/forge/{}/forge-{}-installer.jar",
@@ -1487,8 +1485,8 @@ pub async fn install_instance_files(
         )
         .ok();
 
-        // Execute installer
-        // java -jar <temp_installer> --installClient <mc_dir>
+        // 執行安裝程式
+        // 執行指令：java -jar <安裝檔> --installClient <麥塊目錄>
         let java_exec = java_path.clone().unwrap_or_else(|| "java".to_string());
         let mut installer_cmd = create_command(&java_exec);
         installer_cmd
@@ -1498,7 +1496,7 @@ pub async fn install_instance_files(
             .arg(&mc_dir);
 
         let output = installer_cmd.output();
-        let _ = fs::remove_file(&temp_installer); // clean up installer jar
+        let _ = fs::remove_file(&temp_installer); // 清除安裝檔暫存
 
         match output {
             Ok(out) => {
@@ -1546,7 +1544,7 @@ fn should_use_library(rules: &Option<Vec<Rule>>) -> bool {
     allowed
 }
 fn maven_to_path(name: &str) -> Option<String> {
-    // e.g. "net.fabricmc:fabric-loader:0.14.22" -> "net/fabricmc/fabric-loader/0.14.22/fabric-loader-0.14.22.jar"
+    // 例如 "net.fabricmc:fabric-loader:0.14.22" -> "net/fabricmc/fabric-loader/0.14.22/fabric-loader-0.14.22.jar"
     let parts: Vec<&str> = name.split(':').collect();
     if parts.len() < 3 {
         return None;
@@ -1663,7 +1661,7 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
         let mut mods = vec![];
         let client = reqwest::Client::new();
 
-        // Modrinth Hash Lookups (最多 300 個一包，一般 modpack 不會超過 300)
+        // Modrinth Hash 雜湊值批次查詢（每包最多 300 個）
         if !sha1_hashes.is_empty() {
             let lookup_url = "https://api.modrinth.com/v2/version_files";
             let body = serde_json::json!({
@@ -1783,19 +1781,19 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
 
         if let Some(primary_loader) = manifest.minecraft.mod_loaders.iter().find(|l| l.primary) {
             let id = &primary_loader.id;
-            if id.starts_with("fabric-") {
+            if let Some(stripped) = id.strip_prefix("fabric-") {
                 modloader = "Fabric".to_string();
-                modloader_version = id["fabric-".len()..].to_string();
-            } else if id.starts_with("forge-") {
+                modloader_version = stripped.to_string();
+            } else if let Some(stripped) = id.strip_prefix("forge-") {
                 modloader = "Forge".to_string();
-                modloader_version = id["forge-".len()..].to_string();
-            } else if id.starts_with("neoforge-") {
+                modloader_version = stripped.to_string();
+            } else if let Some(stripped) = id.strip_prefix("neoforge-") {
                 modloader = "NeoForge".to_string();
-                modloader_version = id["neoforge-".len()..].to_string();
+                modloader_version = stripped.to_string();
             }
         }
 
-        // Query mods details from CurseForge in batch
+        // 批次向 CurseForge 查詢模組詳細資訊
         let project_ids: Vec<u32> = manifest.files.iter().map(|f| f.project_id).collect();
         let mut mods = vec![];
 
@@ -1876,7 +1874,7 @@ pub async fn import_mrpack(
 
     fs::create_dir_all(&mc_dir).ok();
 
-    // Scope ZIP reading to ensure ZipArchive and ZipFile are dropped before any async .await
+    // 限制 ZIP 讀取生命週期，確保在任何非同步 await 前釋放 ZipArchive 與 ZipFile
     let (is_modrinth, modrinth_files, curseforge_files) = {
         let file = fs::File::open(&file_path).map_err(|e| format!("無法開啟整合包檔案: {}", e))?;
         let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip 失敗: {}", e))?;
@@ -1914,7 +1912,7 @@ pub async fn import_mrpack(
                         .unwrap_or(&f.path)
                         .to_string();
                     if !sel.contains(&f.path) && !sel.contains(&filename) {
-                        continue; // Skip if not selected
+                        continue; // 跳過未被選取的項目
                     }
                 }
             }
@@ -1945,7 +1943,7 @@ pub async fn import_mrpack(
             let count = downloaded_count.clone();
             let app_h = app_handle.clone();
             let inst_id = instance_id.clone();
-            let dest = mc_dir.join(&f.path.replace('/', "\\"));
+            let dest = mc_dir.join(f.path.replace('/', "\\"));
 
             // 取得下載連結
             let download_url = f
@@ -2024,8 +2022,7 @@ pub async fn import_mrpack(
             let mut entry = archive.by_index(i).unwrap();
             let entry_name = entry.name().replace('/', "\\");
 
-            if entry_name.starts_with("overrides\\") {
-                let relative_path = &entry_name["overrides\\".len()..];
+            if let Some(relative_path) = entry_name.strip_prefix("overrides\\") {
                 if relative_path.is_empty() {
                     continue;
                 }
@@ -2047,10 +2044,10 @@ pub async fn import_mrpack(
         let mut file_ids = vec![];
         for f in &manifest_files {
             if let Some(ref sel) = selected_mods {
-                // Check if project ID is selected
+                // 檢查專案 ID 是否已被選取
                 let id_str = f.project_id.to_string();
                 let name_filter = format!("Mod ID: {}", f.project_id);
-                // Also check if any selected mod matches
+                // 同時檢查是否有任何被選取的 Mod 匹配
                 if !sel.contains(&id_str) && !sel.contains(&name_filter) {
                     continue;
                 }
@@ -2070,7 +2067,7 @@ pub async fn import_mrpack(
         )
         .ok();
 
-        // Query files details in batch
+        // 批次查詢檔案詳細資訊
         let mut curseforge_files = vec![];
         let client = reqwest::Client::new();
         for chunk in file_ids.chunks(100) {
@@ -2123,7 +2120,7 @@ pub async fn import_mrpack(
                     file_name,
                     sha1,
                 });
-                // Count blocked files as processed so progress reaches 80%
+                // 將受阻擋的檔案計為已處理，使進度能達到 80%
                 let count_clone = count.clone();
                 let app_h = app_handle.clone();
                 let inst_id = instance_id.clone();
@@ -2220,8 +2217,7 @@ pub async fn import_mrpack(
             let mut entry = archive.by_index(i).unwrap();
             let entry_name = entry.name().replace('/', "\\");
 
-            if entry_name.starts_with("overrides\\") {
-                let relative_path = &entry_name["overrides\\".len()..];
+            if let Some(relative_path) = entry_name.strip_prefix("overrides\\") {
                 if relative_path.is_empty() {
                     continue;
                 }
@@ -2318,7 +2314,7 @@ pub async fn launch_instance(
     let vanilla_info: MinecraftVersionInfo =
         serde_json::from_str(&version_info_str).map_err(|e| format!("無法解析版本 JSON: {}", e))?;
 
-    // Load base version JSON if inherits_from is present
+    // 若存在繼承版本，載入基礎版本的 JSON 設定檔
     let mut base_vanilla_info: Option<MinecraftVersionInfo> = None;
     if let Some(ref base_ver) = vanilla_info.inherits_from {
         let base_version_json_path = base_dir
@@ -2408,11 +2404,11 @@ pub async fn launch_instance(
         }
     }
 
-    // 加入 Fabric / Forge / NeoForge / Custom libraries
-    let is_fabric = cfg.modloader.to_ascii_lowercase() == "fabric";
-    let is_forge = cfg.modloader.to_ascii_lowercase() == "forge";
-    let is_neoforge = cfg.modloader.to_ascii_lowercase() == "neoforge";
-    let is_custom = cfg.modloader.to_ascii_lowercase() == "custom";
+    // 載入第三方加載器（Fabric/Forge/NeoForge/Custom）程式庫
+    let is_fabric = cfg.modloader.eq_ignore_ascii_case("fabric");
+    let is_forge = cfg.modloader.eq_ignore_ascii_case("forge");
+    let is_neoforge = cfg.modloader.eq_ignore_ascii_case("neoforge");
+    let is_custom = cfg.modloader.eq_ignore_ascii_case("custom");
 
     let mut fabric_main_class: Option<String> = None;
     let mut loader_main_class: Option<String> = None;
@@ -2511,7 +2507,7 @@ pub async fn launch_instance(
         }
     }
 
-    // 加入 client jar（必須最後）
+    // 載入遊戲主程式 JAR 檔
     let jar_version = vanilla_info.inherits_from.as_ref().unwrap_or(&cfg.version);
     let client_jar_path = base_dir
         .join("version")
@@ -2519,23 +2515,23 @@ pub async fn launch_instance(
         .join(format!("{}.jar", jar_version));
     classpath_items.push(client_jar_path);
 
-    // 串接成 java -cp 字串（Windows 分隔符為分號）
+    // 建立 Classpath 參數（Windows 使用分號分隔）
     let classpath_str = classpath_items
         .iter()
         .map(|p| p.to_string_lossy().to_string())
         .collect::<Vec<String>>()
         .join(";");
 
-    // 4. 組裝 Java 啟動參數
+    // 組裝 Java 啟動參數
     let mut cmd = create_command(&java_path);
     cmd.current_dir(&mc_dir);
 
-    // JVM 參數
+    // JVM 記憶體參數
     let max_mem = cfg.max_memory.unwrap_or(4096);
     cmd.arg(format!("-Xmx{}M", max_mem));
     cmd.arg(format!("-Xms{}M", (max_mem / 4).max(512)));
 
-    // 檢查是否有自訂 JVM 參數，若無，則自動注入優化的 G1GC 參數
+    // 預設注入優化之 G1GC 垃圾回收參數
     let mut has_custom_args = false;
     if let Some(ref custom_args) = cfg.jvm_args {
         if !custom_args.trim().is_empty() {
@@ -2567,12 +2563,12 @@ pub async fn launch_instance(
     cmd.arg("-Dminecraft.launcher.brand=FocalCraft");
     cmd.arg("-Dminecraft.launcher.version=0.1.0");
 
-    // Fabric 執行時需要這個標誌
+    // 設置 Fabric 執行環境標誌
     if is_fabric {
         cmd.arg("-Dfabric.development=false");
     }
 
-    // 使用者自訂 JVM 參數
+    // 載入使用者自訂 JVM 參數
     if let Some(ref custom_args) = cfg.jvm_args {
         if !custom_args.trim().is_empty() {
             for arg in custom_args.split_whitespace() {
@@ -2581,7 +2577,7 @@ pub async fn launch_instance(
         }
     }
 
-    // 5. 替換變數設置
+    // 設置變數替換對照表
     let assets_dir = base_dir.join("assets");
     let asset_index_id = vanilla_info
         .asset_index
@@ -2593,8 +2589,6 @@ pub async fn launch_instance(
         })
         .map(|a| a.id.clone())
         .unwrap_or_else(|| "legacy".to_string());
-
-    // 模板替換變數
     let vars: std::collections::HashMap<&str, String> = [
         ("auth_player_name", account.mc_id.clone()),
         ("version_name", cfg.version.clone()),
@@ -2627,16 +2621,16 @@ pub async fn launch_instance(
         result
     }
 
-    // 加入 loader 專屬 JVM 參數 (例如 Forge 的 --add-opens 等)
+    // 載入第三方加載器專屬 JVM 參數
     for arg in &loader_jvm_args {
         cmd.arg(substitute(arg, &vars));
     }
 
-    // Classpath 與 MainClass
+    // 設定 Classpath 與進入點
     cmd.arg("-cp");
     cmd.arg(&classpath_str);
 
-    // 決定 MainClass
+    // 決定主程式啟動類別 (MainClass)
     let main_class_default: String;
     let main_class = if let Some(ref lmc) = loader_main_class {
         lmc.as_str()
@@ -2659,14 +2653,14 @@ pub async fn launch_instance(
     };
     cmd.arg(main_class);
 
-    // 6. 組裝 Minecraft 遊戲參數
+    // 組裝 Minecraft 遊戲執行參數
     if !loader_game_args.is_empty() {
         for arg in &loader_game_args {
             cmd.arg(substitute(arg, &vars));
         }
     }
-    // 舊格式：minecraftArguments（1.12 以前）
-    else if let Some(ref mc_args_str) = vanilla_info.minecraft_arguments.as_ref().or_else(|| {
+    // 處理舊格式參數（Minecraft 1.12 以前）
+    else if let Some(mc_args_str) = vanilla_info.minecraft_arguments.as_ref().or_else(|| {
         base_vanilla_info
             .as_ref()
             .and_then(|b| b.minecraft_arguments.as_ref())
@@ -2675,8 +2669,8 @@ pub async fn launch_instance(
             cmd.arg(substitute(token, &vars));
         }
     }
-    // 新格式：arguments.game（1.13+）
-    else if let Some(ref arguments) = vanilla_info.arguments.as_ref().or_else(|| {
+    // 處理新格式參數（Minecraft 1.13 以上）
+    else if let Some(arguments) = vanilla_info.arguments.as_ref().or_else(|| {
         base_vanilla_info
             .as_ref()
             .and_then(|b| b.arguments.as_ref())
@@ -2707,7 +2701,7 @@ pub async fn launch_instance(
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
 
-    // Register child in session
+    // 在 Session 中註冊子行程
     let session_child = session.child.clone();
     {
         let mut child_guard = session_child.lock().unwrap();
@@ -2724,46 +2718,42 @@ pub async fn launch_instance(
     )
     .ok();
 
-    // Stream stdout in background thread
+    // 在背景執行緒中串流標準輸出 (stdout)
     let app_stdout = app.clone();
     let inst_id_stdout = instance_id.clone();
     if let Some(stdout) = stdout {
         std::thread::spawn(move || {
             use std::io::{BufRead, BufReader};
             let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    let _ = app_stdout.emit(
-                        "game-log",
-                        serde_json::json!({
-                            "instanceId": inst_id_stdout,
-                            "text": l,
-                            "stream": "stdout"
-                        }),
-                    );
-                }
+            for l in reader.lines().map_while(Result::ok) {
+                let _ = app_stdout.emit(
+                    "game-log",
+                    serde_json::json!({
+                        "instanceId": inst_id_stdout,
+                        "text": l,
+                        "stream": "stdout"
+                    }),
+                );
             }
         });
     }
 
-    // Stream stderr in background thread
+    // 在背景執行緒中串流標準錯誤 (stderr)
     let app_stderr = app.clone();
     let inst_id_stderr = instance_id.clone();
     if let Some(stderr) = stderr {
         std::thread::spawn(move || {
             use std::io::{BufRead, BufReader};
             let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(l) = line {
-                    let _ = app_stderr.emit(
-                        "game-log",
-                        serde_json::json!({
-                            "instanceId": inst_id_stderr,
-                            "text": l,
-                            "stream": "stderr"
-                        }),
-                    );
-                }
+            for l in reader.lines().map_while(Result::ok) {
+                let _ = app_stderr.emit(
+                    "game-log",
+                    serde_json::json!({
+                        "instanceId": inst_id_stderr,
+                        "text": l,
+                        "stream": "stderr"
+                    }),
+                );
             }
         });
     }
@@ -2801,7 +2791,7 @@ pub async fn launch_instance(
             tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
         }
 
-        // Clean up
+        // 清理暫存資源
         {
             let mut guard = session_child.lock().unwrap();
             *guard = None;
@@ -2930,6 +2920,7 @@ pub async fn load_global_config() -> Result<GlobalConfig, String> {
             default_jvm_args: None,
             custom_java_path: None,
             instances_path: None,
+            language: None,
         })
     }
 }
@@ -2965,24 +2956,21 @@ pub async fn save_global_config(config: GlobalConfig) -> Result<(), String> {
             .map_err(|e| format!("無法建立新的實例儲存資料夾: {}", e))?;
 
         if let Ok(entries) = fs::read_dir(&actual_old_path) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    let from_path = entry.path();
-                    if let Some(file_name) = from_path.file_name() {
-                        let to_path = actual_new_path.join(file_name);
-                        if from_path.is_dir() {
-                            if let Err(_) = fs::rename(&from_path, &to_path) {
-                                copy_dir_recursive(&from_path, &to_path)?;
-                                let _ = fs::remove_dir_all(&from_path);
-                            }
-                        } else if from_path.is_file() {
-                            if let Err(_) = fs::rename(&from_path, &to_path) {
-                                fs::copy(&from_path, &to_path)
-                                    .map_err(|e| format!("複製檔案失敗: {}", e))?;
-                                let _ = fs::remove_file(&from_path);
-                            }
+            for entry in entries.flatten() {
+                let from_path = entry.path();
+                if let Some(file_name) = from_path.file_name() {
+                    let to_path = actual_new_path.join(file_name);
+                    if from_path.is_dir() {
+                        if fs::rename(&from_path, &to_path).is_err() {
+                            copy_dir_recursive(&from_path, &to_path)?;
+                            let _ = fs::remove_dir_all(&from_path);
                         }
-                    }
+                    } else if from_path.is_file()
+                        && fs::rename(&from_path, &to_path).is_err() {
+                            fs::copy(&from_path, &to_path)
+                                .map_err(|e| format!("複製檔案失敗: {}", e))?;
+                            let _ = fs::remove_file(&from_path);
+                        }
                 }
             }
         }
@@ -2998,16 +2986,14 @@ pub async fn save_global_config(config: GlobalConfig) -> Result<(), String> {
 fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
     fs::create_dir_all(dst).map_err(|e| format!("建立資料夾失敗: {}", e))?;
     let entries = fs::read_dir(src).map_err(|e| format!("讀取資料夾失敗: {}", e))?;
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let from_path = entry.path();
-            if let Some(file_name) = from_path.file_name() {
-                let to_path = dst.join(file_name);
-                if from_path.is_dir() {
-                    copy_dir_recursive(&from_path, &to_path)?;
-                } else {
-                    fs::copy(&from_path, &to_path).map_err(|e| format!("複製檔案失敗: {}", e))?;
-                }
+    for entry in entries.flatten() {
+        let from_path = entry.path();
+        if let Some(file_name) = from_path.file_name() {
+            let to_path = dst.join(file_name);
+            if from_path.is_dir() {
+                copy_dir_recursive(&from_path, &to_path)?;
+            } else {
+                fs::copy(&from_path, &to_path).map_err(|e| format!("複製檔案失敗: {}", e))?;
             }
         }
     }
@@ -3057,10 +3043,10 @@ fn extract_main_class_from_jar(jar_path: &Path) -> Result<String, String> {
     let mut current_val = String::new();
 
     for line in content.lines() {
-        if line.starts_with(' ') {
-            current_val.push_str(line[1..].trim_end());
+        if let Some(stripped) = line.strip_prefix(' ') {
+            current_val.push_str(stripped.trim_end());
         } else {
-            if current_key.to_ascii_lowercase() == "main-class" {
+            if current_key.eq_ignore_ascii_case("main-class") {
                 main_class = Some(current_val.trim().to_string());
             }
             let parts: Vec<&str> = line.splitn(2, ':').collect();
@@ -3073,7 +3059,7 @@ fn extract_main_class_from_jar(jar_path: &Path) -> Result<String, String> {
             }
         }
     }
-    if current_key.to_ascii_lowercase() == "main-class" {
+    if current_key.eq_ignore_ascii_case("main-class") {
         main_class = Some(current_val.trim().to_string());
     }
 
@@ -3088,13 +3074,13 @@ pub async fn upload_custom_loader_jar(
     let instance_dir = get_instances_dir()?.join(&instance_id);
     let dest_path = instance_dir.join("custom_loader.jar");
 
-    // Copy file
+    // 複製檔案
     fs::copy(&source_path, &dest_path).map_err(|e| format!("無法複製自訂 Loader 檔案: {}", e))?;
 
-    // Extract Main-Class
+    // 擷取主類別 (Main-Class)
     let main_class = extract_main_class_from_jar(&dest_path)?;
 
-    // Update instance config with the extracted main class
+    // 使用擷取的主類別更新實例設定檔
     let cfg_file = instance_dir.join("instance.cfg");
     if cfg_file.exists() {
         let content =
@@ -3229,7 +3215,7 @@ fn verify_sha1(path: &Path, expected_sha1: &str) -> bool {
         hasher.update(&bytes);
         let result = hasher.finalize();
         let actual_sha1 = format!("{:x}", result);
-        actual_sha1.to_ascii_lowercase() == expected_sha1.to_ascii_lowercase()
+        actual_sha1.eq_ignore_ascii_case(expected_sha1)
     } else {
         false
     }
@@ -3316,7 +3302,7 @@ pub async fn verify_custom_java(path: String) -> Result<Option<JavaInstallation>
 }
 
 // ==========================================
-// New Instance Detail & File Management APIs
+// 實例詳情與檔案管理 API
 // ==========================================
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -3358,7 +3344,7 @@ pub struct ServerItem {
     pub accept_textures: Option<u8>,
 }
 
-// Helpers for JAR Metadata parsing
+// 解析 JAR 元資料的輔助函式
 fn parse_fabric_mod_json(zip: &mut ZipArchive<fs::File>) -> Option<(String, String, String)> {
     let mut entry = zip.by_name("fabric.mod.json").ok()?;
     let val: serde_json::Value = serde_json::from_reader(&mut entry).ok()?;
@@ -3443,6 +3429,7 @@ pub struct CachedModInfo {
     pub sha1: String,
 }
 
+#[allow(clippy::type_complexity)]
 fn get_mod_cache() -> &'static std::sync::Mutex<
     std::collections::HashMap<PathBuf, (u64, std::time::SystemTime, CachedModInfo)>,
 > {
@@ -3505,20 +3492,18 @@ pub async fn get_installed_mods(instance_id: String) -> Result<Vec<ModItem>, Str
     let entries = fs::read_dir(mods_dir).map_err(|e| format!("無法讀取 mods 資料夾: {}", e))?;
     let mut files_to_process = vec![];
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.is_file() {
-                let file_name = path
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("")
-                    .to_string();
-                let is_enabled = file_name.ends_with(".jar");
-                let is_disabled = file_name.ends_with(".jar.disabled");
-                if is_enabled || is_disabled {
-                    files_to_process.push((path, file_name, is_enabled));
-                }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_file() {
+            let file_name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("")
+                .to_string();
+            let is_enabled = file_name.ends_with(".jar");
+            let is_disabled = file_name.ends_with(".jar.disabled");
+            if is_enabled || is_disabled {
+                files_to_process.push((path, file_name, is_enabled));
             }
         }
     }
@@ -3680,71 +3665,69 @@ pub async fn get_installed_resourcepacks(
     let entries =
         fs::read_dir(rp_dir).map_err(|e| format!("無法讀取 resourcepacks 資料夾: {}", e))?;
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            let file_name = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("")
-                .to_string();
-            if file_name.is_empty() || file_name.starts_with('.') {
-                continue;
-            }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let file_name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("")
+            .to_string();
+        if file_name.is_empty() || file_name.starts_with('.') {
+            continue;
+        }
 
-            let sha1 = if path.is_file() {
-                calculate_sha1(&path).unwrap_or_default()
-            } else {
-                "".to_string()
-            };
+        let sha1 = if path.is_file() {
+            calculate_sha1(&path).unwrap_or_default()
+        } else {
+            "".to_string()
+        };
 
-            let mut name = file_name.clone();
-            let mut description = String::new();
-            let mut pack_format = 0;
+        let mut name = file_name.clone();
+        let mut description = String::new();
+        let mut pack_format = 0;
 
-            if path.is_dir() {
-                let mcmeta_path = path.join("pack.mcmeta");
-                if mcmeta_path.exists() {
-                    if let Ok(content) = fs::read_to_string(mcmeta_path) {
-                        if let Some((p_name, p_desc, p_format)) = parse_mcmeta_json(&content) {
-                            name = p_name.unwrap_or_else(|| file_name.clone());
-                            description = p_desc;
-                            pack_format = p_format;
-                        }
+        if path.is_dir() {
+            let mcmeta_path = path.join("pack.mcmeta");
+            if mcmeta_path.exists() {
+                if let Ok(content) = fs::read_to_string(mcmeta_path) {
+                    if let Some((p_name, p_desc, p_format)) = parse_mcmeta_json(&content) {
+                        name = p_name.unwrap_or_else(|| file_name.clone());
+                        description = p_desc;
+                        pack_format = p_format;
                     }
                 }
-            } else if path.is_file() && (file_name.ends_with(".zip") || file_name.ends_with(".jar"))
-            {
-                if let Ok(file) = fs::File::open(&path) {
-                    if let Ok(mut archive) = ZipArchive::new(file) {
-                        if let Ok(mut mcmeta_entry) = archive.by_name("pack.mcmeta") {
-                            use std::io::Read;
-                            let mut content = String::new();
-                            if mcmeta_entry.read_to_string(&mut content).is_ok() {
-                                if let Some((p_name, p_desc, p_format)) =
-                                    parse_mcmeta_json(&content)
-                                {
-                                    name = p_name.unwrap_or_else(|| file_name.clone());
-                                    description = p_desc;
-                                    pack_format = p_format;
-                                }
+            }
+        } else if path.is_file() && (file_name.ends_with(".zip") || file_name.ends_with(".jar"))
+        {
+            if let Ok(file) = fs::File::open(&path) {
+                if let Ok(mut archive) = ZipArchive::new(file) {
+                    if let Ok(mut mcmeta_entry) = archive.by_name("pack.mcmeta") {
+                        use std::io::Read;
+                        let mut content = String::new();
+                        if mcmeta_entry.read_to_string(&mut content).is_ok() {
+                            if let Some((p_name, p_desc, p_format)) =
+                                parse_mcmeta_json(&content)
+                            {
+                                name = p_name.unwrap_or_else(|| file_name.clone());
+                                description = p_desc;
+                                pack_format = p_format;
                             }
                         }
                     }
                 }
             }
-
-            let game_version = map_pack_format_to_version(pack_format);
-
-            list.push(ResourcePackItem {
-                file_name,
-                name,
-                description,
-                pack_format,
-                game_version,
-                sha1,
-            });
         }
+
+        let game_version = map_pack_format_to_version(pack_format);
+
+        list.push(ResourcePackItem {
+            file_name,
+            name,
+            description,
+            pack_format,
+            game_version,
+            sha1,
+        });
     }
 
     Ok(list)
@@ -3766,33 +3749,31 @@ pub async fn get_installed_shaderpacks(
     let entries =
         fs::read_dir(sp_dir).map_err(|e| format!("無法讀取 shaderpacks 資料夾: {}", e))?;
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            let file_name = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("")
-                .to_string();
-            if file_name.is_empty() || file_name.starts_with('.') {
-                continue;
-            }
-
-            let sha1 = if path.is_file() {
-                calculate_sha1(&path).unwrap_or_default()
-            } else {
-                "".to_string()
-            };
-
-            list.push(ResourcePackItem {
-                file_name: file_name.clone(),
-                name: file_name,
-                description: "光影包".to_string(),
-                pack_format: 0,
-                game_version: "".to_string(),
-                sha1,
-            });
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let file_name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("")
+            .to_string();
+        if file_name.is_empty() || file_name.starts_with('.') {
+            continue;
         }
+
+        let sha1 = if path.is_file() {
+            calculate_sha1(&path).unwrap_or_default()
+        } else {
+            "".to_string()
+        };
+
+        list.push(ResourcePackItem {
+            file_name: file_name.clone(),
+            name: file_name,
+            description: "光影包".to_string(),
+            pack_format: 0,
+            game_version: "".to_string(),
+            sha1,
+        });
     }
 
     Ok(list)
@@ -3816,70 +3797,68 @@ pub async fn get_installed_datapacks(
     let mut list = vec![];
     let entries = fs::read_dir(dp_dir).map_err(|e| format!("無法讀取 datapacks 資料夾: {}", e))?;
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            let file_name = path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("")
-                .to_string();
-            if file_name.is_empty() || file_name.starts_with('.') {
-                continue;
-            }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let file_name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("")
+            .to_string();
+        if file_name.is_empty() || file_name.starts_with('.') {
+            continue;
+        }
 
-            let sha1 = if path.is_file() {
-                calculate_sha1(&path).unwrap_or_default()
-            } else {
-                "".to_string()
-            };
+        let sha1 = if path.is_file() {
+            calculate_sha1(&path).unwrap_or_default()
+        } else {
+            "".to_string()
+        };
 
-            let mut name = file_name.clone();
-            let mut description = String::new();
-            let mut pack_format = 0;
+        let mut name = file_name.clone();
+        let mut description = String::new();
+        let mut pack_format = 0;
 
-            if path.is_dir() {
-                let mcmeta_path = path.join("pack.mcmeta");
-                if mcmeta_path.exists() {
-                    if let Ok(content) = fs::read_to_string(mcmeta_path) {
-                        if let Some((p_name, p_desc, p_format)) = parse_mcmeta_json(&content) {
-                            name = p_name.unwrap_or_else(|| file_name.clone());
-                            description = p_desc;
-                            pack_format = p_format;
-                        }
+        if path.is_dir() {
+            let mcmeta_path = path.join("pack.mcmeta");
+            if mcmeta_path.exists() {
+                if let Ok(content) = fs::read_to_string(mcmeta_path) {
+                    if let Some((p_name, p_desc, p_format)) = parse_mcmeta_json(&content) {
+                        name = p_name.unwrap_or_else(|| file_name.clone());
+                        description = p_desc;
+                        pack_format = p_format;
                     }
                 }
-            } else if path.is_file() && file_name.ends_with(".zip") {
-                if let Ok(file) = fs::File::open(&path) {
-                    if let Ok(mut archive) = ZipArchive::new(file) {
-                        if let Ok(mut mcmeta_entry) = archive.by_name("pack.mcmeta") {
-                            use std::io::Read;
-                            let mut content = String::new();
-                            if mcmeta_entry.read_to_string(&mut content).is_ok() {
-                                if let Some((p_name, p_desc, p_format)) =
-                                    parse_mcmeta_json(&content)
-                                {
-                                    name = p_name.unwrap_or_else(|| file_name.clone());
-                                    description = p_desc;
-                                    pack_format = p_format;
-                                }
+            }
+        } else if path.is_file() && file_name.ends_with(".zip") {
+            if let Ok(file) = fs::File::open(&path) {
+                if let Ok(mut archive) = ZipArchive::new(file) {
+                    if let Ok(mut mcmeta_entry) = archive.by_name("pack.mcmeta") {
+                        use std::io::Read;
+                        let mut content = String::new();
+                        if mcmeta_entry.read_to_string(&mut content).is_ok() {
+                            if let Some((p_name, p_desc, p_format)) =
+                                parse_mcmeta_json(&content)
+                            {
+                                name = p_name.unwrap_or_else(|| file_name.clone());
+                                description = p_desc;
+                                pack_format = p_format;
                             }
                         }
                     }
                 }
             }
-
-            let game_version = map_pack_format_to_version(pack_format);
-
-            list.push(ResourcePackItem {
-                file_name,
-                name,
-                description,
-                pack_format,
-                game_version,
-                sha1,
-            });
         }
+
+        let game_version = map_pack_format_to_version(pack_format);
+
+        list.push(ResourcePackItem {
+            file_name,
+            name,
+            description,
+            pack_format,
+            game_version,
+            sha1,
+        });
     }
 
     Ok(list)
@@ -3916,50 +3895,46 @@ pub async fn get_installed_worlds(instance_id: String) -> Result<Vec<WorldItem>,
     let mut list = vec![];
     let entries = fs::read_dir(saves_dir).map_err(|e| format!("無法讀取 saves 資料夾: {}", e))?;
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.is_dir() {
-                let folder_name = path
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("")
-                    .to_string();
-                if folder_name.is_empty() || folder_name.starts_with('.') {
-                    continue;
-                }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let folder_name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("")
+                .to_string();
+            if folder_name.is_empty() || folder_name.starts_with('.') {
+                continue;
+            }
 
-                let size_bytes = get_folder_size(&path).unwrap_or(0);
+            let size_bytes = get_folder_size(&path).unwrap_or(0);
 
-                let datapacks_dir = path.join("datapacks");
-                let mut datapacks = vec![];
-                if datapacks_dir.exists() && datapacks_dir.is_dir() {
-                    if let Ok(dp_entries) = fs::read_dir(datapacks_dir) {
-                        for dp in dp_entries {
-                            if let Ok(dp) = dp {
-                                let name = dp.file_name().to_string_lossy().to_string();
-                                if !name.starts_with('.') {
-                                    datapacks.push(name);
-                                }
-                            }
+            let datapacks_dir = path.join("datapacks");
+            let mut datapacks = vec![];
+            if datapacks_dir.exists() && datapacks_dir.is_dir() {
+                if let Ok(dp_entries) = fs::read_dir(datapacks_dir) {
+                    for dp in dp_entries.flatten() {
+                        let name = dp.file_name().to_string_lossy().to_string();
+                        if !name.starts_with('.') {
+                            datapacks.push(name);
                         }
                     }
                 }
-
-                list.push(WorldItem {
-                    folder_name: folder_name.clone(),
-                    name: folder_name,
-                    size_bytes,
-                    datapacks,
-                });
             }
+
+            list.push(WorldItem {
+                folder_name: folder_name.clone(),
+                name: folder_name,
+                size_bytes,
+                datapacks,
+            });
         }
     }
     Ok(list)
 }
 
 // ==========================================
-// NBT Parser / Serializer for servers.dat
+// 針對 servers.dat 的 NBT 解析器與序列化器
 // ==========================================
 
 #[derive(Debug, Clone)]
@@ -4181,40 +4156,40 @@ pub async fn save_servers(instance_id: String, servers: Vec<ServerItem>) -> Resu
 
     let mut out = vec![];
 
-    // Root tag: TAG_Compound (10)
+    // 根標籤：TAG_Compound (10)
     write_nbt_u8(&mut out, 10);
-    // Root name: empty string
+    // 根名稱：空字串
     write_nbt_string(&mut out, "");
 
-    // Tag: TAG_List (9) for "servers"
+    // 標籤：TAG_List (9) 對應 "servers"
     write_nbt_u8(&mut out, 9);
     write_nbt_string(&mut out, "servers");
-    // Element type: TAG_Compound (10)
+    // 元素類型：TAG_Compound (10)
     write_nbt_u8(&mut out, 10);
-    // List size
+    // 清單長度
     write_nbt_i32(&mut out, servers.len() as i32);
 
     for server in servers {
-        // Tag: TAG_String (8) for "name"
+        // 標籤：TAG_String (8) 對應 "name"
         write_nbt_u8(&mut out, 8);
         write_nbt_string(&mut out, "name");
         write_nbt_string(&mut out, &server.name);
 
-        // Tag: TAG_String (8) for "ip"
+        // 標籤：TAG_String (8) 對應 "ip"
         write_nbt_u8(&mut out, 8);
         write_nbt_string(&mut out, "ip");
         write_nbt_string(&mut out, &server.ip);
 
-        // Tag: TAG_Byte (1) for "acceptTextures"
+        // 標籤：TAG_Byte (1) 對應 "acceptTextures"
         write_nbt_u8(&mut out, 1);
         write_nbt_string(&mut out, "acceptTextures");
         write_nbt_u8(&mut out, server.accept_textures.unwrap_or(0));
 
-        // End Compound: TAG_End (0)
+        // 結束 Compound：TAG_End (0)
         write_nbt_u8(&mut out, 0);
     }
 
-    // End Root Compound: TAG_End (0)
+    // 結束根 Compound：TAG_End (0)
     write_nbt_u8(&mut out, 0);
 
     fs::write(servers_dat_path, out).map_err(|e| format!("無法寫入 servers.dat: {}", e))?;
@@ -4394,12 +4369,12 @@ pub async fn import_files(
                 .ok_or_else(|| "無效的檔案名稱".to_string())?;
             let dest_path = dest_dir.join(file_name);
             if src_path.is_dir() {
-                if let Err(_) = fs::rename(src_path, &dest_path) {
+                if fs::rename(src_path, &dest_path).is_err() {
                     copy_dir_recursive(src_path, &dest_path)?;
                     let _ = fs::remove_dir_all(src_path);
                 }
             } else {
-                if let Err(_) = fs::rename(src_path, &dest_path) {
+                if fs::rename(src_path, &dest_path).is_err() {
                     fs::copy(src_path, &dest_path).map_err(|e| format!("複製檔案失敗: {}", e))?;
                     let _ = fs::remove_file(src_path);
                 }
@@ -4633,8 +4608,8 @@ pub async fn search_modrinth(
 
     if let Some(ref ld) = loader {
         if !ld.trim().is_empty()
-            && ld.to_ascii_lowercase() != "vanilla"
-            && ld.to_ascii_lowercase() != "all"
+            && !ld.eq_ignore_ascii_case("vanilla")
+            && !ld.eq_ignore_ascii_case("all")
         {
             facets_list.push(vec![format!("categories:{}", ld.to_ascii_lowercase())]);
         }
@@ -4684,20 +4659,18 @@ pub async fn get_screenshots(instance_id: String) -> Result<Vec<String>, String>
     let entries =
         fs::read_dir(screenshots_dir).map_err(|e| format!("無法讀取 screenshots 資料夾: {}", e))?;
 
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.is_file() {
-                if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                    let ext_lower = ext.to_lowercase();
-                    if ext_lower == "png"
-                        || ext_lower == "jpg"
-                        || ext_lower == "jpeg"
-                        || ext_lower == "webp"
-                    {
-                        if let Some(p_str) = path.to_str() {
-                            list.push(p_str.to_string());
-                        }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                let ext_lower = ext.to_lowercase();
+                if ext_lower == "png"
+                    || ext_lower == "jpg"
+                    || ext_lower == "jpeg"
+                    || ext_lower == "webp"
+                {
+                    if let Some(p_str) = path.to_str() {
+                        list.push(p_str.to_string());
                     }
                 }
             }
@@ -4736,12 +4709,12 @@ pub async fn watch_instance_folders(
     let mut watcher =
         notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| match res {
             Ok(event) => {
-                let is_relevant_event = match event.kind {
+                let is_relevant_event = matches!(
+                    event.kind,
                     notify::EventKind::Create(_)
-                    | notify::EventKind::Modify(_)
-                    | notify::EventKind::Remove(_) => true,
-                    _ => false,
-                };
+                        | notify::EventKind::Modify(_)
+                        | notify::EventKind::Remove(_)
+                );
                 if is_relevant_event {
                     for path in &event.paths {
                         for component in path.components() {
@@ -4801,7 +4774,7 @@ pub async fn unwatch_instance_folders(state: State<'_, crate::WatcherState>) -> 
 }
 
 // ==========================================
-// 啟動會話與進程管理 (Session & Process Management)
+// 啟動會話與行程管理
 // ==========================================
 
 use std::sync::atomic::Ordering;
@@ -4880,7 +4853,7 @@ pub async fn kill_launch_session(
 }
 
 // ==========================================
-// Java 需求版本自動對應 (Java Version Autoresolution)
+// Java 需求版本自動比對
 // ==========================================
 
 #[tauri::command]
@@ -4902,7 +4875,7 @@ pub async fn get_required_java_version(
     cfg.id = instance_id.clone();
     let version_id = cfg.version;
 
-    // 1. Try local version JSON
+    // 嘗試使用本地版本 JSON
     let version_json_dir = base_dir.join("version").join(&version_id);
     let version_json_path = version_json_dir.join(format!("{}.json", version_id));
 
@@ -4933,7 +4906,7 @@ pub async fn get_required_java_version(
         return Ok(local_java_major);
     }
 
-    // 1.5 Try Mojang API online
+    // 嘗試使用 Mojang API 線上取得
     let client = reqwest::Client::builder()
         .user_agent("focal-craft-launcher")
         .build();
@@ -4966,8 +4939,8 @@ pub async fn get_required_java_version(
                                         version_id, jv.major_version
                                     );
                                     fs::create_dir_all(&version_json_dir).ok();
-                                    let _ = fs::write(&version_json_path, &text); // Write full raw text!
-                                    return Ok(jv.major_version);
+                                    let _ = fs::write(&version_json_path, &text); // 寫入原始 JSON 內容
+                                    return Ok(remote_json.java_version.unwrap().major_version);
                                 }
                             }
                         }
@@ -4977,7 +4950,7 @@ pub async fn get_required_java_version(
         }
     }
 
-    // 2. Fallback matching rules
+    // 備用比對規則
     let parts: Vec<&str> = version_id.split('.').collect();
     if parts.len() >= 2 {
         if let Ok(minor) = parts[1].parse::<u32>() {
@@ -5033,7 +5006,7 @@ pub async fn get_required_java_version(
 }
 
 // ==========================================
-// CurseForge API 整合 (CurseForge API Integration)
+// CurseForge API 整合
 // ==========================================
 
 const CURSEFORGE_API_KEY: &str = match option_env!("CURSEFORGE_API_KEY") {
@@ -5189,17 +5162,15 @@ pub async fn scan_downloads_for_hashes(
     if let Some(dir) = downloads_dir {
         if dir.exists() {
             if let Ok(entries) = fs::read_dir(dir) {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let path = entry.path();
-                        if path.is_file() {
-                            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                            if file_name.ends_with(".jar") || file_name.ends_with(".zip") {
-                                if let Ok(sha1) = calculate_sha1(&path) {
-                                    if hashes.contains(&sha1) {
-                                        matched_files
-                                            .insert(sha1, path.to_string_lossy().to_string());
-                                    }
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                        if file_name.ends_with(".jar") || file_name.ends_with(".zip") {
+                            if let Ok(sha1) = calculate_sha1(&path) {
+                                if hashes.contains(&sha1) {
+                                    matched_files
+                                        .insert(sha1, path.to_string_lossy().to_string());
                                 }
                             }
                         }

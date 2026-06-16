@@ -1,11 +1,13 @@
 import { useRef, useEffect, useState } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { useInstanceStore } from '../../store/instanceStore';
+import { useI18n } from '../../utils/i18n';
 import styles from './TopNav.module.css';
 
 export function TopNav() {
   const { currentView, activeDetailTab, setActiveDetailTab } = useAppStore();
   const instances = useInstanceStore((state) => state.instances);
+  const { t } = useI18n();
 
   const tabsRef = useRef<HTMLDivElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
@@ -28,7 +30,7 @@ export function TopNav() {
       }
     };
 
-    // Run after a tiny timeout to ensure DOM layout is updated and active class is applied
+    // 延遲更新以確保 DOM 佈局已套用 active 樣式
     const timer = setTimeout(updateIndicator, 0);
     window.addEventListener('resize', updateIndicator);
 
@@ -46,35 +48,35 @@ export function TopNav() {
             {currentView === 'account_info' ? (
               <div className={styles.tabs} ref={tabsRef}>
                  <button
-                  className={`${styles.tab} ${activeDetailTab === 'skins' ? styles.active : ''}`}
-                  onClick={() => setActiveDetailTab('skins')}
-                >
-                  皮膚
-                </button>
+                   className={`${styles.tab} ${activeDetailTab === 'skins' ? styles.active : ''}`}
+                   onClick={() => setActiveDetailTab('skins')}
+                 >
+                   {t('nav.skins')}
+                 </button>
                 <button
-                  className={`${styles.tab} ${activeDetailTab === 'skin_wardrobe' ? styles.active : ''}`}
-                  onClick={() => setActiveDetailTab('skin_wardrobe')}
-                >
-                  皮膚櫃
-                </button>
+                   className={`${styles.tab} ${activeDetailTab === 'skin_wardrobe' ? styles.active : ''}`}
+                   onClick={() => setActiveDetailTab('skin_wardrobe')}
+                 >
+                   {t('nav.skin_wardrobe')}
+                 </button>
                 <button
-                  className={`${styles.tab} ${activeDetailTab === 'capes' ? styles.active : ''}`}
-                  onClick={() => setActiveDetailTab('capes')}
-                >
-                  披風
-                </button>
+                   className={`${styles.tab} ${activeDetailTab === 'capes' ? styles.active : ''}`}
+                   onClick={() => setActiveDetailTab('capes')}
+                 >
+                   {t('nav.capes')}
+                 </button>
                 <div
-                  className={styles.indicator}
-                  style={{
-                    transform: `translateX(${indicatorStyle.left}px)`,
-                    width: `${indicatorStyle.width}px`,
-                    opacity: indicatorStyle.opacity
-                  }}
-                />
+                   className={styles.indicator}
+                   style={{
+                     transform: `translateX(${indicatorStyle.left}px)`,
+                     width: `${indicatorStyle.width}px`,
+                     opacity: indicatorStyle.opacity
+                   }}
+                 />
               </div>
             ) : (
               <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                {currentView === 'global_settings' && '全局設定'}
+                {currentView === 'global_settings' && t('nav.settings')}
               </div>
             )}
           </div>
@@ -90,7 +92,7 @@ export function TopNav() {
           className={`${styles.tab} ${activeDetailTab === 'edit' ? styles.active : ''}`}
           onClick={() => setActiveDetailTab('edit')}
         >
-          主畫面
+          {t('nav.main')}
         </button>
         {instance.modrinthProjectId && (
           <button
@@ -104,46 +106,46 @@ export function TopNav() {
           className={`${styles.tab} ${activeDetailTab === 'log' ? styles.active : ''}`}
           onClick={() => setActiveDetailTab('log')}
         >
-          紀錄
+          {t('nav.logs')}
         </button>
         <button
           className={`${styles.tab} ${activeDetailTab === 'mods' ? styles.active : ''}`}
           onClick={() => setActiveDetailTab('mods')}
         >
-          模組
+          {t('nav.mods')}
         </button>
         <button
           className={`${styles.tab} ${activeDetailTab === 'resourcepacks' ? styles.active : ''}`}
           onClick={() => setActiveDetailTab('resourcepacks')}
         >
-          資源包
+          {t('nav.resourcepacks')}
         </button>
         <button
           className={`${styles.tab} ${activeDetailTab === 'shaderpacks' ? styles.active : ''}`}
           onClick={() => setActiveDetailTab('shaderpacks')}
         >
-          光影包
+          {t('nav.shaderpacks')}
         </button>
         <button
           className={`${styles.tab} ${activeDetailTab === 'worlds' ? styles.active : ''}`}
           onClick={() => setActiveDetailTab('worlds')}
         >
-          世界
+          {t('nav.worlds')}
         </button>
         <button
           className={`${styles.tab} ${activeDetailTab === 'servers' ? styles.active : ''}`}
           onClick={() => setActiveDetailTab('servers')}
         >
-          伺服器
+          {t('nav.servers')}
         </button>
         <button
           className={`${styles.tab} ${activeDetailTab === 'settings' ? styles.active : ''}`}
           onClick={() => setActiveDetailTab('settings')}
         >
-          詳細設定
+          {t('nav.detail_settings')}
         </button>
 
-        {/* Sliding indicator line */}
+        {/* 滑動指示器 */}
         <div
           className={styles.indicator}
           style={{

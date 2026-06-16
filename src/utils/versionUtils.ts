@@ -1,13 +1,6 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
 
-// ==========================================
-// Minecraft 版本分組工具
-// ==========================================
-
-/**
- * 將 Minecraft 版本 ID 分類為版本群組字串
- * 例如: "1.20.4" -> "1.20.X", "b1.7.3" -> "Beta 測試版 (Beta)"
- */
+// 依 Minecraft 版本號取得對應的分組名稱 (例如: 1.20.4 -> 1.20.X)
 export const getMajorVersionGroup = (verId: string): string => {
   if (verId.startsWith('b1.')) return 'Beta 測試版 (Beta)';
   if (verId.startsWith('a1.')) return 'Alpha 測試版 (Alpha)';
@@ -23,21 +16,12 @@ export const getMajorVersionGroup = (verId: string): string => {
   return '其他測試版本';
 };
 
-// ==========================================
-// 實例圖示工具
-// ==========================================
-
 interface InstanceLike {
   id: string;
   icon?: string | null;
 }
 
-/**
- * 計算實例圖示的可顯示 URL 或 null（表示顯示 Emoji）
- * @param instance 實例物件（需含 id, icon）
- * @param baseDir  App 的 base 目錄（來自 init_app_dirs）
- * @param instancesPath 自訂實例路徑（來自 settingsConfig.instancesPath）
- */
+// 取得實例自訂圖示的本機或網路載入網址
 export const getInstanceIconSrc = (
   instance: InstanceLike,
   baseDir: string,
@@ -45,10 +29,10 @@ export const getInstanceIconSrc = (
 ): string | null => {
   if (!instance.icon) return null;
 
-  // 僅接受 HTTPS（不接受 HTTP 以避免混合內容安全警告）
+  // 僅接受 HTTPS
   if (instance.icon.startsWith('https://')) return instance.icon;
 
-  // 過濾掉非圖片的短字串（Emoji 等）
+  // 若長度太短且不含副檔名，視為 Emoji
   if (instance.icon.length <= 4 && !instance.icon.includes('.')) return null;
 
   const instsDir = instancesPath || `${baseDir}/instances`;

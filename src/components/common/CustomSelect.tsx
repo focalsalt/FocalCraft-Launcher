@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 import styles from './CustomSelect.module.css';
 
@@ -18,37 +19,99 @@ export interface CustomSelectProps {
 
 export function CustomSelect({ value, onChange, options, disabled, placeholder, direction = 'down' }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // 計算下拉選單的絕對定位（相對於 viewport）
+  const updateDropdownPos = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    if (direction === 'up') {
+      setDropdownPos({
+        top: rect.top - 206, // 200px max-height + 6px gap
+        left: rect.left,
+        width: rect.width,
+      });
+    } else {
+      setDropdownPos({
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [direction]);
+
+  const handleOpen = () => {
+    if (disabled) return;
+    if (!isOpen) {
+      updateDropdownPos();
+    }
+    setIsOpen((prev) => !prev);
+  };
+
+  // 點擊外部關閉（同時排除 portal 下拉選單本身）
   useEffect(() => {
+    if (!isOpen) return;
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      if (
+        containerRef.current?.contains(target) ||
+        dropdownRef.current?.contains(target)
+      ) {
+        return;
       }
+      setIsOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
+
+  // 捲動或縮放時重新計算位置
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleUpdate() {
+      updateDropdownPos();
+    }
+    window.addEventListener('scroll', handleUpdate, true);
+    window.addEventListener('resize', handleUpdate);
+    return () => {
+      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
+    };
+  }, [isOpen, updateDropdownPos]);
 
   const selectedOption = options.find((o) => o.value === value);
 
-  const dropdownStyle = direction === 'up'
-    ? { bottom: 'calc(100% + 6px)', top: 'auto', boxShadow: '0 -10px 25px rgba(0, 0, 0, 0.5)' }
-    : { top: 'calc(100% + 6px)', bottom: 'auto' };
+  const dropdownStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: dropdownPos.top,
+    left: dropdownPos.left,
+    width: dropdownPos.width,
+    zIndex: 99999,
+    ...(direction === 'up'
+      ? { boxShadow: '0 -10px 25px rgba(0, 0, 0, 0.5)' }
+      : { boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)' }),
+  };
 
   return (
     <div className={styles.customSelectContainer} ref={containerRef}>
       <button
         type="button"
         className={`${styles.customSelectTrigger} ${disabled ? styles.disabled : ''}`}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleOpen}
         disabled={disabled}
       >
         <span>{selectedOption ? selectedOption.label : (placeholder || '請選擇...')}</span>
         <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </button>
-      {isOpen && (
-        <div className={`${styles.customSelectDropdown} global-scrollbar`} style={dropdownStyle}>
+
+      {isOpen && createPortal(
+        <div
+          ref={dropdownRef}
+          className={`${styles.customSelectDropdown} global-scrollbar`}
+          style={dropdownStyle}
+        >
           {options.map((opt) => (
             <div
               key={opt.value}
@@ -62,7 +125,8 @@ export function CustomSelect({ value, onChange, options, disabled, placeholder, 
               {opt.value === value && <Check size={14} />}
             </div>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

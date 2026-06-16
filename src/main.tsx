@@ -11,9 +11,10 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   </React.StrictMode>,
 );
 
-// Dismiss the HTML splash screen once React has painted
+// 關閉啟動載入畫面
 requestAnimationFrame(() => {
   requestAnimationFrame(() => {
     (window as any).__hideSplash?.();
   });
 });
+

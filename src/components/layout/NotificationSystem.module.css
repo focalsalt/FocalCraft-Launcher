@@ -6,7 +6,7 @@
   flex-direction: column;
   gap: 12px;
   z-index: 9999;
-  pointer-events: none; /* Let clicks pass through the container */
+  pointer-events: none; /* 允許點擊穿透 */
 }
 
 .notification {
@@ -18,7 +18,7 @@
   display: flex;
   gap: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  pointer-events: auto; /* Re-enable clicks on the notification itself */
+  pointer-events: auto; /* 允許點擊本體 */
   animation: slideIn var(--transition-normal);
   position: relative;
   overflow: hidden;

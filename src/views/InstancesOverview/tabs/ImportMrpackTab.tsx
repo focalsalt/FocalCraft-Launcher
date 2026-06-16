@@ -1,4 +1,5 @@
 import { Upload, Loader } from 'lucide-react';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../CreateInstanceModal.module.css';
 
 interface ImportMrpackTabProps {
@@ -26,6 +27,8 @@ export function ImportMrpackTab({
   toggleModSelection,
   isDragOver,
 }: ImportMrpackTabProps) {
+  const { t } = useI18n();
+
   return (
     <div className={styles.twoColumnLayout}>
       {!mrpackPath ? (
@@ -36,9 +39,11 @@ export function ImportMrpackTab({
           >
             <Upload className={styles.filePickerIcon} size={40} />
             <div className={styles.filePickerText}>
-              {isDragOver ? '放開以匯入整合包...' : '點擊選擇或拖曳 .mrpack / .zip 檔案至此'}
+              {isDragOver ? t('create.mrpack.drop_release') : t('create.mrpack.dropzone_text')}
             </div>
-            <div className={styles.filePickerSub}>支援 Modrinth (.mrpack) 與 CurseForge (.zip) 格式的 Minecraft 整合包檔案</div>
+            <div className={styles.filePickerSub}>
+              {t('create.mrpack.dropzone_sub')}
+            </div>
           </div>
         </div>
       ) : (
@@ -46,7 +51,7 @@ export function ImportMrpackTab({
           {loadingDetails ? (
             <div className={styles.loadingSpinner}>
               <Loader className="animate-spin" size={32} />
-              <span>正在解析整合包內容...</span>
+              <span>{t('create.mrpack.parsing')}</span>
             </div>
           ) : mrpackDetails ? (
             <div className={styles.modpackDetailLayout}>
@@ -55,102 +60,102 @@ export function ImportMrpackTab({
                   <div className={styles.detailIconPlaceholder}>📦</div>
                   <div className={styles.detailHeaderInfo}>
                     <h3 className={styles.detailTitle}>{mrpackDetails.name}</h3>
-                    <p className={styles.detailDesc}>本機匯入的整合包檔案</p>
+                    <p className={styles.detailDesc}>{t('create.mrpack.local_pack')}</p>
                   </div>
                 </div>
               </div>
 
-            <div className={styles.detailBottomSection}>
-              {!isSelectingMods ? (
-                <div className={styles.versionSummaryCard}>
-                  <div className={styles.licenseHeader}>
-                    <span className={styles.modsCountTitle}>📦 整合包資訊</span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>遊戲版本</span>
-                    <span className={styles.value}>{mrpackDetails.gameVersion}</span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>載入器類型</span>
-                    <span className={styles.value}>{mrpackDetails.modloader}</span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>載入器版本</span>
-                    <span className={styles.value}>{mrpackDetails.modloaderVersion || '未知'}</span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>包含的 Mod 總數</span>
-                    <span className={styles.value}>{mrpackDetails.mods.length} 個</span>
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.licenseConfirmContainer}>
-                  <div className={styles.backToDescRow}>
-                    <button 
-                      type="button"
-                      className={styles.backToDescButton}
-                      onClick={() => setIsSelectingMods(false)}
-                    >
-                      ← 返回整合包資訊
-                    </button>
-                  </div>
-                  <div className={styles.licenseHeader}>
-                    <span className={styles.modsCountTitle}>
-                      🛠️ 選擇要安裝的 Mod ({selectedMods.size} / {mrpackDetails.mods.length} 個)
-                    </span>
-                    <div className={styles.toggleAllContainer}>
-                      <label className={styles.checkboxLabel}>
-                        <input 
-                          type="checkbox"
-                          checked={selectedMods.size === mrpackDetails.mods.length}
-                          ref={(el) => {
-                            if (el) el.indeterminate = selectedMods.size > 0 && selectedMods.size < mrpackDetails.mods.length;
-                          }}
-                          onChange={(e) => toggleAllMods(e.target.checked, mrpackDetails.mods)}
-                        />
-                        <span>全選</span>
-                      </label>
+              <div className={styles.detailBottomSection}>
+                {!isSelectingMods ? (
+                  <div className={styles.versionSummaryCard}>
+                    <div className={styles.licenseHeader}>
+                      <span className={styles.modsCountTitle}>{t('create.mrpack.info_title')}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.label}>{t('create.label.version')}</span>
+                      <span className={styles.value}>{mrpackDetails.gameVersion}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.label}>{t('create.mrpack.loader_type')}</span>
+                      <span className={styles.value}>{mrpackDetails.modloader}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.label}>{t('create.label.loader_version')}</span>
+                      <span className={styles.value}>{mrpackDetails.modloaderVersion || t('overview.unknown_version')}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.label}>{t('create.mrpack.mods_count')}</span>
+                      <span className={styles.value}>{t('create.mrpack.mods_count_val', { count: mrpackDetails.mods.length })}</span>
                     </div>
                   </div>
-                  
-                  <div className={styles.modList}>
-                    {mrpackDetails.mods.map((mod: any, i: number) => {
-                      const isChecked = selectedMods.has(mod.name);
-                      return (
-                        <div 
-                          key={i} 
-                          className={`${styles.modItemSelectable} ${isChecked ? styles.checked : ''}`}
-                          onClick={() => toggleModSelection(mod.name)}
-                        >
-                          <label className={styles.checkboxLabel} onClick={(e) => e.stopPropagation()}>
-                            <input 
-                              type="checkbox" 
-                              checked={isChecked}
-                              onChange={() => toggleModSelection(mod.name)}
-                            />
-                          </label>
-                          <div className={styles.modMain}>
-                            <span className={styles.modName}>{mod.name}</span>
-                            <span className={styles.modAuthor}>作者: {mod.author}</span>
+                ) : (
+                  <div className={styles.licenseConfirmContainer}>
+                    <div className={styles.backToDescRow}>
+                      <button 
+                        type="button"
+                        className={styles.backToDescButton}
+                        onClick={() => setIsSelectingMods(false)}
+                      >
+                        {t('create.mrpack.back_to_info')}
+                      </button>
+                    </div>
+                    <div className={styles.licenseHeader}>
+                      <span className={styles.modsCountTitle}>
+                        {t('create.mrpack.select_mods_title', { selected: selectedMods.size, total: mrpackDetails.mods.length })}
+                      </span>
+                      <div className={styles.toggleAllContainer}>
+                        <label className={styles.checkboxLabel}>
+                          <input 
+                            type="checkbox"
+                            checked={selectedMods.size === mrpackDetails.mods.length}
+                            ref={(el) => {
+                              if (el) el.indeterminate = selectedMods.size > 0 && selectedMods.size < mrpackDetails.mods.length;
+                            }}
+                            onChange={(e) => toggleAllMods(e.target.checked, mrpackDetails.mods)}
+                          />
+                          <span>{t('create.mrpack.select_all')}</span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.modList}>
+                      {mrpackDetails.mods.map((mod: any, i: number) => {
+                        const isChecked = selectedMods.has(mod.name);
+                        return (
+                          <div 
+                            key={i} 
+                            className={`${styles.modItemSelectable} ${isChecked ? styles.checked : ''}`}
+                            onClick={() => toggleModSelection(mod.name)}
+                          >
+                            <label className={styles.checkboxLabel} onClick={(e) => e.stopPropagation()}>
+                              <input 
+                                type="checkbox" 
+                                checked={isChecked}
+                                onChange={() => toggleModSelection(mod.name)}
+                              />
+                            </label>
+                            <div className={styles.modMain}>
+                              <span className={styles.modName}>{mod.name}</span>
+                              <span className={styles.modAuthor}>{t('create.mrpack.author', { author: mod.author })}</span>
+                            </div>
+                            <span className={styles.modLicense}>{mod.license}</span>
                           </div>
-                          <span className={styles.modLicense}>{mod.license}</span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                    <div className={styles.disclaimerText}>
+                      {t('create.mrpack.disclaimer', { count: selectedMods.size })}
+                    </div>
                   </div>
-                  <div className={styles.disclaimerText}>
-                    * 您已選取 {selectedMods.size} 個模組。未勾選的模組將不會被下載與安裝。
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className={styles.placeholderText}>
-            <span>請選擇本機的 .mrpack 或 .zip 檔案以查看詳細資訊</span>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className={styles.placeholderText}>
+              <span>{t('create.mrpack.placeholder')}</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

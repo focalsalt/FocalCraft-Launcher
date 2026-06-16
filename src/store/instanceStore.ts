@@ -84,7 +84,6 @@ interface InstanceState {
   clearLogs: (instanceId: string) => void;
 }
 
-
 export const useInstanceStore = create<InstanceState>((set, get) => ({
   instances: [],
   downloadingInstanceId: null,
@@ -106,11 +105,12 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     instanceLogs: { ...state.instanceLogs, [instanceId]: [] }
   })),
 
+  // 初始化監聽事件
   init: async () => {
     if (get().initialized) return;
     set({ initialized: true });
 
-    // Listen to game logs
+    // 監聽遊戲日誌
     await listen<any>('game-log', (event) => {
       const { instanceId, text } = event.payload;
       if (instanceId) {
@@ -126,7 +126,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       }
     });
 
-    // Listen to download progress
+    // 監聽下載進度事件
     await listen<ProgressPayload>('download-progress', (event) => {
       const targetId = event.payload.instanceId;
       if (targetId) {
@@ -144,7 +144,6 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
           };
         });
       } else {
-        // Fallback to active launching/downloading instance ID
         const activeId = get().downloadingInstanceId || get().launchingInstanceId;
         if (activeId) {
           set((state) => {
@@ -163,14 +162,14 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         }
       }
 
-      // Legacy global fields for backward compatibility
+      // 相容舊版全域欄位
       set({
         downloadProgress: event.payload.progress,
         downloadStatusText: event.payload.detail
       });
     });
 
-    // Listen to game status
+    // 監聽遊戲運行狀態
     await listen<GameStatusPayload>('game-status', (event) => {
       const { instanceId, status, exitCode, crashed } = event.payload;
       const isCrash = !!(crashed && exitCode !== 0);
@@ -214,7 +213,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         });
         console.log(`Game exited with code: ${exitCode}`);
 
-        // Bug #5: Crash notification + auto switch to Log tab
+        // 處理遊戲崩潰：發送通知並自動切換至日誌標籤
         if (isCrash) {
           useAppStore.getState().addNotification({
             type: 'error',
@@ -227,6 +226,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     });
   },
 
+  // 載入所有實例
   loadInstances: async () => {
     try {
       const list = await invoke<Instance[]>('get_instances');
@@ -236,6 +236,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 建立新實例
   createInstance: async (id, name, version, modloader, loaderVersion, icon, modrinthProjectId, modrinthVersionId) => {
     try {
       const created = await invoke<Instance>('create_instance', {
@@ -256,6 +257,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 刪除實例
   deleteInstance: async (id) => {
     try {
       await invoke('delete_instance', { id });
@@ -273,6 +275,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 更新實例 JVM 啟動參數與記憶體設定
   updateInstanceSettings: async (id, jvmArgs, maxMemory, javaPath) => {
     try {
       await invoke('update_instance_settings', { id, jvmArgs, maxMemory, javaPath: javaPath || null });
@@ -283,6 +286,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 更新實例基礎設定
   updateInstanceConfig: async (id, name, version, modloader, loaderVersion, modrinthProjectId, modrinthVersionId) => {
     try {
       await invoke('update_instance_config', {
@@ -301,6 +305,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 匯入 mrpack 整合包檔案
   importMrpack: async (instanceId, filePath, selectedMods?: string[]) => {
     set((state) => {
       const s = state.instanceStates[instanceId] || getInitialInstanceState();
@@ -343,12 +348,13 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 啟動實例遊戲程序
   launchInstance: async (id, accountJson) => {
-    // Prevent duplicate launch on the same instance
+    // 防止重複啟動
     const current = get().instanceStates[id] || getInitialInstanceState();
     if (current.isLaunching || current.isRunning) return;
 
-    // Immediately mark as launching to prevent duplicate clicks
+    // 標記為啟動中
     set((state) => {
       const s = state.instanceStates[id] || getInitialInstanceState();
       return {
@@ -384,14 +390,14 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     };
 
     try {
-      // Reset session in backend
+      // 初始化後端啟動會話
       await invoke('init_launch_session', { instanceId: id });
       const instance = get().instances.find(i => i.id === id);
       if (!instance) throw new Error('找不到該實例');
 
       logInfo(`=== 準備啟動實例: ${instance.name} ===`);
       
-      // === Phase 0: Microsoft credential check and refresh ===
+      // 驗證微軟憑證並視需要自動重新整理
       logInfo('正在驗證微軟登入狀態與憑證效期...');
       const originalAccount = JSON.parse(accountJson);
       const accountStore = useAccountStore.getState();
@@ -426,7 +432,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       const reqVersion = await invoke<number>('get_required_java_version', { instanceId: id });
       let javaPath = '';
 
-      // === Phase 1: Java environment setup ===
+      // 準備 Java 執行環境
       logInfo('正在進行 Java 環境準備...');
 
       const customJavaPath = instance.javaPath || useSettingsStore.getState().config.customJavaPath;
@@ -546,7 +552,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         }
       }
 
-      // === Phase 2: Game files preparation ===
+      // 下載與準備遊戲核心/依賴檔案
       logInfo('正在檢查與準備遊戲核心檔案、依賴庫 (Libraries)、資源包索引 (Assets) 等...');
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
@@ -581,7 +587,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         };
       });
 
-      // === Phase 3: Game launch process ===
+      // 組裝啟動參數並執行遊戲
       logInfo('正在組裝啟動參數，並呼叫 Java 啟動遊戲進程...');
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
@@ -658,6 +664,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 儲存實例排列順序
   saveInstanceOrder: async (order: string[]) => {
     try {
       const currentInstances = get().instances;
@@ -675,6 +682,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 監聽實例目錄變動
   watchInstanceFolders: async (instanceId) => {
     try {
       await invoke('watch_instance_folders', { instanceId });
@@ -683,6 +691,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 停止監聽實例目錄
   unwatchInstanceFolders: async () => {
     try {
       await invoke('unwatch_instance_folders');
@@ -691,6 +700,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
+  // 取消遊戲啟動會話
   cancelLaunch: async (instanceId) => {
     try {
       await invoke('cancel_launch_session', { instanceId });
@@ -721,6 +731,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     console.log(`Launch cancelled for instance: ${instanceId}`);
   },
 
+  // 強制終止遊戲進程
   killGame: async (instanceId) => {
     try {
       await invoke('kill_launch_session', { instanceId });

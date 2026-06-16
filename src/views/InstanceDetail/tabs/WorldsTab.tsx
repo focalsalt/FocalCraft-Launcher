@@ -1,6 +1,6 @@
-
 import { Upload, Download, Loader, FolderOpen, Trash2, ChevronLeft, Layers, Compass } from 'lucide-react';
 import { WorldItem, ResourcePackItem } from '../../../types';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
 
 interface WorldsTabProps {
@@ -36,37 +36,38 @@ export function WorldsTab({
   handleDeleteDpClick,
   formatSize,
 }: WorldsTabProps) {
+  const { t } = useI18n();
+
   const onDownloadDatapackClick = () => {
     setModrinthModalType('datapack');
     setIsModrinthModalOpen(true);
   };
 
-  // 1. World Datapacks subpage
   if (activeWorldForDatapacks) {
     return (
       <div className={styles.tabContainer}>
         <div className={styles.subpageHeader}>
           <button className={styles.backBtn} onClick={() => setActiveWorldForDatapacks(null)}>
             <ChevronLeft size={16} />
-            <span>返回世界列表</span>
+            <span>{t('tabs.worlds.btn.back')}</span>
           </button>
-          <h2>{activeWorldForDatapacks.name} - 資料包管理</h2>
+          <h2>{t('tabs.worlds.datapacks_title', { name: activeWorldForDatapacks.name })}</h2>
         </div>
 
         <div className={styles.sectionHeader}>
           <div className={styles.btnRow}>
             <button className={styles.primaryBtn} onClick={handleImportDatapacks}>
               <Upload size={16} />
-              <span>匯入資料包</span>
+              <span>{t('tabs.worlds.btn.import_dp')}</span>
             </button>
             <button className={styles.secBtn} onClick={onDownloadDatapackClick}>
               <Download size={16} />
-              <span>下載資料包</span>
+              <span>{t('tabs.worlds.btn.download_dp')}</span>
             </button>
           </div>
           <button className={styles.actionBtn} onClick={handleOpenDatapacksFolder}>
             <FolderOpen size={16} />
-            <span>開啟資料包資料夾</span>
+            <span>{t('tabs.worlds.btn.folder_dp')}</span>
           </button>
         </div>
 
@@ -79,9 +80,9 @@ export function WorldsTab({
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>名稱與說明</th>
-                  <th>適用版本</th>
-                  <th style={{ width: 140, textAlign: 'center' }}>操作</th>
+                  <th>{t('tabs.worlds.label.name_desc_dp')}</th>
+                  <th>{t('tabs.worlds.label.version_dp')}</th>
+                  <th style={{ width: 140, textAlign: 'center' }}>{t('tabs.mods.label.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -89,9 +90,9 @@ export function WorldsTab({
                   <tr key={dp.fileName}>
                     <td>
                       <div className={styles.fileName}>{dp.name}</div>
-                      <span className={styles.fileSub}>{dp.description || '無描述資訊'}</span>
+                      <span className={styles.fileSub}>{dp.description || t('tabs.worlds.no_desc_dp')}</span>
                     </td>
-                    <td>{dp.gameVersion || '通用'}</td>
+                    <td>{dp.gameVersion || t('tabs.worlds.generic_version')}</td>
                     <td>
                       <div className={styles.tableActions}>
                         <button className={styles.deleteIconBtn} onClick={() => handleDeleteDpClick(dp.fileName)}>
@@ -106,18 +107,18 @@ export function WorldsTab({
           ) : (
             <div className={styles.emptyStateContainer}>
               <Layers className={styles.emptyStateIcon} size={48} />
-              <div className={styles.emptyStateTitle}>目前無安裝資料包</div>
+              <div className={styles.emptyStateTitle}>{t('tabs.worlds.empty_title_dp')}</div>
               <div className={styles.emptyStateDesc}>
-                資料包 (Datapacks) 可以自訂該世界的遊戲規則、合成表、結構與生態域。
+                {t('tabs.worlds.empty_desc_dp')}
               </div>
               <div className={styles.btnRow}>
                 <button className={styles.primaryBtn} onClick={onDownloadDatapackClick}>
                   <Download size={14} />
-                  <span>從 Modrinth 下載</span>
+                  <span>{t('tabs.worlds.btn.download_dp_modrinth')}</span>
                 </button>
                 <button className={styles.secBtn} onClick={handleImportDatapacks}>
                   <Upload size={14} />
-                  <span>手動匯入資料包</span>
+                  <span>{t('tabs.worlds.btn.import_dp_manual')}</span>
                 </button>
               </div>
             </div>
@@ -127,17 +128,16 @@ export function WorldsTab({
     );
   }
 
-  // 2. Worlds listing main view
   return (
     <div className={styles.tabContainer}>
       <div className={styles.sectionHeader}>
         <button className={styles.primaryBtn} onClick={handleImportWorld}>
           <Upload size={16} />
-          <span>匯入世界存檔</span>
+          <span>{t('tabs.worlds.btn.import_world')}</span>
         </button>
         <button className={styles.actionBtn} onClick={() => handleOpenFolder('saves')}>
           <FolderOpen size={16} />
-          <span>開啟存檔資料夾</span>
+          <span>{t('tabs.worlds.btn.folder_world')}</span>
         </button>
       </div>
 
@@ -150,9 +150,9 @@ export function WorldsTab({
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>名稱</th>
-                <th>檔案大小</th>
-                <th style={{ width: 120, textAlign: 'center' }}>操作</th>
+                <th>{t('tabs.worlds.label.world_name')}</th>
+                <th>{t('tabs.worlds.label.world_size')}</th>
+                <th style={{ width: 120, textAlign: 'center' }}>{t('tabs.mods.label.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -160,7 +160,7 @@ export function WorldsTab({
                 <tr key={world.folderName}>
                   <td>
                     <div className={styles.fileName}>{world.name}</div>
-                    <span className={styles.fileSub}>資料夾: {world.folderName}</span>
+                    <span className={styles.fileSub}>{t('tabs.worlds.label.world_folder', { name: world.folderName })}</span>
                   </td>
                   <td>{formatSize(world.sizeBytes)}</td>
                   <td>
@@ -168,7 +168,7 @@ export function WorldsTab({
                       <button
                         className={styles.deleteIconBtn}
                         onClick={() => setActiveWorldForDatapacks(world)}
-                        title="管理資料包 (Datapacks)"
+                        title={t('tabs.worlds.tooltip.manage_dp')}
                         style={{ color: 'var(--text-secondary)' }}
                       >
                         <Layers size={16} />
@@ -185,14 +185,14 @@ export function WorldsTab({
         ) : (
           <div className={styles.emptyStateContainer}>
             <Compass className={styles.emptyStateIcon} size={48} />
-            <div className={styles.emptyStateTitle}>目前無任何世界存檔</div>
+            <div className={styles.emptyStateTitle}>{t('tabs.worlds.empty_title_world')}</div>
             <div className={styles.emptyStateDesc}>
-              這個實例尚未建立任何單人遊戲世界存檔。您可以啟動遊戲建立新世界，或從外部匯入現有的存檔世界。
+              {t('tabs.worlds.empty_desc_world')}
             </div>
             <div className={styles.btnRow}>
               <button className={styles.primaryBtn} onClick={handleImportWorld}>
                 <Upload size={14} />
-                <span>匯入世界存檔</span>
+                <span>{t('tabs.worlds.btn.import_world_manual')}</span>
               </button>
             </div>
           </div>

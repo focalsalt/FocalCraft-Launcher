@@ -3,6 +3,7 @@ import { useInstanceStore, getInitialInstanceState } from '../../store/instanceS
 import { useAppStore } from '../../store/appStore';
 import { useAccountStore } from '../../store/accountStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useI18n } from '../../utils/i18n';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { getInstanceIconSrc } from '../../utils/versionUtils';
 import { listen } from '@tauri-apps/api/event';
@@ -24,9 +25,7 @@ import { SettingsTab } from './tabs/SettingsTab';
 import { ModpackUpdateTab } from './tabs/ModpackUpdateTab';
 import styles from './InstanceDetail.module.css';
 
-// Stable empty array — prevents Zustand v5 / React 19 tearing-detection from
-// creating a new `[]` reference on every selector call when there are no logs,
-// which would cause "Maximum update depth exceeded" due to infinite re-renders.
+// 避免 Zustand 與 React 重複渲染的空陣列常數
 const EMPTY_LOGS: string[] = [];
 
 interface Props {
@@ -67,6 +66,7 @@ interface ServerItem {
 
 
 export function InstanceDetail({ instanceId }: Props) {
+  const { t } = useI18n();
   const instances = useInstanceStore((state) => state.instances);
   const updateInstanceSettings = useInstanceStore((state) => state.updateInstanceSettings);
   const updateInstanceConfig = useInstanceStore((state) => state.updateInstanceConfig);
@@ -89,27 +89,17 @@ export function InstanceDetail({ instanceId }: Props) {
 
   const instance = instances.find(i => i && i.id === instanceId);
 
-  // Synchronized via appStore
-
-  // Basic states
   const [baseDir, setBaseDir] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
-
-  // Version/Loader Edit Modal States
   const [isEditingVersion, setIsEditingVersion] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const prevTabRef = useRef(activeTab);
 
-
-  // Detailed settings states (moved from original)
   const [jvmArgs, setJvmArgs] = useState('');
   const [maxMemory, setMaxMemory] = useState(4096);
   const [customJava, setCustomJava] = useState('');
 
-  // Tab content states
-  // Use a stable EMPTY_LOGS reference to avoid Zustand v5 tearing-detection
-  // triggering infinite re-renders when there are no logs for this instance.
   const logs = useInstanceStore(state => state.instanceLogs[instanceId] ?? EMPTY_LOGS);
   const [mods, setMods] = useState<ModItem[]>([]);
   const [modsUpdates, setModsUpdates] = useState<Record<string, any>>({});
@@ -125,10 +115,7 @@ export function InstanceDetail({ instanceId }: Props) {
   const [isCheckingModpackUpdate, setIsCheckingModpackUpdate] = useState(false);
   const [latestModpackVersion, setLatestModpackVersion] = useState<any>(null);
 
-  // Lists loading state
   const [loadingList, setLoadingList] = useState(false);
-
-  // Screenshots states
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [loadingScreenshots, setLoadingScreenshots] = useState(false);
   const [activeScreenshotIndex, setActiveScreenshotIndex] = useState(0);
@@ -143,7 +130,6 @@ export function InstanceDetail({ instanceId }: Props) {
     setIsScreenshotZoomed(false);
   }, [activeScreenshotIndex]);
 
-  // Modal open states
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [isConfirmDeleteWorldOpen, setIsConfirmDeleteWorldOpen] = useState(false);
   const [targetDeleteWorld, setTargetDeleteWorld] = useState<string | null>(null);
@@ -167,13 +153,12 @@ export function InstanceDetail({ instanceId }: Props) {
   const logConsoleRef = useRef<HTMLDivElement>(null);
   const lastLoadIdRef = useRef(0);
 
-  // Fetch app base dir on mount
+  // 取得應用程式基礎路徑
   useEffect(() => {
     invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
   }, []);
 
-  // Sync settings when instance changes — depend on stable primitives, NOT the
-  // whole `instance` object (find() returns a new ref every render → infinite loop)
+  // 當實例變更時同步設定
   const instanceId_dep   = instance?.id;
   const instanceName_dep = instance?.name;
   const instanceJvm_dep  = instance?.jvmArgs;
@@ -197,11 +182,11 @@ export function InstanceDetail({ instanceId }: Props) {
     let unlistenFn: (() => void) | undefined;
 
     const setupWatcher = async () => {
-      // 1. 開始監聽
+      // 開始監聽
       await watchInstanceFolders(instanceId);
       if (!active) return;
 
-      // 2. 監聽事件
+      // 監聽事件變更
       const unlisten = await listen<{ folder: string; instanceId: string }>('folder-change', async (event) => {
         if (event.payload.instanceId !== instanceId) return;
         
@@ -254,13 +239,13 @@ export function InstanceDetail({ instanceId }: Props) {
     };
   }, [instanceId, activeWorldForDatapacks]);
 
-  // Load active tab data
+  // 載入當前分頁資料
   useEffect(() => {
     if (!instance) return;
     loadTabData();
   }, [activeTab, instanceId]);
 
-  // Trigger animation when tab changes, then clear after transition
+  // 分頁變更時觸發動畫
   useEffect(() => {
     if (prevTabRef.current !== activeTab) {
       prevTabRef.current = activeTab;
@@ -272,7 +257,7 @@ export function InstanceDetail({ instanceId }: Props) {
     }
   }, [activeTab]);
 
-  // Auto-scroll logs
+  // 自動滾動日誌
   useEffect(() => {
     if (logConsoleRef.current) {
       logConsoleRef.current.scrollTop = logConsoleRef.current.scrollHeight;
@@ -290,7 +275,7 @@ export function InstanceDetail({ instanceId }: Props) {
   }, [activeWorldForDatapacks]);
 
   if (!instance) {
-    return <div className={styles.notFound}>找不到該實例</div>;
+    return <div className={styles.notFound}>{t('detail.not_found')}</div>;
   }
 
   const instState = instanceStates[instance.id] || getInitialInstanceState();
@@ -342,8 +327,8 @@ export function InstanceDetail({ instanceId }: Props) {
       ]);
       addNotification({
         type: 'success',
-        title: '已複製圖片',
-        message: '螢幕截圖已成功複製到剪貼簿！'
+        title: t('detail.notification.screenshot_copied.title'),
+        message: t('detail.notification.screenshot_copied.msg')
       });
     } catch (err) {
       console.error('Failed to copy screenshot:', err);
@@ -351,11 +336,11 @@ export function InstanceDetail({ instanceId }: Props) {
         await navigator.clipboard.writeText(activePath);
         addNotification({
           type: 'info',
-          title: '已複製路徑',
-          message: '複製圖片失敗，已將螢幕截圖檔案路徑複製到剪貼簿！'
+          title: t('detail.notification.path_copied.title'),
+          message: t('detail.notification.path_copied.msg')
         });
       } catch (e) {
-        addNotification({ type: 'error', title: '複製失敗', message: String(e) });
+        addNotification({ type: 'error', title: t('detail.notification.copy_failed'), message: String(e) });
       }
     }
   };
@@ -450,15 +435,15 @@ export function InstanceDetail({ instanceId }: Props) {
     }
   };
 
-  // Launch Play Button Handlers
+  // 啟動遊戲
   const handlePlay = async () => {
     if (isLaunching || isRunning) return;
 
     if (!selectedAccountId) {
       addNotification({
         type: 'warning',
-        title: '無法啟動遊戲',
-        message: '請先登入微軟帳號！'
+        title: t('detail.notification.cannot_launch.title'),
+        message: t('detail.notification.cannot_launch.login_first')
       });
       return;
     }
@@ -467,16 +452,16 @@ export function InstanceDetail({ instanceId }: Props) {
     if (!selectedAccount) {
       addNotification({
         type: 'error',
-        title: '無法啟動遊戲',
-        message: '找不到已選取的帳號資訊，請重新登入！'
+        title: t('detail.notification.cannot_launch.title'),
+        message: t('detail.notification.cannot_launch.account_missing')
       });
       return;
     }
 
     addNotification({
       type: 'info',
-      title: '啟動中',
-      message: `準備啟動 ${instance.name}...`
+      title: t('detail.btn.launching'),
+      message: t('detail.notification.preparing_launch', { name: instance.name })
     });
 
     const accountJson = JSON.stringify({
@@ -485,10 +470,10 @@ export function InstanceDetail({ instanceId }: Props) {
       mcAccessToken: selectedAccount.mcAccessToken
     });
 
-    // Start launching (which synchronously sets launchingInstanceId)
+    // 執行啟動程序
     const launchPromise = launchInstance(instance.id, accountJson);
 
-    // Switch tab and clear logs
+    // 切換至日誌分頁並清除舊日誌
     setActiveTab('log');
     clearLogs(instance.id);
 
@@ -499,7 +484,7 @@ export function InstanceDetail({ instanceId }: Props) {
     }
   };
 
-  // Open directory
+  // 開啟資料夾
   const handleOpenFolder = async (folderType?: string) => {
     try {
       const instsDir = settingsConfig.instancesPath || `${baseDir}/instances`;
@@ -511,13 +496,13 @@ export function InstanceDetail({ instanceId }: Props) {
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '無法開啟資料夾',
+        title: t('detail.notification.cannot_open_folder'),
         message: String(error)
       });
     }
   };
 
-  // 1. Edit Name Inline
+  // 編輯實例名稱
   const handleSaveName = async () => {
     setIsEditingName(false);
     if (!editedName.trim() || editedName === instance.name) return;
@@ -533,16 +518,16 @@ export function InstanceDetail({ instanceId }: Props) {
       );
       addNotification({
         type: 'success',
-        title: '名稱已變更',
-        message: `實例已重新命名為 ${editedName.trim()}`
+        title: t('overview.notification.rename.title'),
+        message: t('overview.notification.rename.msg', { name: editedName.trim() })
       });
     } catch (err: any) {
-      addNotification({ type: 'error', title: '更名失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('overview.notification.rename_failed.title'), message: String(err) });
       setEditedName(instance.name);
     }
   };
 
-  // 2. Icon config
+  // 設定實例圖示
   const handleIconClick = () => {
     setIsIconModalOpen(true);
   };
@@ -550,16 +535,16 @@ export function InstanceDetail({ instanceId }: Props) {
   const handleSelectLocalIcon = async () => {
     try {
       const path = await invoke<string>('select_single_file', {
-        title: "選擇實例圖示圖片",
+        title: t('detail.select.instance_icon'),
         filter: "圖片檔案 (*.png;*.jpg;*.jpeg;*.webp)|*.png;*.jpg;*.jpeg;*.webp"
       });
       if (path === 'CANCELLED') return;
       await invoke('update_instance_icon', { id: instance.id, filePath: path });
       await loadInstances();
-      addNotification({ type: 'success', title: '圖示更新成功', message: '本機圖示已更新！' });
+      addNotification({ type: 'success', title: t('detail.notification.icon_updated.title'), message: t('detail.notification.icon_updated.local_msg') });
       setIsIconModalOpen(false);
     } catch (err) {
-      addNotification({ type: 'error', title: '更新圖示失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.icon_updated.failed'), message: String(err) });
     }
   };
 
@@ -567,10 +552,10 @@ export function InstanceDetail({ instanceId }: Props) {
     try {
       await invoke('update_instance_icon_url', { id: instance.id, url });
       await loadInstances();
-      addNotification({ type: 'success', title: '圖示更新成功', message: '網路圖示已設定！' });
+      addNotification({ type: 'success', title: t('detail.notification.icon_updated.title'), message: t('detail.notification.icon_updated.url_msg') });
       setIsIconModalOpen(false);
     } catch (err) {
-      addNotification({ type: 'error', title: '設定圖示網址失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.icon_updated.failed'), message: String(err) });
     }
   };
 
@@ -578,10 +563,10 @@ export function InstanceDetail({ instanceId }: Props) {
     try {
       await invoke('update_instance_icon_value', { id: instance.id, value: emoji });
       await loadInstances();
-      addNotification({ type: 'success', title: '圖示更新成功', message: '內建圖示已套用！' });
+      addNotification({ type: 'success', title: t('detail.notification.icon_updated.title'), message: t('detail.notification.icon_updated.emoji_msg') });
       setIsIconModalOpen(false);
     } catch (err) {
-      addNotification({ type: 'error', title: '設定內建圖示失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.icon_updated.failed'), message: String(err) });
     }
   };
 
@@ -589,10 +574,10 @@ export function InstanceDetail({ instanceId }: Props) {
     try {
       await invoke('update_instance_icon_value', { id: instance.id, value: null });
       await loadInstances();
-      addNotification({ type: 'success', title: '圖示重設成功', message: '圖示已恢復為預設！' });
+      addNotification({ type: 'success', title: t('detail.notification.icon_updated.title'), message: t('detail.notification.icon_reset.msg') });
       setIsIconModalOpen(false);
     } catch (err) {
-      addNotification({ type: 'error', title: '重設圖示失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.icon_updated.failed'), message: String(err) });
     }
   };
 
@@ -600,7 +585,7 @@ export function InstanceDetail({ instanceId }: Props) {
     return getInstanceIconSrc(instance, baseDir, settingsConfig.instancesPath);
   };
 
-  // 3. Edit Version & Loader Modal Handlers
+  // 編輯版本與載入器
   const handleOpenEditVersion = () => {
     setIsEditingVersion(true);
   };
@@ -614,18 +599,18 @@ export function InstanceDetail({ instanceId }: Props) {
       });
       addNotification({
         type: 'success',
-        title: enabled ? '已啟用模組' : '已停用模組',
-        message: `模組 ${mod.name} 狀態已變更`
+        title: enabled ? t('detail.notification.mod_toggle.enabled') : t('detail.notification.mod_toggle.disabled'),
+        message: t('detail.notification.mod_toggle.msg', { name: mod.name })
       });
-      // Refresh the mods list
+      // 重新整理模組列表
       const list = await invoke<ModItem[]>('get_installed_mods', { instanceId });
       setMods(list);
     } catch (err: any) {
-      addNotification({ type: 'error', title: '變更模組狀態失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.mod_toggle.failed'), message: String(err) });
     }
   };
 
-  // 4. Mod check updates
+  // 檢查模組更新
   const handleCheckModsUpdates = async () => {
     if (mods.length === 0) return;
     setIsCheckingModsUpdates(true);
@@ -658,8 +643,8 @@ export function InstanceDetail({ instanceId }: Props) {
         setModsUpdates(filteredData);
         addNotification({
           type: 'success',
-          title: '檢查模組更新完成',
-          message: `共偵測到 ${Object.keys(filteredData).length} 個模組有可用更新！`
+          title: t('detail.notification.mods_check.title'),
+          message: t('detail.notification.mods_check.msg', { count: Object.keys(filteredData).length })
         });
       }
     } catch (err) {
@@ -674,7 +659,7 @@ export function InstanceDetail({ instanceId }: Props) {
       const file = updateObj.files.find((f: any) => f.primary) || updateObj.files[0];
       if (!file) return;
 
-      addNotification({ type: 'info', title: '更新中', message: `正在下載新版 ${mod.name}...` });
+      addNotification({ type: 'info', title: t('detail.notification.mod_update.downloading', { name: '' }).split('...')[0], message: t('detail.notification.mod_update.downloading', { name: mod.name }) });
 
       await invoke('download_and_replace_file', {
         instanceId: instance.id,
@@ -684,10 +669,10 @@ export function InstanceDetail({ instanceId }: Props) {
         oldFilename: mod.fileName
       });
 
-      addNotification({ type: 'success', title: '更新成功', message: `${mod.name} 已更新到最新版本！` });
+      addNotification({ type: 'success', title: t('detail.notification.mod_update.success', { name: '' }).split(' ')[1] || t('notification.success'), message: t('detail.notification.mod_update.success', { name: mod.name }) });
       loadTabData();
     } catch (err) {
-      addNotification({ type: 'error', title: '模組更新失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.mod_update.failed'), message: String(err) });
     }
   };
 
@@ -698,7 +683,7 @@ export function InstanceDetail({ instanceId }: Props) {
   const handleImportMods = async () => {
     try {
       const paths = await invoke<string[]>('select_multiple_files', {
-        title: "選擇匯入的模組",
+        title: t('detail.tab.mods'),
         filter: "Java Archive (*.jar)|*.jar"
       });
       if (paths && paths !== ('CANCELLED' as any)) {
@@ -710,7 +695,7 @@ export function InstanceDetail({ instanceId }: Props) {
     }
   };
 
-  // 5. Resource pack updates
+  // 檢查資源包更新
   const handleCheckRpUpdates = async () => {
     if (resourcePacks.length === 0) return;
     setIsCheckingRpUpdates(true);
@@ -743,8 +728,8 @@ export function InstanceDetail({ instanceId }: Props) {
         setRpUpdates(filteredData);
         addNotification({
           type: 'success',
-          title: '檢查資源包更新完成',
-          message: `共偵測到 ${Object.keys(filteredData).length} 個資源包有可用更新！`
+          title: t('detail.notification.rp_check.title'),
+          message: t('detail.notification.rp_check.msg', { count: Object.keys(filteredData).length })
         });
       }
     } catch (err) {
@@ -759,7 +744,7 @@ export function InstanceDetail({ instanceId }: Props) {
       const file = updateObj.files.find((f: any) => f.primary) || updateObj.files[0];
       if (!file) return;
 
-      addNotification({ type: 'info', title: '更新中', message: `正在下載新版 ${rp.name}...` });
+      addNotification({ type: 'info', title: t('detail.notification.rp_update.downloading', { name: '' }).split('...')[0], message: t('detail.notification.rp_update.downloading', { name: rp.name }) });
 
       await invoke('download_and_replace_file', {
         instanceId: instance.id,
@@ -769,10 +754,10 @@ export function InstanceDetail({ instanceId }: Props) {
         oldFilename: rp.fileName
       });
 
-      addNotification({ type: 'success', title: '更新成功', message: `${rp.name} 已更新到最新版本！` });
+      addNotification({ type: 'success', title: t('detail.notification.rp_update.success', { name: '' }).split(' ')[1] || t('notification.success'), message: t('detail.notification.rp_update.success', { name: rp.name }) });
       loadTabData();
     } catch (err) {
-      addNotification({ type: 'error', title: '資源包更新失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.rp_update.failed'), message: String(err) });
     }
   };
 
@@ -787,7 +772,7 @@ export function InstanceDetail({ instanceId }: Props) {
   const handleImportSps = async () => {
     try {
       const paths = await invoke<string[]>('select_multiple_files', {
-        title: "選擇匯入的光影包",
+        title: t('detail.select.shaderpack'),
         filter: "光影包檔案 (*.zip)|*.zip"
       });
       if (paths && paths !== ('CANCELLED' as any)) {
@@ -803,7 +788,7 @@ export function InstanceDetail({ instanceId }: Props) {
   const handleImportRps = async () => {
     try {
       const paths = await invoke<string[]>('select_multiple_files', {
-        title: "選擇匯入的資源包",
+        title: t('detail.select.resourcepack'),
         filter: "Resource Pack Zip (*.zip)|*.zip"
       });
       if (paths && paths !== ('CANCELLED' as any)) {
@@ -815,21 +800,21 @@ export function InstanceDetail({ instanceId }: Props) {
     }
   };
 
-  // 6. World Save handlers
+  // 世界存檔操作
   const handleImportWorld = async () => {
     try {
       const path = await invoke<string>('select_single_file', {
-        title: "選擇世界存檔壓縮檔 (.zip)",
+        title: t('detail.select.world_zip'),
         filter: "World Backup (*.zip)|*.zip"
       });
       if (path && path !== 'CANCELLED') {
-        addNotification({ type: 'info', title: '匯入世界中', message: '正在解壓縮世界存檔檔案...' });
+        addNotification({ type: 'info', title: t('detail.notification.world_import.preparing'), message: t('detail.notification.world_import.preparing_msg') });
         await invoke('import_world_zip', { instanceId: instance.id, zipPath: path });
-        addNotification({ type: 'success', title: '世界存檔匯入完成', message: '新存檔已可於單人遊戲中遊玩！' });
+        addNotification({ type: 'success', title: t('detail.notification.world_import.success'), message: t('detail.notification.world_import.success_msg') });
         loadTabData();
       }
     } catch (err) {
-      if (err !== 'CANCELLED') addNotification({ type: 'error', title: '世界存檔匯入失敗', message: String(err) });
+      if (err !== 'CANCELLED') addNotification({ type: 'error', title: t('detail.notification.world_import.failed'), message: String(err) });
     }
   };
 
@@ -847,10 +832,10 @@ export function InstanceDetail({ instanceId }: Props) {
         folderName: 'saves',
         fileName: targetDeleteWorld
       });
-      addNotification({ type: 'success', title: '世界已刪除', message: `已刪除存檔資料夾: ${targetDeleteWorld}` });
+      addNotification({ type: 'success', title: t('detail.notification.world_delete.success'), message: t('detail.notification.world_delete.success_msg', { name: targetDeleteWorld }) });
       loadTabData();
     } catch (err) {
-      addNotification({ type: 'error', title: '刪除世界失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.world_delete.failed'), message: String(err) });
     } finally {
       setTargetDeleteWorld(null);
     }
@@ -860,7 +845,7 @@ export function InstanceDetail({ instanceId }: Props) {
     if (!activeWorldForDatapacks) return;
     try {
       const paths = await invoke<string[]>('select_multiple_files', {
-        title: "選擇匯入的資料包",
+        title: t('detail.select.datapack'),
         filter: "資料包壓縮檔 (*.zip)|*.zip"
       });
       if (paths && paths !== ('CANCELLED' as any)) {
@@ -885,7 +870,7 @@ export function InstanceDetail({ instanceId }: Props) {
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '無法開啟資料夾',
+        title: t('detail.notification.cannot_open_folder'),
         message: String(error)
       });
     }
@@ -895,7 +880,7 @@ export function InstanceDetail({ instanceId }: Props) {
     setConfirmDeleteTarget({ type: 'datapack', fileName });
   };
 
-  // 7. Server list handlers
+  // 伺服器列表操作
   const handleOpenServerModal = (server: ServerItem | null, index: number | null) => {
     setEditingServer(server);
     setEditingServerIndex(index);
@@ -907,41 +892,64 @@ export function InstanceDetail({ instanceId }: Props) {
     try {
       const updatedServers = [...servers];
       if (editingServerIndex !== null) {
-        // Edit mode
+        // 編輯模式
         updatedServers[editingServerIndex] = { name, ip, acceptTextures };
       } else {
-        // Add mode
+        // 新增模式
         updatedServers.push({ name, ip, acceptTextures });
       }
 
       await invoke('save_servers', { instanceId: instance.id, servers: updatedServers });
       loadTabData();
     } catch (err) {
-      addNotification({ type: 'error', title: '儲存伺服器失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.server_save.failed'), message: String(err) });
     }
   };
 
   const handleDeleteServer = (index: number) => {
     const srv = servers[index];
-    setConfirmDeleteTarget({ type: 'server', serverIndex: index, serverName: srv ? srv.name : `伺服器 #${index + 1}` });
+    setConfirmDeleteTarget({ type: 'server', serverIndex: index, serverName: srv ? srv.name : `Server #${index + 1}` });
   };
 
-  // 8. Detailed Settings handlers
+  // 詳細設定操作
   const handleSaveSettings = async () => {
     try {
       await updateInstanceSettings(instance.id, jvmArgs, maxMemory, customJava.trim() || undefined);
       addNotification({
         type: 'success',
-        title: '設定已儲存',
-        message: `實例 ${instance.name} 的設定已更新`
+        title: t('detail.notification.settings_save.success'),
+        message: t('detail.notification.settings_save.success_msg', { name: instance.name })
       });
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '儲存失敗',
+        title: t('detail.notification.settings_save.failed'),
         message: String(error)
       });
     }
+  };
+
+  // 瀏覽並選取此實例專用 Java 執行檔路徑
+  const handleBrowseJavaPath = async () => {
+    try {
+      const selected = await invoke<string>('select_java_file');
+      if (selected && selected !== 'CANCELLED') {
+        setCustomJava(selected);
+      }
+    } catch (err) {
+      if (err !== 'CANCELLED') {
+        addNotification({
+          type: 'error',
+          title: t('settings.notification.browse_java_failed.title'),
+          message: String(err)
+        });
+      }
+    }
+  };
+
+  // 清除此實例的自訂 Java 路徑（回復使用全域設定）
+  const handleClearJavaPath = () => {
+    setCustomJava('');
   };
 
   const handleDeleteInstance = async () => {
@@ -950,20 +958,20 @@ export function InstanceDetail({ instanceId }: Props) {
       await deleteInstance(instance.id);
       addNotification({
         type: 'success',
-        title: '實例已刪除',
-        message: `實例 ${instance.name} 已成功刪除`
+        title: t('detail.notification.instance_delete.success'),
+        message: t('detail.notification.instance_delete.success_msg', { name: instance.name })
       });
       setCurrentView('instances_overview');
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '刪除失敗',
+        title: t('detail.notification.instance_delete.failed'),
         message: String(error)
       });
     }
   };
 
-  // 9. Modpack update handlers
+  // 整合包更新操作
   const handleUpdateModpackClick = () => {
     setConfirmDeleteTarget({ type: 'modpack_update' });
   };
@@ -971,21 +979,21 @@ export function InstanceDetail({ instanceId }: Props) {
   const executeModpackUpdate = async () => {
     if (!latestModpackVersion) return;
     try {
-      addNotification({ type: 'info', title: '更新整合包', message: '正在清除舊模組檔案並下載新版整合包...' });
+      addNotification({ type: 'info', title: t('detail.notification.modpack_update.preparing'), message: t('detail.notification.modpack_update.preparing_msg') });
 
       const file = latestModpackVersion.files.find((f: any) => f.filename.endsWith('.mrpack'));
       if (!file) throw new Error('此版本缺少相容的 .mrpack 檔案');
 
-      // Download pack file
+      // 下載整合包檔案
       const localPath = await invoke<string>('download_mrpack', { url: file.url });
 
-      // Clean old mods
+      // 清理舊模組
       await invoke('delete_instance_file', { instanceId: instance.id, folderName: '', fileName: 'minecraft/mods' });
 
-      // Re-import mrpack files
+      // 重新匯入 mrpack
       await invoke('import_mrpack', { instanceId: instance.id, filePath: localPath });
 
-      // Update modpack config
+      // 更新整合包設定
       await updateInstanceConfig(
         instance.id,
         instance.name,
@@ -996,10 +1004,10 @@ export function InstanceDetail({ instanceId }: Props) {
         latestModpackVersion.id
       );
 
-      addNotification({ type: 'success', title: '整合包更新完成', message: '整合包已成功升級！' });
+      addNotification({ type: 'success', title: t('detail.notification.modpack_update.success'), message: t('detail.notification.modpack_update.success_msg') });
       setActiveTab('edit');
     } catch (err: any) {
-      addNotification({ type: 'error', title: '整合包更新失敗', message: err.message || String(err) });
+      addNotification({ type: 'error', title: t('detail.notification.modpack_update.failed'), message: err.message || String(err) });
     }
   };
 
@@ -1007,16 +1015,16 @@ export function InstanceDetail({ instanceId }: Props) {
     const isBtnDisabled = isLaunching || isRunning || isDownloading;
 
     const phaseText = isRunning
-      ? '遊戲執行中'
+      ? t('detail.btn.running')
       : launchPhase === 'java_check'
-        ? '正在偵測 Java...'
+        ? t('hud.java_check')
         : launchPhase === 'java_download'
-          ? `下載 Java (${Math.round(downloadProgress)}%)`
+          ? t('detail.status.downloading_java_percent', { progress: Math.round(downloadProgress) })
           : launchPhase === 'files' || isDownloading
-            ? `準備遊戲檔案 (${Math.round(downloadProgress)}%)`
+            ? t('detail.status.preparing_files_percent', { progress: Math.round(downloadProgress) })
             : launchPhase === 'launching'
-              ? '正在啟動...'
-              : '啟動遊戲';
+              ? t('detail.btn.launching')
+              : t('detail.btn.play');
 
     const showProgress = (isLaunching || isDownloading) && !isRunning;
 
@@ -1037,7 +1045,7 @@ export function InstanceDetail({ instanceId }: Props) {
               onClick={() => setIsConfirmKillGameOpen(true)}
             >
               <Square size={20} fill="white" />
-              <span>終止遊戲</span>
+              <span>{t('detail.btn.kill')}</span>
             </button>
           )}
           <button
@@ -1066,20 +1074,20 @@ export function InstanceDetail({ instanceId }: Props) {
       <div className={styles.background}></div>
 
       <div className={styles.content}>
-        {/* Main Panel Content area */}
+        {/* 主面板區塊 */}
         <div className={`${styles.mainPanel} ${isAnimating ? styles.animating : ''}`}>
-          {/* Launch Progress HUD Overlay */}
+          {/* 啟動進度遮罩 */}
           {(isLaunching || isDownloading) && (
             <div className={styles.hudOverlay}>
               <div className={styles.hudCard}>
                 <div className={styles.hudHeader}>
                   <Loader className={`${styles.hudSpinner} animate-spin`} size={24} />
                   <span className={styles.hudTitle}>
-                    {isDownloading ? '正在下載與準備資源...' : '正在準備啟動遊戲...'}
+                    {isDownloading ? t('detail.status.downloading') : t('detail.status.launching')}
                   </span>
                 </div>
                 <div className={styles.hudDetail}>
-                  {downloadStatusText || '正在初始化階段...'}
+                  {downloadStatusText || t('detail.status.initializing')}
                 </div>
                 <div className={styles.hudProgressContainer}>
                   <div className={styles.hudProgressBar}>
@@ -1214,6 +1222,8 @@ export function InstanceDetail({ instanceId }: Props) {
               handleSaveSettings={handleSaveSettings}
               handleOpenFolder={handleOpenFolder}
               setIsConfirmDeleteOpen={setIsConfirmDeleteOpen}
+              handleBrowseJavaPath={handleBrowseJavaPath}
+              handleClearJavaPath={handleClearJavaPath}
             />
           )}
 
@@ -1227,13 +1237,13 @@ export function InstanceDetail({ instanceId }: Props) {
           )}
         </div>
 
-        {/* Bottom bar with left action and right play button */}
+        {/* 底部工具列 */}
         <div className={styles.bottomBar}>
           <div className={styles.bottomLeftActions}>
             {activeTab === 'edit' && (
               <button className={styles.actionBtn} onClick={() => handleOpenFolder()}>
                 <FolderOpen size={16} />
-                <span>開啟實例資料夾</span>
+                <span>{t('detail.btn.open_folder')}</span>
               </button>
             )}
           </div>
@@ -1244,27 +1254,27 @@ export function InstanceDetail({ instanceId }: Props) {
 
       </div>
 
-      {/* Confirmation and selection modals */}
+      {/* 確認與選擇彈窗 */}
       <CustomConfirmModal
         isOpen={isConfirmDeleteOpen}
-        title="刪除實例警告"
-        message={`您確定要刪除實例 "${instance.name}" 嗎？此動作將無法還原，並會永久刪除此實例下所有的存檔、設定與檔案！`}
+        title={t('detail.modal.delete_instance.title')}
+        message={t('detail.modal.delete_instance.msg', { name: instance.name })}
         onConfirm={handleDeleteInstance}
         onCancel={() => setIsConfirmDeleteOpen(false)}
       />
 
       <CustomConfirmModal
         isOpen={isConfirmDeleteWorldOpen}
-        title="刪除存檔世界"
-        message={`您確定要永久刪除世界存檔 "${targetDeleteWorld}" 嗎？此刪除動作無法復原！`}
+        title={t('tabs.worlds.delete.title')}
+        message={t('tabs.worlds.delete.confirm', { name: targetDeleteWorld || '' })}
         onConfirm={handleConfirmDeleteWorld}
         onCancel={() => { setIsConfirmDeleteWorldOpen(false); setTargetDeleteWorld(null); }}
       />
 
       <CustomConfirmModal
         isOpen={isConfirmKillGameOpen}
-        title="強制終止遊戲警告"
-        message="您確定要強制終止正在執行中的 Minecraft 遊戲進程嗎？這可能會導致未儲存的世界存檔損毀或進度流失！"
+        title={t('detail.modal.kill_game.title')}
+        message={t('detail.modal.kill_game.msg')}
         onConfirm={() => {
           killGame(instance.id);
           setIsConfirmKillGameOpen(false);
@@ -1294,7 +1304,7 @@ export function InstanceDetail({ instanceId }: Props) {
           } else {
             loadTabData();
           }
-          addNotification({ type: 'success', title: '下載完成', message: '已成功下載檔案到實例中！' });
+          addNotification({ type: 'success', title: t('detail.notification.download_complete.title'), message: t('detail.notification.download_complete.msg') });
         }}
         onClose={() => setIsModrinthModalOpen(false)}
       />
@@ -1303,22 +1313,22 @@ export function InstanceDetail({ instanceId }: Props) {
         <CustomConfirmModal
           isOpen={!!confirmDeleteTarget}
           title={
-            confirmDeleteTarget.type === 'mod' ? '刪除模組' :
-            confirmDeleteTarget.type === 'resourcepack' ? '刪除資源包' :
-            confirmDeleteTarget.type === 'shaderpack' ? '刪除光影包' :
-            confirmDeleteTarget.type === 'datapack' ? '刪除資料包' :
-            confirmDeleteTarget.type === 'server' ? '刪除伺服器連線' :
-            confirmDeleteTarget.type === 'screenshot' ? '刪除螢幕截圖' :
-            '更新整合包'
+            confirmDeleteTarget.type === 'mod' ? t('detail.modal.delete_mod.title') :
+            confirmDeleteTarget.type === 'resourcepack' ? t('detail.modal.delete_rp.title') :
+            confirmDeleteTarget.type === 'shaderpack' ? t('detail.modal.delete_sp.title') :
+            confirmDeleteTarget.type === 'datapack' ? t('detail.modal.delete_dp.title') :
+            confirmDeleteTarget.type === 'server' ? t('detail.modal.delete_server.title') :
+            confirmDeleteTarget.type === 'screenshot' ? t('detail.modal.delete_screenshot.title') :
+            t('detail.modal.update_modpack.title')
           }
           message={
-            confirmDeleteTarget.type === 'mod' ? `您確定要刪除模組 "${confirmDeleteTarget.fileName}" 嗎？` :
-            confirmDeleteTarget.type === 'resourcepack' ? `您確定要刪除資源包 "${confirmDeleteTarget.fileName}" 嗎？` :
-            confirmDeleteTarget.type === 'shaderpack' ? `您確定要刪除光影包 "${confirmDeleteTarget.fileName}" 嗎？` :
-            confirmDeleteTarget.type === 'datapack' ? `您確定要刪除世界資料包 "${confirmDeleteTarget.fileName}" 嗎？` :
-            confirmDeleteTarget.type === 'server' ? `您確定要刪除伺服器連線紀錄 "${confirmDeleteTarget.serverName}" 嗎？` :
-            confirmDeleteTarget.type === 'screenshot' ? `您確定要刪除螢幕截圖 "${confirmDeleteTarget.fileName}" 嗎？` :
-            `確認要將此整合包更新至版本 ${latestModpackVersion?.version_number} 嗎？\n更新將會清空並更替目前的模組目錄。`
+            confirmDeleteTarget.type === 'mod' ? t('detail.modal.delete_mod.msg', { name: confirmDeleteTarget.fileName || '' }) :
+            confirmDeleteTarget.type === 'resourcepack' ? t('detail.modal.delete_rp.msg', { name: confirmDeleteTarget.fileName || '' }) :
+            confirmDeleteTarget.type === 'shaderpack' ? t('detail.modal.delete_sp.msg', { name: confirmDeleteTarget.fileName || '' }) :
+            confirmDeleteTarget.type === 'datapack' ? t('detail.modal.delete_dp.msg', { name: confirmDeleteTarget.fileName || '' }) :
+            confirmDeleteTarget.type === 'server' ? t('detail.modal.delete_server.msg', { name: confirmDeleteTarget.serverName || '' }) :
+            confirmDeleteTarget.type === 'screenshot' ? t('detail.modal.delete_screenshot.msg', { name: confirmDeleteTarget.fileName || '' }) :
+            t('detail.modal.update_modpack.msg', { version: latestModpackVersion?.version_number || '' })
           }
           onConfirm={async () => {
             const target = confirmDeleteTarget;
@@ -1329,14 +1339,14 @@ export function InstanceDetail({ instanceId }: Props) {
                 await invoke('delete_instance_file', { instanceId: instance.id, folderName: 'mods', fileName: target.fileName });
                 loadTabData();
               } catch (err) {
-                addNotification({ type: 'error', title: '刪除模組失敗', message: String(err) });
+                addNotification({ type: 'error', title: t('detail.notification.delete_mod.failed'), message: String(err) });
               }
             } else if (target.type === 'resourcepack' && target.fileName) {
               try {
                 await invoke('delete_instance_file', { instanceId: instance.id, folderName: 'resourcepacks', fileName: target.fileName });
                 loadTabData();
               } catch (err) {
-                addNotification({ type: 'error', title: '刪除資源包失敗', message: String(err) });
+                addNotification({ type: 'error', title: t('detail.notification.delete_rp.failed'), message: String(err) });
               }
             } else if (target.type === 'shaderpack' && target.fileName) {
               try {
@@ -1344,7 +1354,7 @@ export function InstanceDetail({ instanceId }: Props) {
                 const list = await invoke<ResourcePackItem[]>('get_installed_shaderpacks', { instanceId });
                 setShaderPacks(list);
               } catch (err) {
-                addNotification({ type: 'error', title: '刪除光影包失敗', message: String(err) });
+                addNotification({ type: 'error', title: t('detail.notification.delete_sp.failed'), message: String(err) });
               }
             } else if (target.type === 'datapack' && target.fileName && activeWorldForDatapacks) {
               try {
@@ -1355,7 +1365,7 @@ export function InstanceDetail({ instanceId }: Props) {
                 });
                 refreshDatapacks(activeWorldForDatapacks.folderName);
               } catch (err) {
-                addNotification({ type: 'error', title: '刪除資料包失敗', message: String(err) });
+                addNotification({ type: 'error', title: t('detail.notification.delete_dp.failed'), message: String(err) });
               }
             } else if (target.type === 'server' && target.serverIndex !== undefined) {
               try {
@@ -1363,14 +1373,14 @@ export function InstanceDetail({ instanceId }: Props) {
                 await invoke('save_servers', { instanceId: instance.id, servers: updatedServers });
                 loadTabData();
               } catch (err) {
-                addNotification({ type: 'error', title: '刪除伺服器失敗', message: String(err) });
+                addNotification({ type: 'error', title: t('detail.notification.delete_server.failed'), message: String(err) });
               }
             } else if (target.type === 'screenshot' && target.fileName) {
               try {
                 await invoke('delete_instance_file', { instanceId: instance.id, folderName: 'screenshots', fileName: target.fileName });
                 loadScreenshots();
               } catch (err) {
-                addNotification({ type: 'error', title: '刪除截圖失敗', message: String(err) });
+                addNotification({ type: 'error', title: t('detail.notification.delete_screenshot.failed'), message: String(err) });
               }
             } else if (target.type === 'modpack_update') {
               executeModpackUpdate();
@@ -1390,7 +1400,7 @@ export function InstanceDetail({ instanceId }: Props) {
         onCancel={() => setIsIconModalOpen(false)}
       />
 
-      {/* Extract version edit modal */}
+      {/* 版本編輯彈窗 */}
       <VersionEditModal
         isOpen={isEditingVersion}
         onClose={() => setIsEditingVersion(false)}

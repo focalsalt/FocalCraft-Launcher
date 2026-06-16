@@ -21,6 +21,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   isLoading: false,
   refreshStatuses: {},
 
+  // 載入所有帳號
   loadAccounts: async () => {
     set({ isLoading: true });
     try {
@@ -34,11 +35,11 @@ export const useAccountStore = create<AccountState>((set, get) => ({
         });
         set({ 
           accounts: loadedAccounts,
-          selectedAccountId: loadedAccounts[0].id, // 預設選取第一個
+          selectedAccountId: loadedAccounts[0].id, // 預設選取首位
           refreshStatuses: initialStatuses
         });
 
-        // 檢查並自動刷新所有快過期的帳號
+        // 自動更新即將過期權杖
         await get().checkAndRefreshTokens();
       } else {
         set({ accounts: [], selectedAccountId: null, refreshStatuses: {} });
@@ -50,9 +51,9 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
+  // 新增帳號
   addAccount: async (account) => {
     const { accounts } = get();
-    // 避免重複加入同一個 UUID 帳號
     const exists = accounts.some(a => a.id === account.id);
     let newAccounts: Account[];
     if (exists) {
@@ -61,7 +62,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
       newAccounts = [...accounts, account];
     }
 
-    // 新增帳號時，自動排在第一位（變成預選帳號）
+    // 置頂新登入帳號
     const targetAccount = newAccounts.find(a => a.id === account.id)!;
     const remaining = newAccounts.filter(a => a.id !== account.id);
     const reorderedAccounts = [targetAccount, ...remaining];
@@ -79,6 +80,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
+  // 移除帳號
   removeAccount: async (id) => {
     const { accounts, selectedAccountId } = get();
     const newAccounts = accounts.filter(a => a.id !== id);
@@ -104,12 +106,13 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
+  // 切換目前選取帳號
   selectAccount: async (id) => {
     const { accounts } = get();
     const targetAccount = accounts.find(a => a.id === id);
     if (!targetAccount) return;
 
-    // 將選取的帳號移至陣列首位，以方便預設加載
+    // 置頂已選取帳號
     const remaining = accounts.filter(a => a.id !== id);
     const reorderedAccounts = [targetAccount, ...remaining];
 
@@ -125,6 +128,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
+  // 重新整理單一帳號的權杖 (支援失敗自動重試)
   refreshAccountToken: async (id) => {
     const { accounts } = get();
     const targetAccount = accounts.find(a => a.id === id);
@@ -145,14 +149,13 @@ export const useAccountStore = create<AccountState>((set, get) => ({
           refreshToken: targetAccount.msRefreshToken 
         });
         refreshedAccount = refreshed;
-        break; // Success!
+        break; // 成功取得新權杖
       } catch (error) {
         attempt++;
         lastError = error;
         console.warn(`Attempt ${attempt} to refresh token for ${id} failed:`, error);
         if (attempt < maxRetries) {
-          // Wait 1 second before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 延遲後重試
         }
       }
     }
@@ -175,11 +178,11 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
+  // 檢查並刷新所有即將過期的權杖 (小於 30 分鐘者)
   checkAndRefreshTokens: async () => {
     const { accounts } = get();
     const now = Date.now();
     for (const account of accounts) {
-      // 如果 token 將在 30 分鐘內過期，或已經過期，自動刷新
       if (account.tokenExpiresAt - now < 30 * 60 * 1000) {
         console.log(`Token near expiry or expired for ${account.mcId}, auto refreshing...`);
         get().refreshAccountToken(account.id).catch(console.error);

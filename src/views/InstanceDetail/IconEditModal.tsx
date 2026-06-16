@@ -13,11 +13,8 @@ interface Props {
 }
 
 const PRESET_EMOJIS = [
-  // Blocks & Items
   '📦', '🧱', '🌲', '💎', '🍎', '🍖', '🧪', '⚔️', '🛡️', '⛏️', '🧭', '🗺️',
-  // Mobs & Animals
   '💀', '🧟', '🕷️', '🐷', '🐑', '🐔', '🐺', '🐱', '🐉', '👾',
-  // Magic & Tech & Status
   '⭐', '🔥', '⚡', '🍀', '🔮', '⚙️', '🔑', '🔔', '🏆', '🚀', '❤️', '💥'
 ];
 
@@ -72,7 +69,7 @@ export function IconEditModal({
           </button>
         </div>
 
-        {/* Tab Selection */}
+        {/* 分頁切換 */}
         <div className={styles.tabHeader}>
           <button 
             type="button" 
@@ -101,7 +98,7 @@ export function IconEditModal({
         </div>
 
         <div className={styles.body}>
-          {/* 1. PRESET EMOJI TAB */}
+          {/* 內建圖示分頁 */}
           {activeTab === 'preset' && (
             <div className={styles.presetSection}>
               <p className={styles.sectionTitle}>請選擇一個內建圖示：</p>
@@ -120,7 +117,7 @@ export function IconEditModal({
             </div>
           )}
 
-          {/* 2. LOCAL FILE UPLOAD TAB */}
+          {/* 本機上傳分頁 */}
           {activeTab === 'local' && (
             <div className={styles.localSection}>
               <div className={styles.uploadArea} onClick={onSelectLocal}>
@@ -131,7 +128,7 @@ export function IconEditModal({
             </div>
           )}
 
-          {/* 3. URL IMPORT TAB */}
+          {/* 網路網址分頁 */}
           {activeTab === 'url' && (
             <form className={styles.urlForm} onSubmit={handleUrlSubmit}>
               <div className={styles.formGroup}>

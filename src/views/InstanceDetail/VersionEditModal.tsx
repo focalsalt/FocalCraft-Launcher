@@ -27,8 +27,6 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
   const updateInstanceConfig = useInstanceStore((state) => state.updateInstanceConfig);
   const addNotification = useAppStore((state) => state.addNotification);
 
-  // Use stable primitive deps to avoid object reference churn when
-  // the parent re-renders and passes a new `instance` object from find()
   const instId       = instance.id;
   const instVersion  = instance.version;
   const instLoader   = instance.modloader;
@@ -55,7 +53,6 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
       return;
     }
 
-    // Reset local states to current instance values when modal opens
     setMcVersion(instance.version);
     setLoaderType(instance.modloader);
     setLoaderVersion(instance.loaderVersion || '');
@@ -96,7 +93,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
     initVersions();
   }, [isOpen, instId, instVersion, instLoader, instLoaderV]);
 
-  // Fetch loader versions when Minecraft version or Modloader changes
+  // 當版本或載入器變更時取得版本列表
   useEffect(() => {
     const isSupportedLoader = loaderType === 'Fabric' || loaderType === 'Forge' || loaderType === 'NeoForge';
     if (isSupportedLoader && mcVersion && isOpen) {
@@ -104,8 +101,6 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
       invoke<string[]>('get_loader_versions', { modloader: loaderType, gameVersion: mcVersion })
         .then((versionsList) => {
           setLoaderVersionsList(versionsList);
-          // If the current loader version of the instance is in the fetched list and loaderType matches instance.modloader, use it.
-          // Otherwise default to the first one in the list.
           if (loaderType === instance.modloader && versionsList.includes(instance.loaderVersion || '')) {
             setLoaderVersion(instance.loaderVersion || '');
           } else if (versionsList.length > 0) {
@@ -128,7 +123,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
     }
   }, [mcVersion, loaderType, isOpen, instVersion, instLoader, instLoaderV]);
 
-  // Native Tauri Window Drag & Drop Listener for Custom Loader
+  // 監聽拖放自訂載入器事件
   useEffect(() => {
     if (!isOpen) {
       setIsDragOverCustom(false);

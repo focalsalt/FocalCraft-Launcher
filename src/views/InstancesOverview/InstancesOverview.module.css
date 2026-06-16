@@ -70,7 +70,7 @@
   background-color: rgba(239, 83, 80, 0.03);
 }
 
-/* Status Badges */
+/* 狀態標籤 */
 .statusBadge {
   position: absolute;
   top: 12px;
@@ -107,16 +107,9 @@
   border: 2px solid #2196f3;
   border-top-color: transparent;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Empty State */
+/* 空白狀態 */
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -216,7 +209,7 @@
   color: var(--text-secondary);
 }
 
-/* Custom Scrollbar */
+/* 自訂滾動條 */
 .container::-webkit-scrollbar {
   width: 8px;
 }
@@ -230,7 +223,7 @@
   border-radius: 4px;
 }
 
-/* Card drag and drop, delete button, and renaming styles */
+/* 拖曳、刪除與重新命名樣式 */
 .cardDragging {
   opacity: 0.15;
   border: 2px dashed rgba(59, 180, 74, 0.4) !important;

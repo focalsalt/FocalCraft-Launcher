@@ -7,10 +7,10 @@
   height: 100vh;
   border-right: 1px solid var(--border-color);
   color: var(--text-secondary);
-  position: relative; /* for sliding indicator */
+  position: relative; /* 滑動指示器 */
 }
 
-/* ── Top fixed zone: AccountDropdown + 實例總覽 ── */
+/* 頂部固定區 */
 .navTop {
   flex-shrink: 0;
   border-bottom: 1px solid var(--border-color);
@@ -23,7 +23,7 @@
   gap: 0.25rem;
 }
 
-/* ── Middle scrollable zone: instance list ── */
+/* 中間滾動區 */
 .navInstances {
   flex: 1;
   overflow-y: auto;
@@ -34,7 +34,7 @@
   min-height: 0;
 }
 
-/* Custom Scrollbar for instance list */
+/* 自訂滾動條 */
 .navInstances::-webkit-scrollbar {
   width: 0.25rem;
 }
@@ -48,7 +48,7 @@
   border-radius: 0.25rem;
 }
 
-/* ── Bottom fixed zone: 全局設定 ── */
+/* 底部固定區 */
 .navBottom {
   flex-shrink: 0;
   padding: 0.5rem 0.5rem 0.625rem;
@@ -58,7 +58,7 @@
   gap: 0.25rem;
 }
 
-/* ── Section Titles ── */
+/* 區塊標題 */
 .sectionTitle {
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -68,7 +68,7 @@
   font-weight: 600;
 }
 
-/* ── Nav Item ── */
+/* 導覽項目 */
 .navItem {
   display: flex;
   align-items: center;
@@ -104,7 +104,7 @@
   opacity: 1;
 }
 
-/* ── Instance Icons ── */
+/* 實例圖示 */
 .sidebarCustomIcon {
   width: 1.25rem;
   height: 1.25rem;
@@ -124,7 +124,7 @@
   flex-shrink: 0;
 }
 
-/* ── Sliding Indicator ── */
+/* 滑動指示器 */
 .slidingIndicator {
   position: absolute;
   left: 0;
@@ -166,7 +166,7 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* ── 版本與更新檢查 ── */
+/* 版本與更新 */
 .versionContainer {
   display: flex;
   align-items: center;
@@ -203,7 +203,7 @@
   cursor: not-allowed;
 }
 
-/* Modal styles for Updater */
+/* 更新對話框 */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -379,13 +379,4 @@
   color: var(--accent-green);
   font-size: 13px;
   font-weight: 500;
-}
-
-.spinIcon {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }

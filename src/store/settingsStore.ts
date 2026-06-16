@@ -6,6 +6,7 @@ export interface GlobalConfig {
   defaultJvmArgs: string | null;
   customJavaPath: string | null;
   instancesPath: string | null;
+  language: string | null;
 }
 
 interface SettingsState {
@@ -22,10 +23,12 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     defaultJvmArgs: null,
     customJavaPath: null,
     instancesPath: null,
+    language: null,
   },
   isLoading: false,
   isSaving: false,
 
+  // 載入全域設定
   loadConfig: async () => {
     set({ isLoading: true });
     try {
@@ -37,6 +40,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     }
   },
 
+  // 儲存全域設定
   saveConfig: async (newConfig) => {
     set({ isSaving: true });
     try {

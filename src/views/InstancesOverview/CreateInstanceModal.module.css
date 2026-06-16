@@ -36,7 +36,7 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -124,7 +124,7 @@
 .content {
   padding: 24px;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -163,12 +163,12 @@
   background-color: rgba(0, 0, 0, 0.45);
 }
 
-/* Two column layout styling */
+/* 雙欄版面配置 */
 .twoColumnLayout {
   display: flex;
   gap: 24px;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   height: 100%;
 }
 
@@ -178,7 +178,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow: hidden;
+  overflow: visible;
   padding-right: 4px;
 }
 
@@ -190,7 +190,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--border-radius-lg);
   padding: 20px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .searchArea {
@@ -489,6 +489,8 @@
   justify-content: flex-end;
   gap: 12px;
   background-color: rgba(0, 0, 0, 0.35);
+  border-bottom-left-radius: var(--border-radius-lg);
+  border-bottom-right-radius: var(--border-radius-lg);
 }
 
 .cancelButton {
@@ -549,7 +551,7 @@
   font-size: 14px;
 }
 
-/* Modpack Detail Split-Pane Layout */
+/* 整合包詳細資訊版面配置 */
 .modpackDetailLayout {
   display: flex;
   flex-direction: column;
@@ -670,7 +672,7 @@
   color: var(--text-primary);
 }
 
-/* Custom Select Dropdown Styling */
+/* 自訂選擇下拉選單 */
 .customSelectContainer {
   position: relative;
   width: 100%;
@@ -756,7 +758,7 @@
   overflow: visible !important;
 }
 
-/* Modpack Two-Stage Flow Styles */
+/* 整合包雙階段流程樣式 */
 .detailBody {
   font-size: 14px;
   color: var(--text-secondary);
@@ -1178,7 +1180,7 @@
   color: var(--text-muted);
 }
 
-/* Platform Tabs */
+/* 平台分頁 */
 .platformTabs {
   display: flex;
   background-color: rgba(0, 0, 0, 0.45);
@@ -1217,7 +1219,7 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Manual Download Mode */
+/* 手動下載模式 */
 .manualContainer {
   display: flex;
   flex-direction: column;
@@ -1386,7 +1388,7 @@
   align-items: center;
 }
 
-/* Animations & Transitions */
+/* 動畫與過渡 */
 .tabContentActive {
   animation: tabFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

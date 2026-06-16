@@ -1,19 +1,12 @@
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafb);
-}
 :root {
   --font-family: 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
   
-  /* 官方啟動器暗黑風格色彩配置 */
+  /* 色彩變數 */
   --bg-sidebar: #222222;
   --bg-sidebar-hover: #333333;
   --bg-sidebar-active: #444444;
-  --bg-main: #111111; /* 背景通常會被圖片覆蓋 */
-  --bg-topnav: rgba(17, 17, 17, 0.85); /* 毛玻璃頂部 */
+  --bg-main: #111111;
+  --bg-topnav: rgba(17, 17, 17, 0.85);
   
   --text-primary: #FFFFFF;
   --text-secondary: #AAAAAA;
@@ -43,19 +36,19 @@ body {
   font-family: var(--font-family);
   background-color: var(--bg-main);
   color: var(--text-primary);
-  overflow: hidden; /* 防止整個視窗出現捲動條 */
-  user-select: none; /* 讓其看起來更像原生應用程式 */
+  overflow: hidden; /* 隱藏全域捲動條 */
+  user-select: none; /* 禁用網頁文字選取 */
   -webkit-font-smoothing: antialiased;
 }
 
-/* 整個 App 的容器 */
+/* 全域 App 容器 */
 .app-container {
   display: flex;
   height: 100vh;
   width: 100vw;
 }
 
-/* 按鈕基礎樣式重置 */
+/* 按鈕樣式重置 */
 button {
   font-family: inherit;
   border: none;
@@ -70,7 +63,7 @@ a {
   text-decoration: none;
 }
 
-/* 美化 Scrollbar */
+/* 捲動條樣式 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -107,7 +100,7 @@ a {
   animation: spin 1s linear infinite;
 }
 
-/* 隱藏數字輸入框微調按鈕 */
+/* 隱藏數字輸入微調按鈕 */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -117,13 +110,13 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
-/* 限制全域圖片與連結的原生網頁拖拽行為 */
+/* 限制原生拖拽行為 */
 img, a {
   -webkit-user-drag: none;
   user-drag: none;
 }
 
-/* 明確聲明輸入框可正常選取文字 */
+/* 支援輸入框選取文字 */
 input, textarea {
   user-select: text !important;
   -webkit-user-select: text !important;

@@ -1,6 +1,6 @@
-
 import { Loader, AlertTriangle, Check } from 'lucide-react';
 import { Instance } from '../../../types';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
 
 interface ModpackUpdateTabProps {
@@ -16,27 +16,29 @@ export function ModpackUpdateTab({
   instance,
   handleUpdateModpackClick,
 }: ModpackUpdateTabProps) {
+  const { t } = useI18n();
+
   return (
     <div className={styles.tabContainerCenter}>
       {isCheckingModpackUpdate ? (
         <div className={styles.loadingContainer}>
           <Loader className="animate-spin" size={48} />
-          <span>正在檢查 Modrinth 整合包更新...</span>
+          <span>{t('tabs.modpack_update.checking')}</span>
         </div>
       ) : latestModpackVersion ? (
         <div className={styles.updateCheckCard}>
           <div className={styles.updateCheckHeader}>
-            <h2>整合包更新管理</h2>
-            <span className={styles.projectPill}>Modrinth Project</span>
+            <h2>{t('tabs.modpack_update.title')}</h2>
+            <span className={styles.projectPill}>{t('tabs.modpack_update.pill')}</span>
           </div>
 
           <div className={styles.updateDetails}>
             <div className={styles.detailRow}>
-              <span className={styles.label}>當前整合包版本 ID</span>
-              <span className={styles.value}>{instance.modrinthVersionId || '未知'}</span>
+              <span className={styles.label}>{t('tabs.modpack_update.label.curr_id')}</span>
+              <span className={styles.value}>{instance.modrinthVersionId || t('tabs.modpack_update.unknown')}</span>
             </div>
             <div className={styles.detailRow}>
-              <span className={styles.label}>最新可用版本</span>
+              <span className={styles.label}>{t('tabs.modpack_update.label.latest')}</span>
               <span className={styles.value}>{latestModpackVersion.version_number}</span>
             </div>
           </div>
@@ -45,21 +47,21 @@ export function ModpackUpdateTab({
             <div className={styles.updateActionArea}>
               <div className={styles.alertBox}>
                 <AlertTriangle size={18} />
-                <span>偵測到新版本！更新會覆蓋並清空現有 mods 目錄以避免相容衝突。</span>
+                <span>{t('tabs.modpack_update.detect_new')}</span>
               </div>
               <button className={styles.primaryBtnLarge} onClick={handleUpdateModpackClick}>
-                立即更新整合包
+                {t('tabs.modpack_update.btn.update')}
               </button>
             </div>
           ) : (
             <div className={styles.successBox}>
               <Check size={18} />
-              <span>目前整合包已是最新版本！</span>
+              <span>{t('tabs.modpack_update.already_latest')}</span>
             </div>
           )}
         </div>
       ) : (
-        <div className={styles.placeholder}>無法取得整合包更新資料</div>
+        <div className={styles.placeholder}>{t('tabs.modpack_update.failed')}</div>
       )}
     </div>
   );

@@ -20,7 +20,7 @@
   }
 }
 
-/* ── 載入中與錯誤狀態 ── */
+/* 載入中與錯誤狀態 */
 .loadingContainer,
 .errorContainer {
   display: flex;
@@ -34,7 +34,6 @@
 }
 
 .spin {
-  animation: spin 1s linear infinite;
   color: var(--accent-green);
 }
 
@@ -65,7 +64,7 @@
   background-color: var(--accent-green-hover);
 }
 
-/* ── 左側：3D 預覽面板 ── */
+/* 左側：3D 預覽面板 */
 .previewPanel {
   flex: 0 0 20rem;
   display: flex;
@@ -180,7 +179,7 @@
   color: var(--text-primary);
 }
 
-/* ── 右側：內容面板 ── */
+/* 右側：內容面板 */
 .contentPanel {
   flex: 1;
   display: flex;
@@ -190,7 +189,7 @@
   padding-right: 0.25rem;
 }
 
-/* 美化右側面板捲動條 */
+/* 右側面板捲動條 */
 .contentPanel::-webkit-scrollbar {
   width: 0.25rem;
 }
@@ -204,7 +203,7 @@
   border-radius: 0.25rem;
 }
 
-/* ── 玩家資訊卡片 ── */
+/* 玩家資訊卡片 */
 .profileCard {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
   border: 1px solid var(--border-color);
@@ -251,7 +250,7 @@
   color: var(--text-muted);
 }
 
-/* ── 卡片區段樣式 ── */
+/* 卡片區段樣式 */
 .sectionCard {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
@@ -274,7 +273,7 @@
   color: var(--text-primary);
 }
 
-/* ── 皮膚子分頁樣式 ── */
+/* 皮膚子分頁樣式 */
 .skinStatusGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -462,7 +461,7 @@
   cursor: not-allowed;
 }
 
-/* ── 披風子分頁樣式 ── */
+/* 披風子分頁樣式 */
 .capeGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -642,7 +641,7 @@
   border-radius: var(--border-radius-sm);
 }
 
-/* ── Switch 元件樣式 ── */
+/* Switch 元件樣式 */
 .switchContainer {
   display: flex;
   align-items: center;
@@ -689,7 +688,7 @@
   transform: translateX(1rem);
 }
 
-/* ── 拖放上傳高亮樣式 ── */
+/* 拖放上傳高亮樣式 */
 .uploadAreaDragActive {
   border-color: var(--accent-green) !important;
   background-color: rgba(60, 133, 39, 0.05) !important;
@@ -697,7 +696,7 @@
   color: var(--accent-green) !important;
 }
 
-/* ── 皮膚櫃排版與按鈕 ── */
+/* 皮膚櫃排版與按鈕 */
 .wardrobeBtns {
   display: flex;
   flex-direction: column;

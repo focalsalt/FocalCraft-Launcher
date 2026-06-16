@@ -1,6 +1,6 @@
-
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { Upload } from 'lucide-react';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../CreateInstanceModal.module.css';
 
 interface CustomTabProps {
@@ -58,13 +58,15 @@ export function CustomTab({
   customLoaderJarName,
   handleSelectCustomLoaderJar,
 }: CustomTabProps) {
+  const { t } = useI18n();
+
   return (
     <>
       <div className={styles.formGroup}>
-        <label>實例名稱</label>
+        <label>{t('create.label.name')}</label>
         <input 
           type="text" 
-          placeholder="例如：我的生存伺服器" 
+          placeholder={t('create.custom.placeholder.name')} 
           className={styles.input} 
           value={customName}
           onChange={(e) => setCustomName(e.target.value)}
@@ -73,7 +75,11 @@ export function CustomTab({
       
       <div className={styles.formGroup}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <label>Minecraft 版本 (大版本 / {minorFilter === 'snapshot' ? '快照版本' : '小版本'})</label>
+          <label>
+            {t('create.custom.version_title', { 
+              minor: minorFilter === 'snapshot' ? t('create.custom.snapshot') : t('create.custom.minor') 
+            })}
+          </label>
           {errorLoadingVersions && (
             <button 
               onClick={loadVersions} 
@@ -87,34 +93,36 @@ export function CustomTab({
                 padding: 0
               }}
             >
-              載入失敗，點擊重試
+              {t('create.custom.load_failed_retry')}
             </button>
           )}
         </div>
         
         <div className={styles.filtersRow}>
           <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>大版本篩選</span>
+            <span className={styles.filterLabel}>{t('create.custom.major_filter')}</span>
             <div className={styles.filterSegmentedControl}>
               <button
                 type="button"
                 className={`${styles.filterSegmentButton} ${majorFilter === 'release' ? styles.active : ''}`}
                 onClick={() => setMajorFilter('release')}
               >
-                只顯示正式版
+                {t('create.custom.show_releases')}
               </button>
               <button
                 type="button"
                 className={`${styles.filterSegmentButton} ${majorFilter === 'history' ? styles.active : ''}`}
                 onClick={() => setMajorFilter('history')}
               >
-                只顯示歷史版
+                {t('create.custom.show_history')}
               </button>
             </div>
           </div>
           
           <div className={styles.filterGroup}>
-            <span className={styles.filterLabel}>{minorFilter === 'snapshot' ? '快照篩選' : '小版本篩選'}</span>
+            <span className={styles.filterLabel}>
+              {minorFilter === 'snapshot' ? t('create.custom.snapshot_filter') : t('create.custom.minor_filter')}
+            </span>
             <div className={styles.filterSegmentedControl}>
               <button
                 type="button"
@@ -122,7 +130,7 @@ export function CustomTab({
                 onClick={() => setMinorFilter('release')}
                 disabled={majorFilter !== 'release'}
               >
-                只顯示正式版
+                {t('create.custom.show_releases')}
               </button>
               <button
                 type="button"
@@ -130,7 +138,7 @@ export function CustomTab({
                 onClick={() => setMinorFilter('snapshot')}
                 disabled={majorFilter !== 'release'}
               >
-                只顯示快照版
+                {t('create.custom.show_snapshots')}
               </button>
             </div>
           </div>
@@ -143,7 +151,7 @@ export function CustomTab({
               onChange={handleMajorVersionChange}
               options={majorVersionOptions}
               disabled={loadingVersions}
-              placeholder={loadingVersions ? '載入中...' : '大版本'}
+              placeholder={loadingVersions ? t('create.custom.loading') : t('create.custom.major')}
               direction="up"
             />
           </div>
@@ -153,7 +161,7 @@ export function CustomTab({
               onChange={setCustomVersion}
               options={minorVersionOptions}
               disabled={loadingVersions || !selectedMajorVersion}
-              placeholder={minorFilter === 'snapshot' ? '快照版本' : '小版本'}
+              placeholder={minorFilter === 'snapshot' ? t('create.custom.snapshot') : t('create.custom.minor')}
               direction="up"
             />
           </div>
@@ -161,7 +169,7 @@ export function CustomTab({
       </div>
       
       <div className={styles.formGroup}>
-        <label>Modloader</label>
+        <label>{t('create.label.modloader')}</label>
         <CustomSelect
           value={customModloader}
           onChange={(val) => setCustomModloader(val)}
@@ -172,13 +180,13 @@ export function CustomTab({
       
       {customModloader !== 'Vanilla' && customModloader !== 'Custom' && (
         <div className={styles.formGroup}>
-          <label>{customModloader} Loader 版本</label>
+          <label>{t('create.custom.loader_version_title', { loader: customModloader })}</label>
           <CustomSelect
             value={selectedLoaderVersion}
             onChange={setSelectedLoaderVersion}
             options={loaderVersionOptions}
             disabled={loadingLoaderVersions}
-            placeholder={loadingLoaderVersions ? '正在載入版本清單...' : '無可用版本'}
+            placeholder={loadingLoaderVersions ? t('create.custom.loading_loader') : t('create.custom.no_loader_versions')}
             direction="up"
           />
         </div>
@@ -186,17 +194,17 @@ export function CustomTab({
 
       {customModloader === 'Custom' && (
         <div className={styles.formGroup}>
-          <label>自訂 Loader JAR 檔案</label>
+          <label>{t('create.custom.custom_loader_title')}</label>
           <div 
             className={`${styles.dropzone} ${isDragOverCustom ? styles.dropzoneActive : ''}`}
             onClick={handleSelectCustomLoaderJar}
           >
             <Upload size={24} className={styles.dropzoneIcon} />
             <div className={styles.dropzoneText}>
-              {customLoaderJarName ? `已選取：${customLoaderJarName}` : '拖放自訂 Loader JAR 檔案至此，或點擊選擇檔案'}
+              {customLoaderJarName ? t('create.custom.loader_selected', { name: customLoaderJarName }) : t('create.custom.dropzone_text')}
             </div>
             <div className={styles.dropzoneSub}>
-              僅支援 .jar 格式檔案
+              {t('create.custom.dropzone_sub')}
             </div>
           </div>
         </div>

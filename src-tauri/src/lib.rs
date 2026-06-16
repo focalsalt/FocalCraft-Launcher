@@ -30,12 +30,12 @@ pub struct SessionState {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
-    pub id: String,               // Minecraft UUID
-    pub mc_id: String,            // Minecraft Username
-    pub avatar_url: String,       // Minecraft 頭像 URL
-    pub ms_refresh_token: String, // Microsoft Refresh Token，用於自動重新整理
-    pub mc_access_token: String,  // Minecraft Access Token，用於啟動遊戲
-    pub token_expires_at: u64,    // Minecraft Access Token 過期時間戳記（毫秒）
+    pub id: String,               // 玩家 UUID
+    pub mc_id: String,            // 玩家名稱
+    pub avatar_url: String,       // 頭像網址
+    pub ms_refresh_token: String, // 微軟刷新權杖
+    pub mc_access_token: String,  // 遊戲存取權杖
+    pub token_expires_at: u64,    // 權杖過期時間
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -144,7 +144,7 @@ struct MinecraftProfileResponse {
 
 #[tauri::command]
 fn init_app_dirs() -> Result<String, String> {
-    // 獲取 APPDATA 路徑
+    // 取得 APPDATA 路徑
     let appdata = std::env::var("APPDATA").map_err(|_| "無法取得 APPDATA 環境變數".to_string())?;
     let base_dir = PathBuf::from(appdata).join("focal-craft-launcher");
 
@@ -162,7 +162,7 @@ fn init_app_dirs() -> Result<String, String> {
         }
     }
 
-    // 建立預設設定檔（如果不存在）
+    // 建立預設設定檔
     let global_cfg = base_dir.join("global.cfg");
     if !global_cfg.exists() {
         fs::write(&global_cfg, "{}").map_err(|e| format!("建立 global.cfg 失敗: {}", e))?;
@@ -214,11 +214,11 @@ fn load_accounts() -> Result<String, String> {
                 String::from_utf8(decrypted_bytes).map_err(|e| format!("解析帳號字串為 UTF-8 失敗: {}", e))
             }
             Err(_) => {
-                // 如果解密失敗，可能這是舊版的明文字串，檢查是否為明文 JSON
+                // 若解密失敗則嘗試解析為舊版明文 JSON
                 if let Ok(plain_text) = String::from_utf8(bytes.clone()) {
                     let trimmed = plain_text.trim();
                     if trimmed.starts_with('[') && trimmed.ends_with(']') {
-                        // 這是舊的明文，自動為使用者加密存檔升級
+                        // 將舊版明文自動加密存檔
                         if let Err(e) = save_accounts(plain_text.clone()) {
                             eprintln!("自動升級加密帳號設定檔失敗: {}", e);
                         } else {
@@ -315,7 +315,7 @@ async fn login_minecraft_with_ms_token(
 ) -> Result<Account, String> {
     let client = reqwest::Client::new();
 
-    // 1. Xbox Live Authenticate
+    // 驗證 Xbox Live
     let xbl_req = XboxLiveAuthRequest {
         properties: XboxLiveAuthProperties {
             auth_method: "RPS".to_string(),
@@ -351,7 +351,7 @@ async fn login_minecraft_with_ms_token(
         .uhs
         .clone();
 
-    // 2. XSTS Authorize
+    // 授權 XSTS
     let xsts_req = XstsAuthRequest {
         properties: XstsAuthProperties {
             sandbox_id: "RETAIL".to_string(),
@@ -397,7 +397,7 @@ async fn login_minecraft_with_ms_token(
 
     let xsts_token = xsts_data.token;
 
-    // 3. Minecraft Services Login
+    // 登入 Minecraft 服務
     let mc_login_req = MinecraftLoginRequest {
         identity_token: format!("XBL3.0 x={};{}", uhs, xsts_token),
     };
@@ -428,7 +428,7 @@ async fn login_minecraft_with_ms_token(
         .as_millis() as u64
         + (mc_login_data.expires_in * 1000);
 
-    // 4. Entitlements Check
+    // 檢查遊戲所有權
     let entitlements_res = client
         .get("https://api.minecraftservices.com/entitlements/mcstore")
         .bearer_auth(&mc_token)
@@ -453,7 +453,7 @@ async fn login_minecraft_with_ms_token(
         return Err("NO_MINECRAFT_LICENSE".to_string());
     }
 
-    // 5. Get Profile
+    // 取得遊戲角色資訊
     let profile_res = client
         .get("https://api.minecraftservices.com/minecraft/profile")
         .bearer_auth(&mc_token)
@@ -765,7 +765,7 @@ async fn get_wardrobe_skins() -> Result<Vec<WardrobeSkin>, String> {
         if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("png") {
             let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
 
-            // 解析檔名
+            // 解析皮膚檔名資訊
             let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
             let parts: Vec<&str> = stem.split('_').collect();
 
@@ -986,20 +986,19 @@ mod tests {
 
     #[test]
     fn test_load_accounts_migration() {
-        // This test will dry-run or verify loading.
-        // Let's call load_accounts. It will read accounts.cfg, migrate it, and return the plaintext.
+        // 驗證讀取帳號資訊與遷移機制
         let accounts = load_accounts().expect("load_accounts failed");
         println!("Loaded accounts: {}", accounts);
         assert!(accounts.starts_with('[') && accounts.ends_with(']'));
 
-        // If we read it again, it should decrypt successfully (migration completed).
+        // 再次讀取時應成功解密加密檔案
         let appdata = std::env::var("APPDATA").expect("No APPDATA");
         let accounts_cfg = std::path::PathBuf::from(appdata)
             .join("focal-craft-launcher")
             .join("accounts.cfg");
         let bytes = std::fs::read(&accounts_cfg).expect("Read failed");
         
-        // The file should now be binary and NOT start with '[' (which is ascii 91)
+        // 加密後的第一個字元不應為 ASCII '['
         if !bytes.is_empty() {
             assert_ne!(bytes[0], b'[');
         }

@@ -1,4 +1,4 @@
-/* LaunchHUD - Glassmorphic floating progress banner */
+/* 啟動浮動進度列 */
 .hud {
   position: fixed;
   bottom: -120px;
@@ -49,7 +49,6 @@
 
 .spinnerIcon {
   color: rgb(99, 179, 237);
-  animation: spin 1s linear infinite;
 }
 
 .doneIcon {
@@ -132,7 +131,4 @@
   box-shadow: 0 0 8px rgba(99, 179, 237, 0.5);
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+

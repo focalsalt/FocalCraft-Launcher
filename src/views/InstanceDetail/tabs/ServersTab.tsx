@@ -1,6 +1,6 @@
-
 import { Plus, Loader, Trash2, Globe } from 'lucide-react';
 import { ServerItem } from '../../../types';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
 
 interface ServersTabProps {
@@ -16,12 +16,14 @@ export function ServersTab({
   handleOpenServerModal,
   handleDeleteServer,
 }: ServersTabProps) {
+  const { t } = useI18n();
+
   return (
     <div className={styles.tabContainer}>
       <div className={styles.sectionHeader}>
         <button className={styles.primaryBtn} onClick={() => handleOpenServerModal(null, null)}>
           <Plus size={16} />
-          <span>新增伺服器</span>
+          <span>{t('tabs.servers.btn.add')}</span>
         </button>
       </div>
 
@@ -39,11 +41,19 @@ export function ServersTab({
                   <div className={styles.serverName}>{srv.name}</div>
                   <div className={styles.serverIp}>{srv.ip}</div>
                   <div className={styles.serverMeta}>
-                    資源包: {srv.acceptTextures === 1 ? '啟用' : srv.acceptTextures === 2 ? '停用' : '詢問'}
+                    {t('tabs.servers.label.accept_textures', {
+                      status: srv.acceptTextures === 1 
+                        ? t('tabs.servers.accept_textures.enabled') 
+                        : srv.acceptTextures === 2 
+                        ? t('tabs.servers.accept_textures.disabled') 
+                        : t('tabs.servers.accept_textures.prompt')
+                    })}
                   </div>
                 </div>
                 <div className={styles.serverActions}>
-                  <button className={styles.textBtn} onClick={() => handleOpenServerModal(srv, index)}>編輯</button>
+                  <button className={styles.textBtn} onClick={() => handleOpenServerModal(srv, index)}>
+                    {t('tabs.servers.btn.edit')}
+                  </button>
                   <button className={styles.deleteIconBtn} onClick={() => handleDeleteServer(index)}>
                     <Trash2 size={16} />
                   </button>
@@ -54,14 +64,14 @@ export function ServersTab({
         ) : (
           <div className={styles.emptyStateContainer}>
             <Globe className={styles.emptyStateIcon} size={48} />
-            <div className={styles.emptyStateTitle}>目前無伺服器連線記錄</div>
+            <div className={styles.emptyStateTitle}>{t('tabs.servers.empty_title')}</div>
             <div className={styles.emptyStateDesc}>
-              您尚未在此實例新增任何多人遊戲伺服器連線。新增後，您可以更快速地查看並管理伺服器設定。
+              {t('tabs.servers.empty_desc')}
             </div>
             <div className={styles.btnRow}>
               <button className={styles.primaryBtn} onClick={() => handleOpenServerModal(null, null)}>
                 <Plus size={14} />
-                <span>新增伺服器連線</span>
+                <span>{t('tabs.servers.btn.add_connection')}</span>
               </button>
             </div>
           </div>

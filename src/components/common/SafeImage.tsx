@@ -19,7 +19,7 @@ export function SafeImage({
 }: SafeImageProps) {
   const [isError, setIsError] = useState(false);
 
-  // If there's an error, or the src is completely empty
+  // 圖片載入失敗或無來源時顯示 Fallback
   if (isError || !src) {
     return (
       <div className={`${styles.fallbackContainer} ${className}`}>
@@ -41,4 +41,3 @@ export function SafeImage({
     />
   );
 }
-

@@ -1,6 +1,7 @@
 import { useInstanceStore } from '../../store/instanceStore';
 import { useAppStore } from '../../store/appStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useI18n } from '../../utils/i18n';
 import { getInstanceIconSrc } from '../../utils/versionUtils';
 import { invoke } from '@tauri-apps/api/core';
 import { Plus, Package, Trash2 } from 'lucide-react';
@@ -17,6 +18,7 @@ export function InstancesOverview() {
   const updateInstanceConfig = useInstanceStore((state) => state.updateInstanceConfig);
   const saveInstanceOrder = useInstanceStore((state) => state.saveInstanceOrder);
   const { setCurrentView, addNotification } = useAppStore();
+  const { t } = useI18n();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [baseDir, setBaseDir] = useState('');
   const settingsConfig = useSettingsStore((state) => state.config);
@@ -25,7 +27,7 @@ export function InstancesOverview() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
 
-  // Mouse Drag and Drop states
+  // 拖放狀態
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [dragStartIndex, setDragStartIndex] = useState<number>(-1);
   const [hoveredIndex, setHoveredIndex] = useState<number>(-1);
@@ -41,7 +43,7 @@ export function InstancesOverview() {
     setIsModalOpen(true);
   };
 
-  // Drag cursor & select handler
+  // 拖曳游標與選取處理
   useEffect(() => {
     if (isMouseDragging) {
       document.body.style.cursor = 'grabbing';
@@ -56,7 +58,7 @@ export function InstancesOverview() {
     };
   }, [isMouseDragging]);
 
-  // Global mouse handlers for card drag and drop reordering
+  // 卡片拖放排序的全域滑鼠事件
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!activeDragId) return;
@@ -77,7 +79,7 @@ export function InstancesOverview() {
       if (!activeDragId) return;
 
       if (isMouseDragging) {
-        // Drop reorder
+        // 放置排序
         if (hoveredIndex !== -1 && hoveredIndex !== dragStartIndex) {
           const order = instances.filter(i => i && i.id).map(i => i.id);
           const sourceId = activeDragId;
@@ -92,11 +94,11 @@ export function InstancesOverview() {
           }
         }
       } else {
-        // Navigate
+        // 切換頁面
         setCurrentView(activeDragId);
       }
 
-      // Reset states
+      // 重設狀態
       setActiveDragId(null);
       setDragStartIndex(-1);
       setHoveredIndex(-1);
@@ -115,7 +117,7 @@ export function InstancesOverview() {
   const handleCardMouseDown = (e: React.MouseEvent, id: string, index: number) => {
     if (e.button !== 0) return; // Left click only
     const target = e.target as HTMLElement;
-    // Don't drag if clicking custom buttons, input controls or renaming text
+    // 點擊按鈕、輸入框或重新命名時不觸發拖曳
     if (
       target.closest('button') || 
       target.closest('input') || 
@@ -138,15 +140,15 @@ export function InstancesOverview() {
     }
   };
 
-  // Delete handlers
+  // 刪除處理
   const handleDeleteClick = (e: React.MouseEvent, instance: any) => {
     e.stopPropagation();
     const instState = instanceStates[instance.id];
     if (instState?.isRunning) {
       addNotification({
         type: 'warning',
-        title: '無法刪除實例',
-        message: '該實例目前正在運行中，請先關閉遊戲。'
+        title: t('overview.notification.cannot_delete.title'),
+        message: t('overview.notification.cannot_delete.msg')
       });
       return;
     }
@@ -159,13 +161,13 @@ export function InstancesOverview() {
       await deleteInstance(deleteConfirmTarget.id);
       addNotification({
         type: 'success',
-        title: '實例已刪除',
-        message: `已成功刪除實例: ${deleteConfirmTarget.name}`
+        title: t('overview.notification.deleted.title'),
+        message: t('overview.notification.deleted.msg', { name: deleteConfirmTarget.name })
       });
     } catch (err) {
       addNotification({
         type: 'error',
-        title: '刪除實例失敗',
+        title: t('overview.notification.delete_failed.title'),
         message: String(err)
       });
     } finally {
@@ -173,7 +175,7 @@ export function InstancesOverview() {
     }
   };
 
-  // Inline rename handlers
+  // 重新命名處理
   const handleStartRename = (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
     setEditingId(id);
@@ -201,13 +203,13 @@ export function InstancesOverview() {
       );
       addNotification({
         type: 'success',
-        title: '名稱已變更',
-        message: `實例名稱已變更為: ${editName.trim()}`
+        title: t('overview.notification.rename.title'),
+        message: t('overview.notification.rename.msg', { name: editName.trim() })
       });
     } catch (err) {
       addNotification({
         type: 'error',
-        title: '變更名稱失敗',
+        title: t('overview.notification.rename_failed.title'),
         message: String(err)
       });
     } finally {
@@ -226,10 +228,10 @@ export function InstancesOverview() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>實例總覽</h1>
+        <h1>{t('overview.title')}</h1>
         <button className={styles.addButton} onClick={handleCreateNew}>
           <Plus size={20} />
-          <span>建立新實例</span>
+          <span>{t('overview.create')}</span>
         </button>
       </div>
 
@@ -238,14 +240,13 @@ export function InstancesOverview() {
           <div className={styles.emptyIcon}>
             <Package size={56} strokeWidth={1.2} />
           </div>
-          <h2 className={styles.emptyTitle}>尚無任何實例</h2>
-          <p className={styles.emptyDesc}>
-            建立您的第一個 Minecraft 實例，開始遊戲旅程。<br />
-            支援 Vanilla、Fabric 以及從 Modrinth / CurseForge 下載安裝或手動匯入整合包。
+          <h2 className={styles.emptyTitle}>{t('overview.empty.title')}</h2>
+          <p className={styles.emptyDesc} style={{ whiteSpace: 'pre-wrap' }}>
+            {t('overview.empty.desc')}
           </p>
           <button className={styles.addButton} onClick={handleCreateNew}>
             <Plus size={18} />
-            <span>建立第一個實例</span>
+            <span>{t('overview.empty.create')}</span>
           </button>
         </div>
       ) : (
@@ -266,26 +267,26 @@ export function InstancesOverview() {
                 onMouseDown={(e) => !isRunning && !isDownloading && handleCardMouseDown(e, instance.id, index)}
                 onMouseEnter={() => handleCardMouseEnter(index)}
               >
-                {/* Delete Button */}
+                {/* 刪除按鈕 */}
                 {!isRunning && !isDownloading && (
                   <button
                     className={styles.deleteBtn}
                     onClick={(e) => handleDeleteClick(e, instance)}
-                    title="刪除實例"
+                    title={t('overview.delete.tooltip')}
                   >
                     <Trash2 size={14} />
                   </button>
                 )}
 
-                {/* Status Badge */}
-                {isRunning && <span className={`${styles.statusBadge} ${styles.runningBadge}`} title="遊戲執行中">●</span>}
+                {/* 狀態標籤 */}
+                {isRunning && <span className={`${styles.statusBadge} ${styles.runningBadge}`} title={t('overview.status.running')}>●</span>}
                 {isDownloading && !isRunning && (
-                  <span className={`${styles.statusBadge} ${styles.downloadingBadge}`} title="下載/啟動中">
-                    <span className={styles.spinnerDot} />
+                  <span className={`${styles.statusBadge} ${styles.downloadingBadge}`} title={t('overview.status.loading')}>
+                    <span className={`${styles.spinnerDot} animate-spin`} />
                   </span>
                 )}
                 {isCrashed && !isRunning && !isDownloading && (
-                  <span className={`${styles.statusBadge} ${styles.crashedBadge}`} title="遊戲已崩潰">!</span>
+                  <span className={`${styles.statusBadge} ${styles.crashedBadge}`} title={t('overview.status.crashed')}>!</span>
                 )}
 
                 <div className={styles.iconPlaceholder}>
@@ -318,13 +319,13 @@ export function InstancesOverview() {
                     <div 
                       className={styles.cardName}
                       onClick={(e) => handleStartRename(e, instance.id, instance.name)}
-                      title="點擊以重新命名"
+                      title={t('overview.rename.tooltip')}
                     >
-                      {instance.name || '未命名實例'}
+                      {instance.name || t('overview.unnamed')}
                     </div>
                   )}
                   <div className={styles.cardVersion}>
-                    {instance.version || '未知版本'} • {instance.modloader === 'Custom' ? '自訂' : (instance.modloader || 'Vanilla')} {instance.loaderVersion ? `(${instance.loaderVersion})` : ''}
+                    {instance.version || t('overview.unknown_version')} • {instance.modloader === 'Custom' ? t('overview.custom') : (instance.modloader || 'Vanilla')} {instance.loaderVersion ? `(${instance.loaderVersion})` : ''}
                   </div>
                 </div>
               </div>
@@ -340,13 +341,13 @@ export function InstancesOverview() {
 
       <CustomConfirmModal
         isOpen={!!deleteConfirmTarget}
-        title="刪除實例"
-        message={`您確定要永久刪除實例 "${deleteConfirmTarget?.name}" 嗎？此操作將會刪除該實例的所有遊戲檔案且無法復原。`}
+        title={t('overview.delete.title')}
+        message={t('overview.delete.confirm', { name: deleteConfirmTarget?.name || '' })}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteConfirmTarget(null)}
       />
 
-      {/* Floating Drag Preview */}
+      {/* 拖曳浮動預覽 */}
       {isMouseDragging && activeDragId && (() => {
         const draggedInstance = instances.find(i => i.id === activeDragId);
         if (!draggedInstance) return null;
@@ -379,7 +380,7 @@ export function InstancesOverview() {
             <div className={styles.cardInfo}>
               <div className={styles.cardName}>{draggedInstance.name}</div>
               <div className={styles.cardVersion}>
-                {draggedInstance.version || '未知版本'} • {draggedInstance.modloader === 'Custom' ? '自訂' : (draggedInstance.modloader || 'Vanilla')}
+                {draggedInstance.version || t('overview.unknown_version')} • {draggedInstance.modloader === 'Custom' ? t('overview.custom') : (draggedInstance.modloader || 'Vanilla')}
               </div>
             </div>
           </div>

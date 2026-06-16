@@ -1,25 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useAppStore } from '../../store/appStore';
+import { useI18n } from '../../utils/i18n';
 import { invoke } from '@tauri-apps/api/core';
 import { Loader, FolderOpen, RefreshCw, Trash2, Save } from 'lucide-react';
 import { getVersion } from '@tauri-apps/api/app';
+import { CustomSelect } from '../../components/common/CustomSelect';
 import styles from './GlobalSettings.module.css';
 
 export function GlobalSettings() {
   const { config, loadConfig, saveConfig, isSaving, isLoading } = useSettingsStore();
   const { addNotification } = useAppStore();
+  const { t } = useI18n();
 
   const [defaultMaxMemory, setDefaultMaxMemory] = useState(4096);
   const [defaultJvmArgs, setDefaultJvmArgs] = useState('');
   const [customJavaPath, setCustomJavaPath] = useState('');
   const [instancesPath, setInstancesPath] = useState('');
+  const [language, setLanguage] = useState<string | null>(null);
   const [baseDir, setBaseDir] = useState('');
   const [appVersion, setAppVersion] = useState('1.0.0');
 
-
-
-  // Load app base dir and config
+  // 載入應用程式目錄與設定
   useEffect(() => {
     const init = async () => {
       try {
@@ -39,12 +41,13 @@ export function GlobalSettings() {
     init();
   }, []);
 
-  // Sync state with loaded config
+  // 同步設定狀態
   useEffect(() => {
     setDefaultMaxMemory(config.defaultMaxMemory || 4096);
     setDefaultJvmArgs(config.defaultJvmArgs || '');
     setCustomJavaPath(config.customJavaPath || '');
     setInstancesPath(config.instancesPath || '');
+    setLanguage(config.language || null);
   }, [config]);
 
   const handleBrowseInstancesPath = async () => {
@@ -57,7 +60,7 @@ export function GlobalSettings() {
       if (err !== 'CANCELLED') {
         addNotification({
           type: 'error',
-          title: '選取目錄失敗',
+          title: t('settings.notification.browse_failed.title'),
           message: String(err)
         });
       }
@@ -78,7 +81,7 @@ export function GlobalSettings() {
       if (err !== 'CANCELLED') {
         addNotification({
           type: 'error',
-          title: '選取 Java 失敗',
+          title: t('settings.notification.browse_java_failed.title'),
           message: String(err)
         });
       }
@@ -96,31 +99,32 @@ export function GlobalSettings() {
         defaultJvmArgs: defaultJvmArgs.trim() || null,
         customJavaPath: customJavaPath.trim() || null,
         instancesPath: instancesPath.trim() || null,
+        language,
       };
 
       await saveConfig(newConfig);
 
       addNotification({
         type: 'success',
-        title: '設定儲存成功',
-        message: '全局設定已成功更新。'
+        title: t('settings.notification.save_success.title'),
+        message: t('settings.notification.save_success.msg')
       });
     } catch (err) {
       addNotification({
         type: 'error',
-        title: '儲存設定失敗',
+        title: t('settings.notification.save_failed.title'),
         message: String(err)
       });
     }
   };
 
-  const displayInstancesPath = instancesPath || (baseDir ? `${baseDir}\\instances` : '載入中...');
+  const displayInstancesPath = instancesPath || (baseDir ? `${baseDir}\\instances` : '...');
 
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
         <Loader className="animate-spin" size={48} />
-        <span>載入設定中...</span>
+        <span>Loading...</span>
       </div>
     );
   }
@@ -133,8 +137,8 @@ export function GlobalSettings() {
         <div className={styles.migrationOverlay}>
           <div className={styles.migrationBox}>
             <Loader className="animate-spin" size={48} />
-            <h3>正在儲存設定與遷移資料...</h3>
-            <p>這可能需要幾分鐘的時間，請勿關閉啟動器。</p>
+            <h3>{t('settings.overlay.saving')}</h3>
+            <p>{t('settings.overlay.saving_help')}</p>
           </div>
         </div>
       )}
@@ -142,9 +146,9 @@ export function GlobalSettings() {
       <div className={styles.content}>
         <div className={styles.scrollArea}>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>📂 儲存路徑與檔案管理</h2>
+            <h2 className={styles.cardTitle}>{t('settings.card.storage')}</h2>
             <div className={styles.formGroup}>
-              <label>實例儲存路徑</label>
+              <label>{t('settings.label.storage_path')}</label>
               <div className={styles.inputGroup}>
                 <input
                   type="text"
@@ -152,58 +156,58 @@ export function GlobalSettings() {
                   value={displayInstancesPath}
                   readOnly
                 />
-                <button className={styles.btnIcon} onClick={handleBrowseInstancesPath} title="瀏覽資料夾">
+                <button className={styles.btnIcon} onClick={handleBrowseInstancesPath} title={t('settings.btn.browse')}>
                   <FolderOpen size={18} />
-                  <span>瀏覽</span>
+                  <span>{t('settings.btn.browse')}</span>
                 </button>
                 {instancesPath && (
-                  <button className={styles.btnIconSec} onClick={handleRestoreDefaultInstancesPath} title="恢復預設路徑">
+                  <button className={styles.btnIconSec} onClick={handleRestoreDefaultInstancesPath} title={t('settings.btn.restore')}>
                     <RefreshCw size={18} />
-                    <span>恢復預設</span>
+                    <span>{t('settings.btn.restore')}</span>
                   </button>
                 )}
               </div>
               <span className={styles.helpText}>
-                所有建立的 Minecraft 實例、模組包及存檔都會存放在此路徑。變更此路徑時，系統將自動無損移轉現有檔案。
+                {t('settings.help.storage_path')}
               </span>
             </div>
           </div>
 
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>☕ Java 執行環境</h2>
+            <h2 className={styles.cardTitle}>{t('settings.card.java')}</h2>
             <div className={styles.formGroup}>
-              <label>自訂全域 Java 執行路徑 (java.exe / javaw.exe)</label>
+              <label>{t('settings.label.java_path')}</label>
               <div className={styles.inputGroup}>
                 <input
                   type="text"
                   className={styles.input}
-                  placeholder="留空將自動偵測相容的 Java 版本"
+                  placeholder={t('settings.placeholder.java_path')}
                   value={customJavaPath}
                   onChange={(e) => setCustomJavaPath(e.target.value)}
                 />
-                <button className={styles.btnIcon} onClick={handleBrowseJavaPath} title="選取 Java 執行檔">
+                <button className={styles.btnIcon} onClick={handleBrowseJavaPath} title={t('settings.btn.browse')}>
                   <FolderOpen size={18} />
-                  <span>瀏覽</span>
+                  <span>{t('settings.btn.browse')}</span>
                 </button>
                 {customJavaPath && (
-                  <button className={styles.btnIconSec} onClick={handleClearJavaPath} title="清除路徑">
+                  <button className={styles.btnIconSec} onClick={handleClearJavaPath} title="Clear">
                     <Trash2 size={18} />
-                    <span>清除</span>
+                    <span>{t('tabs.settings.btn.clear')}</span>
                   </button>
                 )}
               </div>
               <span className={styles.helpText}>
-                手動指定 Java 的執行路徑。即使指定了此路徑，啟動遊戲前仍會比對版本需求，不符時將安全 fallback 至系統偵測的版本。
+                {t('settings.help.java_path')}
               </span>
             </div>
           </div>
 
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>⚙️ 預設啟動與記憶體設定</h2>
+            <h2 className={styles.cardTitle}>{t('settings.card.launch')}</h2>
 
             <div className={styles.formGroup}>
               <div className={styles.labelRow}>
-                <label>預設最大記憶體分配</label>
+                <label>{t('settings.label.max_memory')}</label>
               </div>
               <div className={styles.sliderGroup}>
                 <input
@@ -226,31 +230,47 @@ export function GlobalSettings() {
                 />
               </div>
               <span className={styles.helpText}>
-                新建立實例時預設分配的最大 RAM 容量。
+                {t('settings.help.max_memory')}
               </span>
             </div>
 
             <div className={styles.formGroup}>
-              <label>預設 JVM 啟動參數</label>
+              <label>{t('settings.label.jvm_args')}</label>
               <textarea
                 className={styles.textarea}
-                placeholder="例如：-XX:+UseG1GC -XX:MaxGCPauseMillis=50"
+                placeholder={t('settings.placeholder.jvm_args')}
                 value={defaultJvmArgs}
                 onChange={(e) => setDefaultJvmArgs(e.target.value)}
               />
               <span className={styles.helpText}>
-                新建立實例時預設寫入的 JVM 最佳化參數。
+                {t('settings.help.jvm_args')}
               </span>
             </div>
           </div>
 
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>ℹ️ 關於 (About)</h2>
+            <h2 className={styles.cardTitle}>{t('settings.card.language')}</h2>
+            <div className={styles.formGroup}>
+              <label style={{ marginBottom: '8px', display: 'block' }}>{t('settings.label.language')}</label>
+              <CustomSelect
+                value={language || ''}
+                onChange={(val) => setLanguage(val || null)}
+                options={[
+                  { value: '', label: t('settings.lang.auto') },
+                  { value: 'zh-TW', label: t('settings.lang.zh_tw') },
+                  { value: 'en-US', label: t('settings.lang.en_us') }
+                ]}
+              />
+            </div>
+          </div>
+
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>{t('settings.card.about')}</h2>
             <div className={styles.aboutRow}>
               <div className={styles.aboutInfo}>
                 <div className={styles.appName}>Focal Craft Launcher</div>
-                <div className={styles.appVersion}>版本：v{appVersion}</div>
-                <div className={styles.appDesc}>一個安全、快速、現代化的 Minecraft 啟動器。</div>
+                <div className={styles.appVersion}>{t('settings.about.version', { version: appVersion })}</div>
+                <div className={styles.appDesc}>{t('settings.about.desc')}</div>
               </div>
             </div>
           </div>
@@ -260,12 +280,10 @@ export function GlobalSettings() {
         <div className={styles.footer}>
           <button className={styles.saveBtn} onClick={handleSave}>
             <Save size={18} />
-            <span>儲存全域設定</span>
+            <span>{t('settings.btn.save')}</span>
           </button>
         </div>
       </div>
-
-
     </div>
   );
 }

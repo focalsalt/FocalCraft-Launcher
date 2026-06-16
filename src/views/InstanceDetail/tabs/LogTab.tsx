@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Loader, AlertTriangle, Copy, Trash2, Check } from 'lucide-react';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
 
 interface LogTabProps {
@@ -19,6 +20,7 @@ export function LogTab({
   crashedInstanceId,
   onClearLogs,
 }: LogTabProps) {
+  const { t } = useI18n();
   const isRunning = runningInstanceId === instanceId;
   const isCrashed = crashedInstanceId === instanceId;
   const [copySuccess, setCopySuccess] = useState(false);
@@ -43,12 +45,12 @@ export function LogTab({
 
   return (
     <div className={styles.tabContainer}>
-      {/* Log action toolbar */}
+      {/* 日誌操作工具列 */}
       <div className={styles.logToolbar}>
         {isRunning ? (
           <div className={styles.logStatusBar}>
             <Loader className="animate-spin" size={14} />
-            <span>遊戲執行中，正在即時串流輸出日誌...</span>
+            <span>{t('tabs.log.status.running')}</span>
           </div>
         ) : (
           <div />
@@ -57,20 +59,20 @@ export function LogTab({
           <button
             className={`${styles.logActionBtn} ${copySuccess ? styles.logActionSuccess : ''}`}
             onClick={handleCopyLogs}
-            title="複製日誌"
+            title={t('tabs.log.btn.copy')}
             disabled={logs.length === 0}
           >
             {copySuccess ? <Check size={14} /> : <Copy size={14} />}
-            <span>{copySuccess ? '已複製！' : '複製日誌'}</span>
+            <span>{copySuccess ? t('tabs.log.btn.copied') : t('tabs.log.btn.copy')}</span>
           </button>
           <button
             className={`${styles.logActionBtn} ${styles.logActionDanger}`}
             onClick={onClearLogs}
-            title="清除日誌"
+            title={t('tabs.log.btn.clear')}
             disabled={logs.length === 0}
           >
             <Trash2 size={14} />
-            <span>清除日誌</span>
+            <span>{t('tabs.log.btn.clear')}</span>
           </button>
         </div>
       </div>
@@ -81,15 +83,15 @@ export function LogTab({
             <div key={index} className={styles.logLine}>{line}</div>
           ))
         ) : (
-          <div className={styles.logEmpty}>目前無遊戲執行日誌紀錄。點選「啟動遊戲」後，控制台輸出將在此即時呈現。</div>
+          <div className={styles.logEmpty}>{t('tabs.log.empty')}</div>
         )}
       </div>
       {isCrashed && (
         <div className={styles.crashBanner}>
           <AlertTriangle size={18} />
           <div>
-            <strong>遊戲異常崩潰退出！</strong>
-            <span>請檢查下方日誌內容，找出 Mod 衝突或設定錯誤原因。</span>
+            <strong>{t('tabs.log.crash_title')}</strong>
+            <span>{t('tabs.log.crash_desc')}</span>
           </div>
         </div>
       )}

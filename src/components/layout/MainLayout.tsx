@@ -26,7 +26,7 @@ export function MainLayout() {
     });
     loadConfig();
 
-    // 每 5 分鐘在背景檢查並自動刷新即將過期的 Token
+    // 每 5 分鐘背景檢查並刷新過期 Token
     const intervalId = setInterval(() => {
       useAccountStore.getState().checkAndRefreshTokens();
     }, 5 * 60 * 1000);
@@ -50,7 +50,7 @@ export function MainLayout() {
       return <AccountInfoView key={selectedAccountId || 'none'} />;
     }
 
-    // Otherwise, it must be an instance ID
+    // 預設為實例詳細頁面
     return <InstanceDetail instanceId={currentView} />;
   };
 

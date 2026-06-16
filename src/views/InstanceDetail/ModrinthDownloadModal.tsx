@@ -102,7 +102,6 @@ export function ModrinthDownloadModal({
   const [installedProjectIds, setInstalledProjectIds] = useState<Set<string>>(new Set());
   const [updateProjectIds, setUpdateProjectIds] = useState<Set<string>>(new Set());
 
-  // New Selection & Multiple Download States
   const [selectedProjects, setSelectedProjects] = useState<Map<string, { project: any, version: any | null }>>(new Map());
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isSelectingConfirm, setIsSelectingConfirm] = useState(false);
@@ -110,14 +109,13 @@ export function ModrinthDownloadModal({
   const [confirmedSelection, setConfirmedSelection] = useState<Set<string>>(new Set());
   const [installProgress, setInstallProgress] = useState<{ current: number, total: number, name: string } | null>(null);
 
-  // CurseForge & Manual Download States
   const [platform, setPlatform] = useState<'modrinth' | 'curseforge'>('modrinth');
   const [isManualMode, setIsManualMode] = useState(false);
   const [blockedItems, setBlockedItems] = useState<any[]>([]);
   const [detectedFiles, setDetectedFiles] = useState<Record<string, string>>({});
   const [importedItems, setImportedItems] = useState<Set<string>>(new Set());
 
-  // Load installed items and check for updates
+  // 載入已安裝項目並檢查更新
   useEffect(() => {
     if (!isOpen) {
       setInstalledProjectIds(new Set());
@@ -140,7 +138,6 @@ export function ModrinthDownloadModal({
       setSelectedVersionId('');
       setSelectedVersionChangelog('');
       
-      // Reset CurseForge/Manual download states
       setPlatform('modrinth');
       setIsManualMode(false);
       setBlockedItems([]);
@@ -169,7 +166,7 @@ export function ModrinthDownloadModal({
           return;
         }
 
-        // 1. Resolve project_ids of local files from Modrinth
+        // 取得本機檔案的專案識別碼
         const resFiles = await fetch('https://api.modrinth.com/v2/version_files', {
           method: 'POST',
           headers: {
@@ -193,7 +190,7 @@ export function ModrinthDownloadModal({
         }
         setInstalledProjectIds(installedSet);
 
-        // 2. Check for updates on Modrinth
+        // 從 Modrinth 檢查更新
         const loaders = projectType === 'mod' ? [loader.toLowerCase()] : [];
         const resUpdates = await fetch('https://api.modrinth.com/v2/version_files/update', {
           method: 'POST',
@@ -238,7 +235,6 @@ export function ModrinthDownloadModal({
     datapack: 70886,
   };
 
-  // Reset when platform changes
   useEffect(() => {
     setResults([]);
     setSelectedProject(null);
@@ -250,7 +246,7 @@ export function ModrinthDownloadModal({
     setSelectedProjects(new Map());
   }, [platform]);
 
-  // Background Downloads scanner for blocked files
+  // 背景下載掃描器
   useEffect(() => {
     if (!isManualMode || blockedItems.length === 0) return;
 
@@ -272,7 +268,7 @@ export function ModrinthDownloadModal({
     return () => clearInterval(interval);
   }, [isManualMode, blockedItems]);
 
-  // Search when modal opens, query, versions, loader or category changes (debounced)
+  // 搜尋防抖與監聽條件
   useEffect(() => {
     if (!isOpen) return;
 
@@ -283,7 +279,7 @@ export function ModrinthDownloadModal({
     return () => clearTimeout(delayDebounce);
   }, [query, isOpen, selectedVersions, selectedLoader, selectedCategory, platform]);
 
-  // Select the first item by default if results change
+  // 預設選取第一個項目
   useEffect(() => {
     if (results.length > 0) {
       handleSelectProject(results[0]);
@@ -348,14 +344,14 @@ export function ModrinthDownloadModal({
 
     try {
       if (platform === 'modrinth') {
-        // 1. Fetch detailed project description
+        // 取得專案詳細說明
         const projRes = await fetch(`https://api.modrinth.com/v2/project/${hit.project_id}`);
         if (projRes.ok) {
           const data = await projRes.json();
           setProjectBody(data.body || data.description || hit.description || '');
         }
 
-        // 2. Fetch versions
+        // 取得專案相容版本
         const verRes = await fetch(`https://api.modrinth.com/v2/project/${hit.project_id}/version`);
         if (verRes.ok) {
           const versions = await verRes.json();
@@ -650,7 +646,7 @@ export function ModrinthDownloadModal({
     let successCount = 0;
     let failedNames: string[] = [];
 
-    // Download allowed files first
+    // 下載允許直接下載的項目
     for (let i = 0; i < allowed.length; i++) {
       const item = allowed[i];
       setInstallProgress({
@@ -673,7 +669,7 @@ export function ModrinthDownloadModal({
         });
         successCount++;
 
-        // Update local states immediately
+        // 即時更新本地狀態
         setInstalledProjectIds((prev) => {
           const next = new Set(prev);
           next.add(item.project.project_id);
@@ -694,7 +690,7 @@ export function ModrinthDownloadModal({
     setInstallProgress(null);
 
     if (blocked.length > 0) {
-      // Transition to Manual Mode
+      // 切換至手動下載模式
       setBlockedItems(blocked);
       setIsSelectingConfirm(false);
       setIsManualMode(true);
@@ -719,7 +715,7 @@ export function ModrinthDownloadModal({
       if (successCount > 0) {
         setSelectedProjects(new Map());
         setIsSelectingConfirm(false);
-        onClose(); // Automatically close on success
+        onClose(); // 自動關閉彈窗
       }
     }
   };
@@ -961,7 +957,7 @@ export function ModrinthDownloadModal({
                   )}
                 </div>
 
-                {/* Advanced Filters Panel */}
+                {/* 進階篩選面板 */}
                 {showFilters && (
                   <div className={styles.filterPanel}>
                     <div className={styles.filterGroup}>
@@ -1013,7 +1009,7 @@ export function ModrinthDownloadModal({
                   </div>
                 )}
 
-                {/* Recommend Categories tag wrapper (collapsible) */}
+                {/* 推薦分類標籤 */}
                 <div className={styles.categoriesWrapper}>
                   <div className={`${styles.categoriesRow} ${isCategoriesExpanded ? styles.expanded : styles.collapsed}`}>
                     {categoriesList.map(cat => (
@@ -1095,7 +1091,7 @@ export function ModrinthDownloadModal({
                 </div>
               ) : selectedProject ? (
                 <div className={styles.detailLayout}>
-                  {/* Header */}
+                  {/* 專案標頭 */}
                   <div className={styles.detailHeader}>
                     <SafeImage 
                       src={selectedProject.icon_url} 
@@ -1109,7 +1105,7 @@ export function ModrinthDownloadModal({
                     </div>
                   </div>
 
-                  {/* Installation & Version Selection */}
+                  {/* 安裝與版本選擇 */}
                   <div className={styles.installationBar}>
                     <div className={styles.versionSelector}>
                       <label className={styles.fieldLabel}>適用版本</label>
@@ -1139,7 +1135,7 @@ export function ModrinthDownloadModal({
                     )}
                   </div>
 
-                  {/* Body Tabs / Changelog */}
+                  {/* 詳細內容與更新日誌 */}
                   <div className={`${styles.detailContent} global-scrollbar`}>
                     <div className={styles.contentSection}>
                       <h4>詳細說明</h4>

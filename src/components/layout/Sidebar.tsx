@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useSettingsStore } from '../../store/settingsStore';
+import { useI18n } from '../../utils/i18n';
 import { getInstanceIconSrc } from '../../utils/versionUtils';
 import { invoke } from '@tauri-apps/api/core';
 import { LayoutGrid, Settings, User, Loader, ArrowUpCircle } from 'lucide-react';
@@ -66,6 +67,7 @@ function filterChangelog(body: string, currentVersion: string): string {
 
 export function Sidebar() {
   const { currentView, setCurrentView, addNotification } = useAppStore();
+  const { t } = useI18n();
 
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<any>(null);
@@ -73,6 +75,7 @@ export function Sidebar() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
 
+  // 檢查更新
   const handleCheckUpdate = async (silent: boolean = false) => {
     if (isCheckingUpdate) return;
     setIsCheckingUpdate(true);
@@ -85,8 +88,8 @@ export function Sidebar() {
         if (!silent) {
           addNotification({
             type: 'info',
-            title: '檢查更新',
-            message: '目前已是最新版本。'
+            title: t('sidebar.check_updates'),
+            message: t('sidebar.latest_version')
           });
         }
       }
@@ -95,7 +98,7 @@ export function Sidebar() {
       if (!silent) {
         addNotification({
           type: 'error',
-          title: '檢查更新失敗',
+          title: t('sidebar.check_failed'),
           message: String(err)
         });
       }
@@ -104,6 +107,7 @@ export function Sidebar() {
     }
   };
 
+  // 套用更新
   const handleApplyUpdate = async () => {
     if (!updateInfo || isUpdating) return;
     setIsUpdating(true);
@@ -111,14 +115,14 @@ export function Sidebar() {
     try {
       addNotification({
         type: 'info',
-        title: '下載更新',
-        message: '開始下載更新，請稍候...'
+        title: t('sidebar.downloading_update'),
+        message: t('sidebar.downloading_update_msg')
       });
       await updateInfo.downloadAndInstall();
       addNotification({
         type: 'success',
-        title: '下載更新完成',
-        message: '即將重新啟動應用程式以套用更新。'
+        title: t('sidebar.download_complete'),
+        message: t('sidebar.download_complete_msg')
       });
       setTimeout(async () => {
         try {
@@ -126,7 +130,7 @@ export function Sidebar() {
         } catch (err) {
           console.error('Relaunch failed:', err);
           setIsUpdating(false);
-          setUpdateError('重啟失敗，請手動重啟應用程式。');
+          setUpdateError('Relaunch failed, please restart the app manually.');
         }
       }, 1500);
     } catch (err) {
@@ -135,11 +139,12 @@ export function Sidebar() {
       setUpdateError(String(err));
       addNotification({
         type: 'error',
-        title: '更新安裝失敗',
+        title: t('sidebar.update_failed'),
         message: String(err)
       });
     }
   };
+
   const instances = useInstanceStore((state) => state.instances);
   const accounts = useAccountStore((state) => state.accounts);
   const [baseDir, setBaseDir] = useState('');
@@ -149,6 +154,7 @@ export function Sidebar() {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 0, opacity: 0 });
 
+  // 初始化目錄與版本
   useEffect(() => {
     invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
     getVersion().then(setAppVersion).catch(console.error);
@@ -159,8 +165,8 @@ export function Sidebar() {
     checkUpdateRef.current = handleCheckUpdate;
   });
 
+  // 排程檢查更新
   useEffect(() => {
-    // 啟動時自動檢查更新（靜音模式，只有有更新時才彈窗提示）
     checkUpdateRef.current(true);
 
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -168,15 +174,12 @@ export function Sidebar() {
     const getMsUntilNextSchedule = (): number => {
       const now = new Date();
       
-      // 今天 00:00
       const time0 = new Date(now);
       time0.setHours(0, 0, 0, 0);
       
-      // 今天 12:00
       const time12 = new Date(now);
       time12.setHours(12, 0, 0, 0);
       
-      // 明天 00:00
       const timeNextDay0 = new Date(now);
       timeNextDay0.setDate(now.getDate() + 1);
       timeNextDay0.setHours(0, 0, 0, 0);
@@ -209,11 +212,10 @@ export function Sidebar() {
     };
   }, []);
 
-
+  // 滑動指示器定位
   useEffect(() => {
     const updateIndicator = () => {
       if (!sidebarRef.current) return;
-      // Search across all nav item zones in the sidebar
       const activeEl = sidebarRef.current.querySelector(
         `.${styles.navItem}.${styles.active}`
       ) as HTMLElement;
@@ -242,7 +244,7 @@ export function Sidebar() {
   return (
     <>
       <div className={styles.sidebar} ref={sidebarRef}>
-        {/* Top fixed zone: Account + 實例總覽 */}
+        {/* 頂部區域 */}
         <div className={styles.navTop}>
           <AccountDropdown />
           <div className={styles.navTopItems}>
@@ -252,7 +254,7 @@ export function Sidebar() {
                 onClick={() => setCurrentView('account_info')}
               >
                 <User className={styles.navItemIcon} />
-                <span>帳號資訊</span>
+                <span>{t('account.title')}</span>
               </button>
             )}
             <button
@@ -260,14 +262,14 @@ export function Sidebar() {
               onClick={() => setCurrentView('instances_overview')}
             >
               <LayoutGrid className={styles.navItemIcon} />
-              <span>實例總覽</span>
+              <span>{t('overview.title')}</span>
             </button>
           </div>
         </div>
 
-        {/* Middle scrollable zone: instance list */}
+        {/* 中間滾動實例列表 */}
         <div className={styles.navInstances}>
-          <div className={styles.sectionTitle}>我的實例</div>
+          <div className={styles.sectionTitle}>{t('sidebar.my_instances')}</div>
           {instances.filter(i => i && i.id).map(instance => {
             const iconSrc = getInstanceIconSrc(instance, baseDir, settingsConfig.instancesPath);
             return (
@@ -289,10 +291,10 @@ export function Sidebar() {
                 )}
                 <div className={styles.instanceInfo}>
                   <span className={styles.instanceName}>
-                    {instance.name || '未命名實例'}
+                    {instance.name || t('overview.unnamed')}
                   </span>
                   <span className={styles.instanceVersion}>
-                    {instance.version || '未知版本'} ({instance.modloader === 'Custom' ? '自訂' : instance.modloader})
+                    {instance.version || t('overview.unknown_version')} ({instance.modloader === 'Custom' ? t('overview.custom') : instance.modloader})
                   </span>
                 </div>
               </button>
@@ -300,30 +302,30 @@ export function Sidebar() {
           })}
         </div>
 
-        {/* Bottom fixed zone: 全局設定 */}
+        {/* 底部全局設定 */}
         <div className={styles.navBottom}>
           <button
             className={`${styles.navItem} ${currentView === 'global_settings' ? styles.active : ''}`}
             onClick={() => setCurrentView('global_settings')}
           >
             <Settings className={styles.navItemIcon} />
-            <span>全局設定</span>
+            <span>{t('nav.settings')}</span>
           </button>
 
-          {/* 版本號與檢查更新 */}
+          {/* 版本與更新 */}
           <div className={styles.versionContainer}>
-            <span className={styles.versionText}>版本：v{appVersion}</span>
+            <span className={styles.versionText}>{t('settings.about.version', { version: appVersion })}</span>
             <button
               className={styles.updateCheckBtn}
               onClick={() => handleCheckUpdate(false)}
               disabled={isCheckingUpdate}
             >
-              {isCheckingUpdate ? '檢查中...' : '檢查更新'}
+              {isCheckingUpdate ? t('sidebar.checking_updates') : t('sidebar.check_updates')}
             </button>
           </div>
         </div>
 
-        {/* Sliding Indicator Line — positioned relative to whole sidebar */}
+        {/* 滑動指示器 */}
         <div
           className={styles.slidingIndicator}
           style={{
@@ -334,32 +336,33 @@ export function Sidebar() {
         />
       </div>
 
+      {/* 更新確認彈出視窗 */}
       {isUpdateModalOpen && updateInfo && (
         <div className={styles.modalOverlay}>
           <div className={styles.updateModal}>
             <div className={styles.modalHeader}>
               <div className={styles.modalHeaderTitle}>
                 <ArrowUpCircle size={20} className={styles.updateIcon} />
-                <span>發現新版本：v{updateInfo.version}</span>
+                <span>{t('sidebar.new_version', { version: updateInfo.version })}</span>
               </div>
             </div>
             
             <div className={styles.modalBody}>
               {updateInfo.date && (
-                <div className={styles.updateDate}>發布日期：{updateInfo.date}</div>
+                <div className={styles.updateDate}>{t('sidebar.release_date', { date: updateInfo.date })}</div>
               )}
-              <div className={styles.notesTitle}>更新日誌：</div>
+              <div className={styles.notesTitle}>{t('sidebar.changelog')}</div>
               <div 
                 className={styles.updateNotes}
                 dangerouslySetInnerHTML={{ 
                   __html: updateInfo.body 
                     ? (marked.parse(filterChangelog(updateInfo.body, appVersion)) as string) 
-                    : '<p>無更新日誌。</p>' 
+                    : t('sidebar.no_changelog')
                 }}
               />
               {updateError && (
                 <div className={styles.errorMessage}>
-                  ⚠️ 更新錯誤：{updateError}
+                  ⚠️ {t('sidebar.update_error', { error: updateError })}
                 </div>
               )}
             </div>
@@ -371,19 +374,19 @@ export function Sidebar() {
                     className={styles.cancelBtn} 
                     onClick={() => setIsUpdateModalOpen(false)}
                   >
-                    稍後再說
+                    {t('sidebar.btn.later')}
                   </button>
                   <button 
                     className={styles.confirmBtn} 
                     onClick={handleApplyUpdate}
                   >
-                    立即更新並重啟
+                    {t('sidebar.btn.update')}
                   </button>
                 </>
               ) : (
                 <div className={styles.updatingStatus}>
-                  <Loader className={`${styles.spinIcon} animate-spin`} size={18} />
-                  <span>正在下載並安裝更新，請勿關閉程式...</span>
+                  <Loader className="animate-spin" size={18} />
+                  <span>{t('sidebar.updating_status')}</span>
                 </div>
               )}
             </div>

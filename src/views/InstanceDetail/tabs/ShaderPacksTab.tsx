@@ -1,6 +1,6 @@
-
 import { Upload, Download, Loader, FolderOpen, Trash2, Sparkles } from 'lucide-react';
 import { ResourcePackItem } from '../../../types';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
 
 interface ShaderPacksTabProps {
@@ -22,6 +22,8 @@ export function ShaderPacksTab({
   handleOpenFolder,
   handleDeleteSp,
 }: ShaderPacksTabProps) {
+  const { t } = useI18n();
+
   const onDownloadClick = () => {
     setModrinthModalType('shader');
     setIsModrinthModalOpen(true);
@@ -33,16 +35,16 @@ export function ShaderPacksTab({
         <div className={styles.btnRow}>
           <button className={styles.primaryBtn} onClick={handleImportSps}>
             <Upload size={16} />
-            <span>匯入光影包</span>
+            <span>{t('tabs.sp.btn.import')}</span>
           </button>
           <button className={styles.secBtn} onClick={onDownloadClick}>
             <Download size={16} />
-            <span>下載光影包</span>
+            <span>{t('tabs.sp.btn.download')}</span>
           </button>
         </div>
         <button className={styles.actionBtn} onClick={() => handleOpenFolder('shaderpacks')}>
           <FolderOpen size={16} />
-          <span>開啟光影包資料夾</span>
+          <span>{t('tabs.sp.btn.folder')}</span>
         </button>
       </div>
 
@@ -55,9 +57,9 @@ export function ShaderPacksTab({
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>名稱</th>
-                <th>類型</th>
-                <th style={{ width: 140, textAlign: 'center' }}>操作</th>
+                <th>{t('tabs.sp.label.name')}</th>
+                <th>{t('tabs.sp.label.type')}</th>
+                <th style={{ width: 140, textAlign: 'center' }}>{t('tabs.sp.label.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -69,7 +71,7 @@ export function ShaderPacksTab({
                   </td>
                   <td>
                     <span className={`${styles.badge} ${styles.bothBadge}`}>
-                      {sp.description || '光影包'}
+                      {sp.description || t('tabs.sp.default_desc')}
                     </span>
                   </td>
                   <td>
@@ -86,18 +88,18 @@ export function ShaderPacksTab({
         ) : (
           <div className={styles.emptyStateContainer}>
             <Sparkles className={styles.emptyStateIcon} size={48} />
-            <div className={styles.emptyStateTitle}>目前無安裝光影包</div>
+            <div className={styles.emptyStateTitle}>{t('tabs.sp.empty_title')}</div>
             <div className={styles.emptyStateDesc}>
-              光影包 (Shaders) 能大幅提升遊戲畫面的光影效果、動態水面與真實雲朵。請點選下載尋找您喜愛的光影包。
+              {t('tabs.sp.empty_desc')}
             </div>
             <div className={styles.btnRow}>
               <button className={styles.primaryBtn} onClick={onDownloadClick}>
                 <Download size={14} />
-                <span>從 Modrinth 下載</span>
+                <span>{t('tabs.sp.btn.download_modrinth')}</span>
               </button>
               <button className={styles.secBtn} onClick={handleImportSps}>
                 <Upload size={14} />
-                <span>手動匯入光影包</span>
+                <span>{t('tabs.sp.btn.import_manual')}</span>
               </button>
             </div>
           </div>

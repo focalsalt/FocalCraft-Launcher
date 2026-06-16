@@ -1,5 +1,6 @@
-
 import { useSettingsStore } from '../../../store/settingsStore';
+import { useI18n } from '../../../utils/i18n';
+import { FolderOpen, Trash2 } from 'lucide-react';
 import styles from '../InstanceDetail.module.css';
 
 interface SettingsTabProps {
@@ -12,6 +13,8 @@ interface SettingsTabProps {
   handleSaveSettings: () => void;
   handleOpenFolder: () => void;
   setIsConfirmDeleteOpen: (val: boolean) => void;
+  handleBrowseJavaPath: () => void;
+  handleClearJavaPath: () => void;
 }
 
 export function SettingsTab({
@@ -24,8 +27,11 @@ export function SettingsTab({
   handleSaveSettings,
   handleOpenFolder,
   setIsConfirmDeleteOpen,
+  handleBrowseJavaPath,
+  handleClearJavaPath,
 }: SettingsTabProps) {
   const settingsConfig = useSettingsStore((state) => state.config);
+  const { t } = useI18n();
 
   const handleRestoreDefaultMemory = () => {
     setMaxMemory(settingsConfig.defaultMaxMemory || 4096);
@@ -37,13 +43,13 @@ export function SettingsTab({
 
   return (
     <div className={styles.settingsCard}>
-      <h3 className={styles.settingsSectionTitle}>設定檔細項</h3>
+      <h3 className={styles.settingsSectionTitle}>{t('tabs.inst_settings.title')}</h3>
 
       <div className={styles.formGroup}>
         <div className={styles.formLabelRow}>
-          <label>最大分配記憶體 (MB)</label>
+          <label>{t('tabs.inst_settings.label.max_mem')}</label>
           <button type="button" className={styles.formHelperBtn} onClick={handleRestoreDefaultMemory}>
-            使用全域預設值 ({settingsConfig.defaultMaxMemory || 4096} MB)
+            {t('tabs.inst_settings.btn.use_global', { mem: settingsConfig.defaultMaxMemory || 4096 })}
           </button>
         </div>
         <div className={styles.sliderGroup}>
@@ -66,48 +72,61 @@ export function SettingsTab({
             className={styles.numInput}
           />
         </div>
-        <span className={styles.fieldExplanation}>分配給 Java 虛擬機器 (JVM) 的最大記憶體上限，建議至少設定 2048 MB。</span>
+        <span className={styles.fieldExplanation}>{t('tabs.inst_settings.help.max_mem')}</span>
       </div>
 
       <div className={styles.formGroup}>
         <div className={styles.formLabelRow}>
-          <label>自訂本實例 Java 執行路徑</label>
+          <label>{t('tabs.inst_settings.label.java_path')}</label>
         </div>
-        <input
-          type="text"
-          className={styles.input}
-          placeholder="留空則使用全域設定值"
-          value={customJava}
-          onChange={(e) => setCustomJava(e.target.value)}
-        />
-        <span className={styles.fieldExplanation}>如果您的模組需要特定 Java 版本，可在此指定特定路徑。留空則自動偵測系統相容版本。</span>
+        {/* Java 路徑輸入框與瀏覽/清除按鈕 */}
+        <div className={styles.inputGroup}>
+          <input
+            type="text"
+            className={styles.input}
+            placeholder={t('tabs.inst_settings.placeholder.java_path')}
+            value={customJava}
+            onChange={(e) => setCustomJava(e.target.value)}
+          />
+          <button type="button" className={styles.btnIcon} onClick={handleBrowseJavaPath} title={t('settings.btn.browse')}>
+            <FolderOpen size={16} />
+            <span>{t('settings.btn.browse')}</span>
+          </button>
+          {customJava && (
+            <button type="button" className={styles.btnIconSec} onClick={handleClearJavaPath} title={t('tabs.settings.btn.clear')}>
+              <Trash2 size={16} />
+              <span>{t('tabs.settings.btn.clear')}</span>
+            </button>
+          )}
+        </div>
+        <span className={styles.fieldExplanation}>{t('tabs.inst_settings.help.java_path')}</span>
       </div>
 
       <div className={styles.formGroup}>
         <div className={styles.formLabelRow}>
-          <label>自訂 JVM 啟動參數</label>
+          <label>{t('tabs.inst_settings.label.jvm_args')}</label>
           <button type="button" className={styles.formHelperBtn} onClick={handleRestoreDefaultJvm}>
-            還原預設參數
+            {t('tabs.inst_settings.btn.restore_jvm')}
           </button>
         </div>
         <textarea
           className={styles.textarea}
           value={jvmArgs}
           onChange={(e) => setJvmArgs(e.target.value)}
-          placeholder="例如：-XX:+UseG1GC -XX:MaxGCPauseMillis=50"
+          placeholder={t('settings.placeholder.jvm_args')}
         />
-        <span className={styles.fieldExplanation}>進階 Java 參數設定，例如記憶體回收策略 (Garbage Collection) 優化等。</span>
+        <span className={styles.fieldExplanation}>{t('tabs.inst_settings.help.jvm_args')}</span>
       </div>
 
       <div className={`${styles.btnRow} ${styles.settingsBtnRow}`} style={{ marginTop: 24 }}>
         <button className={styles.saveBtn} onClick={handleSaveSettings}>
-          儲存設定
+          {t('tabs.inst_settings.btn.save')}
         </button>
         <button className={styles.actionBtn} onClick={() => handleOpenFolder()}>
-          開啟實例資料夾
+          {t('tabs.inst_settings.btn.folder')}
         </button>
         <button className={styles.deleteBtn} onClick={() => setIsConfirmDeleteOpen(true)}>
-          刪除此實例
+          {t('tabs.inst_settings.btn.delete')}
         </button>
       </div>
     </div>

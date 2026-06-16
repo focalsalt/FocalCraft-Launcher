@@ -16,10 +16,11 @@ import {
   WifiOff
 } from 'lucide-react';
 import { SkinViewer, WalkingAnimation, IdleAnimation } from 'skinview3d';
+import { useI18n } from '../../utils/i18n';
 import styles from './AccountInfoView.module.css';
 
 
-// 9款官方預設外觀資訊，包含名稱、變體模型、本機材質路徑與可靠的 CDN 材質 URL
+// 官方預設外觀
 const DEFAULT_SKINS = [
   {
     name: "Steve",
@@ -77,7 +78,7 @@ const DEFAULT_SKINS = [
   }
 ];
 
-// 非同步渲染 3D 披風/鞘翅靜態圖，生成完成後自動 dispose 釋放 WebGL 資源
+// 渲染 3D 披風與鞘翅靜態圖
 function renderCape3D(capeB64: string, showElytra: boolean): Promise<string> {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
@@ -90,7 +91,7 @@ function renderCape3D(capeB64: string, showElytra: boolean): Promise<string> {
       enableControls: false
     });
 
-    // 設定 3D 相機位置及視角，如果顯示鞘翅，相機需向後拉遠以避免翅膀被切割
+    // 設定 3D 相機與視角
     if (showElytra) {
       viewer.camera.position.set(14, 1.5, -34);
       viewer.controls.target.set(0, -1, -2);
@@ -106,7 +107,7 @@ function renderCape3D(capeB64: string, showElytra: boolean): Promise<string> {
       viewer.loadCape(img, { backEquipment: showElytra ? "elytra" : "cape" });
       viewer.render();
 
-      // 在下一個畫格獲取 Data URL，確保 WebGL 已渲染完畢
+      // 獲取 Data URL
       requestAnimationFrame(() => {
         try {
           const dataUrl = canvas.toDataURL();
@@ -125,7 +126,7 @@ function renderCape3D(capeB64: string, showElytra: boolean): Promise<string> {
   });
 }
 
-// 非同步渲染 3D 皮膚靜態圖，生成完成後自動 dispose 釋放 WebGL 資源
+// 渲染 3D 皮膚靜態圖
 function renderSkin3D(skinB64: string, variant: 'CLASSIC' | 'SLIM'): Promise<string> {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
@@ -138,10 +139,10 @@ function renderSkin3D(skinB64: string, variant: 'CLASSIC' | 'SLIM'): Promise<str
       enableControls: false
     });
 
-    // 設定 3D 相機位置及視角：面向左前方 45 度，俯角 20 度，人物整體更往上且縮小一點
-    viewer.playerObject.rotation.y = -0.785; // 面向左前方 (45 度)
-    viewer.camera.position.set(0, 17.8, 38.0); // 增加 Z 軸距離 (38.0) 縮小人物，維持 20 度俯角
-    viewer.controls.target.set(0, 2, 0); // 焦點下移 (y=4.0) 使人物在畫面中更偏上
+    // 設定 3D 相機與視角
+    viewer.playerObject.rotation.y = -0.785;
+    viewer.camera.position.set(0, 17.8, 38.0);
+    viewer.controls.target.set(0, 2, 0);
     viewer.controls.update();
 
     const img = new Image();
@@ -169,7 +170,7 @@ function renderSkin3D(skinB64: string, variant: 'CLASSIC' | 'SLIM'): Promise<str
   });
 }
 
-// 非同步檢測皮膚模型變體 (Classic / Slim)
+// 檢測皮膚模型變體
 function detectSkinVariant(skinB64: string): Promise<'CLASSIC' | 'SLIM'> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -194,14 +195,14 @@ function detectSkinVariant(skinB64: string): Promise<'CLASSIC' | 'SLIM'> {
         };
 
         let isSlim = true;
-        // 檢測右手臂區塊最外側的像素列 X: 55, Y: 20-31
+        // 檢測右手臂像素
         for (let y = 20; y < 32; y++) {
           if (getAlpha(55, y) > 0) {
             isSlim = false;
             break;
           }
         }
-        // 檢測左手臂區塊最外側的像素列 X: 47, Y: 52-63
+        // 檢測左手臂像素
         if (isSlim) {
           for (let y = 52; y < 64; y++) {
             if (getAlpha(47, y) > 0) {
@@ -224,6 +225,7 @@ function detectSkinVariant(skinB64: string): Promise<'CLASSIC' | 'SLIM'> {
 export function AccountInfoView() {
   const { accounts, selectedAccountId, refreshAccountToken } = useAccountStore();
   const { activeDetailTab, addNotification } = useAppStore();
+  const { t } = useI18n();
 
   const activeAccount = accounts.find(a => a.id === selectedAccountId);
 
@@ -231,7 +233,7 @@ export function AccountInfoView() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 紋理 Base64 快取
+  // Base64 快取
   const [skinBase64, setSkinBase64] = useState<string>('');
   const [skinVariant, setSkinVariant] = useState<'CLASSIC' | 'SLIM'>('CLASSIC');
   const [capeBase64Map, setCapeBase64Map] = useState<Record<string, string>>({});
@@ -244,7 +246,7 @@ export function AccountInfoView() {
   const [isApplyingSkinId, setIsApplyingSkinId] = useState<string | null>(null);
   const [confirmDeletePath, setConfirmDeletePath] = useState<string | null>(null);
 
-  // 官方預設外觀狀態
+  // 預設外觀狀態
   const [defaultSkinsB64, setDefaultSkinsB64] = useState<Record<string, string>>({});
   const [defaultSkins3D, setDefaultSkins3D] = useState<Record<string, string>>({});
   const [isApplyingDefaultSkin, setIsApplyingDefaultSkin] = useState<string | null>(null);
@@ -255,29 +257,29 @@ export function AccountInfoView() {
   const [defaultSkinErrors, setDefaultSkinErrors] = useState<Record<string, boolean>>({});
   const [wardrobeErrors, setWardrobeErrors] = useState<Record<string, boolean>>({});
 
-  // 3D 渲染控制狀態
+  // 3D 控制狀態
   const [animationType, setAnimationType] = useState<'none' | 'idle' | 'walk'>('idle');
   const [autoRotate, setAutoRotate] = useState(false);
 
-  // 皮膚變體選擇與上傳檔案狀態
+  // 上傳皮膚狀態
   const [selectedVariant, setSelectedVariant] = useState<'CLASSIC' | 'SLIM'>('CLASSIC');
   const [selectedFilePath, setSelectedFilePath] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
 
-  // 披風操作與預覽狀態
+  // 披風預覽狀態
   const [isUpdatingCape, setIsUpdatingCape] = useState(false);
-  const [selectedCapeId, setSelectedCapeId] = useState<string | null>(null); // 手動選取預覽用
+  const [selectedCapeId, setSelectedCapeId] = useState<string | null>(null);
   const [showElytra, setShowElytra] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewerRef = useRef<SkinViewer | null>(null);
   const latestLoadIdRef = useRef<number>(0);
 
-  // 載入 Mojang 資訊與下載 Base64 貼圖
+  // 獲取 Mojang 設定與貼圖
   const fetchProfileData = async () => {
     if (!activeAccount) {
-      setErrorMsg("請先登入帳號");
+      setErrorMsg(t('account.err.login_first'));
       setIsLoading(false);
       return;
     }
@@ -294,24 +296,24 @@ export function AccountInfoView() {
     setWardrobeErrors({});
 
     try {
-      // 確保 Token 在有效期內，如果快過期會自動刷新
+      // 刷新 Token
       let currentToken = activeAccount.mcAccessToken;
       if (activeAccount.tokenExpiresAt < Date.now()) {
         const refreshed = await refreshAccountToken(activeAccount.id);
         if (refreshed) {
           currentToken = refreshed.mcAccessToken;
         } else {
-          throw new Error("帳號認證已過期且自動重新整理失敗，請點選登入頭像重新登入。");
+          throw new Error(t('account.err.session_expired'));
         }
       }
 
-      // 1. 取得 Mojang Profile 資訊
+      // 取得 Profile 資訊
       const profileData = await invoke<MojangProfile>('get_minecraft_profile', {
         mcAccessToken: currentToken
       });
       setProfile(profileData);
 
-      // 2. 取得 active 的皮膚並下載 base64
+      // 下載目前皮膚
       const activeSkin = profileData.skins?.find(s => s.state === 'ACTIVE');
       if (activeSkin) {
         try {
@@ -325,12 +327,12 @@ export function AccountInfoView() {
           setSkinVariant('CLASSIC');
         }
       } else {
-        // 沒有 active 皮膚，載入 Steve
+        // 無皮膚時載入 Steve
         setSkinBase64('/Steve.png');
         setSkinVariant('CLASSIC');
       }
 
-      // 3. 取得所有披風並下載 base64
+      // 下載所有披風
       const capeMap: Record<string, string> = {};
       const errorsMap: Record<string, boolean> = {};
       if (profileData.capes && profileData.capes.length > 0) {
@@ -360,7 +362,7 @@ export function AccountInfoView() {
     try {
       const skins = await invoke<any[]>('get_wardrobe_skins');
 
-      // 自動檢測 variant 並格式化名稱（若是純數字，即為 timestamp 檔案，格式化為日期時間）
+      // 格式化皮膚櫃資料
       const processedSkins = await Promise.all(
         skins.map(async (skin) => {
           let detectedVariant = skin.variant;
@@ -396,7 +398,7 @@ export function AccountInfoView() {
     }
   };
 
-  // 點擊套用皮膚櫃皮膚
+  // 套用皮膚櫃皮膚
   const handleApplyWardrobeSkin = async (skin: any) => {
     if (!activeAccount) return;
     setIsApplyingSkinId(skin.file_path);
@@ -416,8 +418,8 @@ export function AccountInfoView() {
 
       addNotification({
         type: 'success',
-        title: '更換皮膚成功',
-        message: `成功套用皮膚 "${skin.name}"！`
+        title: t('account.notification.skin_used.title'),
+        message: t('account.notification.skin_used.msg', { name: skin.name })
       });
 
       await fetchProfileData();
@@ -425,7 +427,7 @@ export function AccountInfoView() {
       console.error(err);
       addNotification({
         type: 'error',
-        title: '套用皮膚失敗',
+        title: t('account.notification.skin_use_failed.title'),
         message: String(err)
       });
     } finally {
@@ -433,7 +435,7 @@ export function AccountInfoView() {
     }
   };
 
-  // 點擊套用官方預設外觀
+  // 套用官方預設外觀
   const handleApplyDefaultSkin = async (skinUrl: string, variant: 'CLASSIC' | 'SLIM') => {
     if (!activeAccount) return;
     setIsApplyingDefaultSkin(skinUrl);
@@ -453,8 +455,8 @@ export function AccountInfoView() {
 
       addNotification({
         type: 'success',
-        title: '更換預設外觀成功',
-        message: `成功將預設外觀套用至您的 Mojang 帳號！`
+        title: t('account.notification.skin_used.title'),
+        message: t('account.notification.skin_used.msg', { name: 'Default' })
       });
 
       await fetchProfileData();
@@ -462,7 +464,7 @@ export function AccountInfoView() {
       console.error(err);
       addNotification({
         type: 'error',
-        title: '套用預設外觀失敗',
+        title: t('account.notification.skin_use_failed.title'),
         message: String(err)
       });
     } finally {
@@ -476,15 +478,15 @@ export function AccountInfoView() {
       await invoke('delete_skin_from_wardrobe', { filePath });
       addNotification({
         type: 'success',
-        title: '刪除成功',
-        message: '已從皮膚櫃中移除該皮膚。'
+        title: t('account.notification.skin_deleted.title'),
+        message: t('account.notification.skin_deleted.msg', { name: '' })
       });
       await fetchWardrobeSkins();
     } catch (err) {
       console.error(err);
       addNotification({
         type: 'error',
-        title: '刪除失敗',
+        title: t('account.notification.skin_delete_failed.title'),
         message: String(err)
       });
     } finally {
@@ -492,19 +494,19 @@ export function AccountInfoView() {
     }
   };
 
-  // 監聽分頁切換以加載皮膚櫃
+  // 分頁切換加載皮膚櫃
   useEffect(() => {
     if (activeDetailTab === 'skin_wardrobe') {
       fetchWardrobeSkins();
     }
   }, [activeDetailTab]);
 
-  // 監聽拖放上傳與高亮樣式
+  // 監聽拖放上傳
   useEffect(() => {
     let unlisten: (() => void) | null = null;
 
     getCurrentWebview().onDragDropEvent((event) => {
-      // 僅在「皮膚」分頁時處理拖曳檔案
+      // 僅在皮膚分頁處理
       if (activeDetailTab !== 'skins') return;
 
       if (event.payload.type === 'enter') {
@@ -521,8 +523,8 @@ export function AccountInfoView() {
           } else {
             addNotification({
               type: 'error',
-              title: '不支援的檔案格式',
-              message: '請拖放 PNG 格式的皮膚檔案。'
+              title: t('account.notification.skin_import_invalid.title'),
+              message: t('account.notification.skin_import_invalid.msg')
             });
           }
         }
@@ -536,7 +538,7 @@ export function AccountInfoView() {
     };
   }, [activeDetailTab]);
 
-  // 當皮膚櫃清單有變時，非同步生成皮膚 3D 靜態縮圖
+  // 生成皮膚櫃 3D 縮圖
   useEffect(() => {
     let active = true;
 
@@ -549,7 +551,7 @@ export function AccountInfoView() {
       for (const skin of wardrobeSkins) {
         if (!active) return;
 
-        // 用 file_path 作為快取鍵
+        // 暫存快取
         const cacheKey = skin.file_path;
         if (wardrobe3DMap[cacheKey]) {
           newPreviews[cacheKey] = wardrobe3DMap[cacheKey];
@@ -588,7 +590,7 @@ export function AccountInfoView() {
     };
   }, [wardrobeSkins]);
 
-  // 異步讀取本機 9 款預設皮膚的 Base64 數據
+  // 讀取預設皮膚 Base64
   useEffect(() => {
     let active = true;
     const loadDefaultSkins = async () => {
@@ -597,7 +599,7 @@ export function AccountInfoView() {
       for (const skin of DEFAULT_SKINS) {
         if (!active) return;
         try {
-          // 直接從本機 public 目錄讀取，100% 離線可用且無 CORS 限制
+          // 離線自本機讀取
           const res = await fetch(skin.localUrl);
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
           const blob = await res.blob();
@@ -624,7 +626,7 @@ export function AccountInfoView() {
     };
   }, []);
 
-  // 根據快取的 Base64 異步渲染 9 款預設皮膚的 3D 靜態人偶
+  // 渲染預設外觀 3D 人偶
   useEffect(() => {
     let active = true;
     const renderDefaultPreviews = async () => {
@@ -670,7 +672,7 @@ export function AccountInfoView() {
 
   useEffect(() => {
     fetchProfileData();
-    // 切換帳號時重新讀取
+    // 切換帳號時重新整理
   }, [selectedAccountId]);
 
   // 初始化 skinview3d
@@ -689,14 +691,14 @@ export function AccountInfoView() {
     viewer.controls.enableRotate = true;
     viewer.controls.enablePan = false;
 
-    // 設定適當的視角與相機距離 (中心點設定在 y=10 胸腔位置，z=50 全身最佳視野)
+    // 設定相機視角
     viewer.camera.position.set(0, 2.5, 50);
     viewer.controls.target.set(0, 2.5, 0);
     viewer.controls.update();
 
     viewerRef.current = viewer;
 
-    // 使用 ResizeObserver 動態監聽並同步 Canvas 的解析度尺寸，防止拉伸與像素切割
+    // 監聽 Canvas 尺寸調整大小
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
@@ -707,10 +709,10 @@ export function AccountInfoView() {
     });
     resizeObserver.observe(container);
 
-    // 載入預設本機 Steve 皮膚作為初始佔位符
+    // 載入 Steve 佔位符
     viewer.loadSkin('/Steve.png');
 
-    // 載入預設灰色鞘翅貼圖以防 CORS，存入 State 快取
+    // 載入鞘翅貼圖
     invoke<string>('get_image_base64', {
       url: "https://textures.minecraft.net/texture/c52865c3b17d0c345f8f8b809a7b975e5be2ad7f742217cde6c57f9ed5ad5"
     })
@@ -728,7 +730,7 @@ export function AccountInfoView() {
     };
   }, []);
 
-  // 當皮膚有更新時重新載入 3D 模型
+  // 更新 3D 皮膚模型
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer) return;
@@ -789,7 +791,7 @@ export function AccountInfoView() {
     }
   }, [selectedCapeId, profile, capeBase64Map, showElytra, defaultElytraB64]);
 
-  // 當 2D 披風貼圖載入或「顯示鞘翅」切換時，非同步生成 3D 靜態縮圖
+  // 生成 3D 披風縮圖
   useEffect(() => {
     let active = true;
 
@@ -855,7 +857,7 @@ export function AccountInfoView() {
     };
   }, [capeBase64Map, showElytra, profile]);
 
-  // 動態更新動畫與旋轉
+  // 更新 3D 動畫與旋轉
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!viewer) return;
@@ -868,7 +870,7 @@ export function AccountInfoView() {
       viewer.animation = new IdleAnimation();
     } else if (animationType === 'walk') {
       const walkAnim = new WalkingAnimation();
-      walkAnim.speed = 0.65; // 走路速度調慢為 0.65
+      walkAnim.speed = 0.65;
       viewer.animation = walkAnim;
     }
   }, [animationType, autoRotate]);
@@ -882,45 +884,45 @@ export function AccountInfoView() {
     viewer.controls.update();
   };
 
-  // 複製文字至剪貼簿
+  // 複製至剪貼簿
   const handleCopyText = async (text: string, label: string) => {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
       addNotification({
         type: 'success',
-        title: '複製成功',
-        message: `已複製 ${label} 至剪貼簿：${text}`
+        title: t('tabs.log.notification.copied.title'),
+        message: t('account.notification.copied_to_clipboard', { label, text })
       });
     } catch (err) {
       console.error(err);
       addNotification({
         type: 'error',
-        title: '複製失敗',
-        message: '無法存取剪貼簿'
+        title: t('detail.notification.copy_failed'),
+        message: t('account.err.clipboard_access')
       });
     }
   };
 
-  // 更換皮膚：選擇檔案
+  // 選擇皮膚檔案
   const handleSelectSkinFile = async () => {
     try {
       const path = await invoke<string>('select_single_file', {
-        title: "選擇 Minecraft 皮膚檔案 (*.png)",
-        filter: "PNG 圖片 (*.png)|*.png"
+        title: t('account.select.skin_title'),
+        filter: t('account.select.skin_filter')
       });
       if (path === 'CANCELLED') return;
       setSelectedFilePath(path);
     } catch (err) {
       addNotification({
         type: 'error',
-        title: '選擇檔案失敗',
+        title: t('create.notification.select_file_failed'),
         message: String(err)
       });
     }
   };
 
-  // 更換皮膚：執行上傳
+  // 上傳皮膚
   const handleUploadSkin = async () => {
     if (!activeAccount || !selectedFilePath) return;
 
@@ -938,7 +940,7 @@ export function AccountInfoView() {
         filePath: selectedFilePath
       });
 
-      // 自動儲存至皮膚櫃
+      // 儲存至皮膚櫃
       try {
         await invoke('save_skin_to_wardrobe', {
           filePath: selectedFilePath,
@@ -950,12 +952,12 @@ export function AccountInfoView() {
 
       addNotification({
         type: 'success',
-        title: '更換皮膚成功',
-        message: '您的 Minecraft 角色皮膚已更新，且已自動備份至皮膚櫃。'
+        title: t('account.notification.skin_used.title'),
+        message: t('account.notification.skin_updated_backup')
       });
 
       setSelectedFilePath('');
-      // 重新讀取 Profile 以更新 3D 預覽
+      // 重新載入資料
       await fetchProfileData();
       // 重新讀取皮膚櫃
       await fetchWardrobeSkins();
@@ -963,7 +965,7 @@ export function AccountInfoView() {
       console.error(err);
       addNotification({
         type: 'error',
-        title: '更換皮膚失敗',
+        title: t('account.notification.skin_use_failed.title'),
         message: String(err)
       });
     } finally {
@@ -971,7 +973,7 @@ export function AccountInfoView() {
     }
   };
 
-  // 披風：啟用 / 停用
+  // 啟用或停用披風
   const handleToggleCape = async (cape: MojangCape) => {
     if (!activeAccount || isUpdatingCape) return;
 
@@ -990,8 +992,8 @@ export function AccountInfoView() {
         await invoke('deactivate_cape', { mcAccessToken: currentToken });
         addNotification({
           type: 'success',
-          title: '卸下披風成功',
-          message: '已成功卸下目前穿戴的披風。'
+          title: t('account.notification.cape_deactivated'),
+          message: t('account.notification.cape_deactivated')
         });
       } else {
         // 啟用披風
@@ -1001,8 +1003,8 @@ export function AccountInfoView() {
         });
         addNotification({
           type: 'success',
-          title: '穿戴披風成功',
-          message: `已成功套用 "${cape.alias}" 披風！`
+          title: t('account.notification.cape_activated', { name: cape.alias }),
+          message: t('account.notification.cape_activated', { name: cape.alias })
         });
       }
 
@@ -1012,7 +1014,7 @@ export function AccountInfoView() {
       console.error(err);
       addNotification({
         type: 'error',
-        title: '操作披風失敗',
+        title: t('account.notification.skin_use_failed.title'),
         message: String(err)
       });
     } finally {
@@ -1025,10 +1027,10 @@ export function AccountInfoView() {
     return (
       <div className={styles.errorContainer}>
         <AlertTriangle size={48} style={{ color: '#ff4d4d' }} />
-        <span className={styles.errorTitle}>無法顯示資訊</span>
-        <span className={styles.errorMessage}>請確認您的網路連線或重試。</span>
+        <span className={styles.errorTitle}>{t('account.error.cannot_display')}</span>
+        <span className={styles.errorMessage}>{t('account.error.network_retry')}</span>
         <button className={styles.retryButton} onClick={fetchProfileData}>
-          重新整理
+          {t('account.btn.retry')}
         </button>
       </div>
     );
@@ -1038,13 +1040,13 @@ export function AccountInfoView() {
 
   return (
     <div className={styles.container}>
-      {/* ── 左側：3D 預覽區 ── */}
+      {/* 左側：3D 預覽區 */}
       <div className={styles.previewPanel}>
         <div className={styles.canvasContainer}>
           <canvas ref={canvasRef} className={styles.canvas} />
           {selectedCapeId && (
             <div className={styles.previewBadge}>
-              披風預覽中
+              {t('account.preview.cape_previewing')}
             </div>
           )}
         </div>
@@ -1058,7 +1060,7 @@ export function AccountInfoView() {
               <div className={`${styles.switchTrack} ${autoRotate ? styles.switchTrackActive : ''}`}>
                 <div className={`${styles.switchThumb} ${autoRotate ? styles.switchThumbActive : ''}`} />
               </div>
-              <span className={styles.switchLabel}>自動旋轉</span>
+              <span className={styles.switchLabel}>{t('account.preview.auto_rotate')}</span>
             </div>
 
             <div
@@ -1068,41 +1070,41 @@ export function AccountInfoView() {
               <div className={`${styles.switchTrack} ${showElytra ? styles.switchTrackActive : ''}`}>
                 <div className={`${styles.switchThumb} ${showElytra ? styles.switchThumbActive : ''}`} />
               </div>
-              <span className={styles.switchLabel}>顯示鞘翅</span>
+              <span className={styles.switchLabel}>{t('account.preview.show_elytra')}</span>
             </div>
           </div>
 
           <div className={styles.controlRow}>
-            <span className={styles.controlLabel}>動作模型</span>
+            <span className={styles.controlLabel}>{t('account.preview.model_animation')}</span>
             <div className={styles.btnGroup}>
               <button
                 className={`${styles.controlBtn} ${animationType === 'none' ? styles.controlBtnActive : ''}`}
                 onClick={() => setAnimationType('none')}
               >
-                靜止
+                {t('account.preview.anim.none')}
               </button>
               <button
                 className={`${styles.controlBtn} ${animationType === 'idle' ? styles.controlBtnActive : ''}`}
                 onClick={() => setAnimationType('idle')}
               >
-                呼吸
+                {t('account.preview.anim.idle')}
               </button>
               <button
                 className={`${styles.controlBtn} ${animationType === 'walk' ? styles.controlBtnActive : ''}`}
                 onClick={() => setAnimationType('walk')}
               >
-                走路
+                {t('account.preview.anim.walk')}
               </button>
             </div>
           </div>
 
           <button className={styles.resetBtn} onClick={resetCamera}>
-            重設視角
+            {t('account.preview.reset_camera')}
           </button>
         </div>
       </div>
 
-      {/* ── 右側：資訊及管理面板 ── */}
+      {/* 右側：資訊管理 */}
       <div className={styles.contentPanel}>
         {/* 玩家帳號卡片 */}
         <div className={styles.profileCard}>
@@ -1121,15 +1123,15 @@ export function AccountInfoView() {
             {profile ? (
               <div
                 className={styles.copyWrapper}
-                onClick={() => handleCopyText(profile.name, '玩家名稱')}
-                title="點擊複製玩家名稱"
+                onClick={() => handleCopyText(profile.name, t('account.label.player_name'))}
+                title={t('account.tooltip.copy_name')}
               >
                 <span className={styles.profileName}>{profile.name}</span>
                 <Copy className={styles.copyIcon} size={14} />
               </div>
             ) : (
               <span className={styles.profileName}>
-                {isLoading ? '正在載入...' : activeAccount?.mcId}
+                {isLoading ? t('account.status.loading') : activeAccount?.mcId}
               </span>
             )}
 
@@ -1137,14 +1139,14 @@ export function AccountInfoView() {
               <div
                 className={styles.copyWrapper}
                 onClick={() => handleCopyText(profile.id, 'UUID')}
-                title="點擊複製 UUID"
+                title={t('account.tooltip.copy_uuid')}
               >
                 <span className={styles.profileUuid}>{profile.id}</span>
                 <Copy className={styles.copyIcon} size={12} />
               </div>
             ) : (
               <span className={styles.profileUuid}>
-                {isLoading ? '正在取得 UUID...' : ''}
+                {isLoading ? t('account.status.loading_uuid') : ''}
               </span>
             )}
           </div>
@@ -1153,12 +1155,12 @@ export function AccountInfoView() {
         {/* 載入中狀態 */}
         {isLoading && !profile ? (
           <div className={styles.loadingContainer} style={{ minHeight: '200px' }}>
-            <Loader2 className={styles.spin} size={32} />
-            <span>正在取得 Mojang 伺服器同步資料...</span>
+            <Loader2 className={`${styles.spin} animate-spin`} size={32} />
+            <span>{t('account.status.syncing_mojang')}</span>
           </div>
         ) : !profile ? (
           <div className={styles.emptyMessage}>
-            無帳號資訊，請確認網路連線。
+            {t('account.status.no_account_info')}
           </div>
         ) : (
           <>
@@ -1166,7 +1168,7 @@ export function AccountInfoView() {
             {activeDetailTab === 'skins' && (
               <>
                 <div className={styles.sectionCard}>
-                  <span className={styles.sectionTitle}>上傳新皮膚 (PNG 格式)</span>
+                  <span className={styles.sectionTitle}>{t('account.skins.upload_title')}</span>
 
                   {!selectedFilePath ? (
                     <div
@@ -1175,9 +1177,9 @@ export function AccountInfoView() {
                     >
                       <Upload className={styles.uploadIcon} size={28} />
                       <span className={styles.uploadText}>
-                        {isDragActive ? '放開滑鼠以選擇檔案' : '點選選擇或拖放皮膚 PNG 檔案'}
+                        {isDragActive ? t('account.skins.drag_active') : t('account.skins.drag_placeholder')}
                       </span>
-                      <span className={styles.uploadSubtext}>支援標準 64x64 或 64x32 像素皮膚圖片</span>
+                      <span className={styles.uploadSubtext}>{t('account.skins.dimensions_help')}</span>
                     </div>
                   ) : (
                     <div className={styles.selectedFileCard}>
@@ -1190,7 +1192,7 @@ export function AccountInfoView() {
                       <button
                         className={styles.clearFileBtn}
                         onClick={() => setSelectedFilePath('')}
-                        title="清除選取"
+                        title={t('account.skins.clear_selection')}
                       >
                         <X size={16} />
                       </button>
@@ -1198,21 +1200,21 @@ export function AccountInfoView() {
                   )}
 
                   <div className={styles.variantSelector}>
-                    <span className={styles.variantTitle}>選擇皮膚剪裁模型</span>
+                    <span className={styles.variantTitle}>{t('account.skins.select_model')}</span>
                     <div className={styles.variantOptions}>
                       <div
                         className={`${styles.variantOption} ${selectedVariant === 'CLASSIC' ? styles.variantOptionActive : ''}`}
                         onClick={() => setSelectedVariant('CLASSIC')}
                       >
-                        <span className={styles.variantName}>經典 (Classic)</span>
-                        <span className={styles.variantDesc}>適用 4 像素寬度的標準雙臂模型 (Steve)</span>
+                        <span className={styles.variantName}>{t('account.skins.model.classic')}</span>
+                        <span className={styles.variantDesc}>{t('account.skins.model.classic_desc')}</span>
                       </div>
                       <div
                         className={`${styles.variantOption} ${selectedVariant === 'SLIM' ? styles.variantOptionActive : ''}`}
                         onClick={() => setSelectedVariant('SLIM')}
                       >
-                        <span className={styles.variantName}>纖細 (Slim)</span>
-                        <span className={styles.variantDesc}>適用 3 像素寬度的細手臂模型 (Alex)</span>
+                        <span className={styles.variantName}>{t('account.skins.model.slim')}</span>
+                        <span className={styles.variantDesc}>{t('account.skins.model.slim_desc')}</span>
                       </div>
                     </div>
                   </div>
@@ -1224,13 +1226,13 @@ export function AccountInfoView() {
                   >
                     {isUploading ? (
                       <>
-                        <Loader2 className={styles.spin} size={16} />
-                        <span>正在上傳更換...</span>
+                        <Loader2 className={`${styles.spin} animate-spin`} size={16} />
+                        <span>{t('account.skins.status.uploading')}</span>
                       </>
                     ) : (
                       <>
                         <Check size={16} />
-                        <span>確認上傳更換皮膚</span>
+                        <span>{t('account.skins.btn.confirm_upload')}</span>
                       </>
                     )}
                   </button>
@@ -1243,7 +1245,7 @@ export function AccountInfoView() {
               <>
                 <div className={styles.sectionCard} style={{ marginBottom: '1.25rem' }}>
                   <div className={styles.sectionHeader}>
-                    <span className={styles.sectionTitle}>官方預設外觀</span>
+                    <span className={styles.sectionTitle}>{t('account.skins.default_skins_title')}</span>
                   </div>
                   <div className={styles.capeGrid}>
                     {DEFAULT_SKINS.map((skin) => {
@@ -1254,7 +1256,7 @@ export function AccountInfoView() {
                         <div
                           key={skin.url}
                           className={styles.capeCard}
-                          title={`外觀名稱: ${skin.name}`}
+                          title={`${t('account.skins.default_skins_title')}: ${skin.name}`}
                         >
                           <div className={styles.capeTextureContainer}>
                             {preview3d ? (
@@ -1268,14 +1270,14 @@ export function AccountInfoView() {
                                 <WifiOff className={styles.fallbackIcon} size={24} />
                               </div>
                             ) : (
-                              <Loader2 className={styles.spin} size={24} />
+                              <Loader2 className={`${styles.spin} animate-spin`} size={24} />
                             )}
                           </div>
 
                           <div className={styles.capeMeta}>
                             <span className={styles.capeName}>{skin.name}</span>
                             <span className={styles.variantTag}>
-                              {skin.variant === 'SLIM' ? '細手臂 (Slim)' : '標準 (Classic)'}
+                              {skin.variant === 'SLIM' ? t('account.skins.model.tag_slim') : t('account.skins.model.tag_classic')}
                             </span>
                           </div>
 
@@ -1286,11 +1288,11 @@ export function AccountInfoView() {
                               disabled={isApplying || isApplyingDefaultSkin !== null}
                             >
                               {isApplying ? (
-                                <Loader2 className={styles.spin} size={14} />
+                                <Loader2 className={`${styles.spin} animate-spin`} size={14} />
                               ) : (
                                 <>
                                   <Shirt size={14} />
-                                  <span>套用</span>
+                                  <span>{t('account.skins.btn.apply')}</span>
                                 </>
                               )}
                             </button>
@@ -1303,15 +1305,15 @@ export function AccountInfoView() {
 
                 <div className={styles.sectionCard}>
                   <div className={styles.sectionHeader}>
-                    <span className={styles.sectionTitle}>個人皮膚櫃 (快速切換)</span>
+                    <span className={styles.sectionTitle}>{t('account.wardrobe.title')}</span>
                     <span className={styles.statusLabel} style={{ color: 'var(--text-secondary)' }}>
-                      儲存數量：<strong>{wardrobeSkins.length}</strong>
+                      {t('account.wardrobe.count_label')}<strong>{wardrobeSkins.length}</strong>
                     </span>
                   </div>
 
                   {wardrobeSkins.length === 0 ? (
                     <div className={styles.emptyMessage}>
-                      目前您的皮膚櫃中沒有任何記錄。上傳新皮膚時會自動備份至此。
+                      {t('account.wardrobe.empty')}
                     </div>
                   ) : (
                     <div className={styles.capeGrid}>
@@ -1323,7 +1325,7 @@ export function AccountInfoView() {
                           <div
                             key={skin.file_path}
                             className={styles.capeCard}
-                            title={`皮膚名稱: ${skin.name}`}
+                            title={`${t('account.wardrobe.title')}: ${skin.name}`}
                           >
                             <div className={styles.capeTextureContainer}>
                               {wardrobe3DMap[skin.file_path] ? (
@@ -1337,32 +1339,32 @@ export function AccountInfoView() {
                                   <AlertTriangle className={styles.fallbackIcon} size={24} />
                                 </div>
                               ) : (
-                                <Loader2 className={styles.spin} size={24} />
+                                <Loader2 className={`${styles.spin} animate-spin`} size={24} />
                               )}
                             </div>
 
                             <div className={styles.capeMeta}>
                               <span className={styles.capeName}>{skin.name}</span>
                               <span className={styles.variantTag}>
-                                {skin.variant === 'SLIM' ? '細手臂 (Slim)' : '標準 (Classic)'}
+                                {skin.variant === 'SLIM' ? t('account.skins.model.tag_slim') : t('account.skins.model.tag_classic')}
                               </span>
                             </div>
 
                             {isConfirmingDelete ? (
                               <div className={styles.confirmDeleteGroup}>
-                                <span className={styles.confirmDeleteText}>確定刪除？</span>
+                                <span className={styles.confirmDeleteText}>{t('account.wardrobe.confirm_delete')}</span>
                                 <div className={styles.confirmDeleteBtns}>
                                   <button
                                     className={styles.confirmDeleteBtnYes}
                                     onClick={() => handleDeleteWardrobeSkin(skin.file_path)}
                                   >
-                                    確認
+                                    {t('account.wardrobe.btn.confirm_delete')}
                                   </button>
                                   <button
                                     className={styles.confirmDeleteBtnNo}
                                     onClick={() => setConfirmDeletePath(null)}
                                   >
-                                    取消
+                                    {t('account.wardrobe.btn.cancel_delete')}
                                   </button>
                                 </div>
                               </div>
@@ -1374,11 +1376,11 @@ export function AccountInfoView() {
                                   disabled={isApplying}
                                 >
                                   {isApplying ? (
-                                    <Loader2 className={styles.spin} size={14} />
+                                    <Loader2 className={`${styles.spin} animate-spin`} size={14} />
                                   ) : (
                                     <>
                                       <Shirt size={14} />
-                                      <span>套用</span>
+                                      <span>{t('account.skins.btn.apply')}</span>
                                     </>
                                   )}
                                 </button>
@@ -1389,7 +1391,7 @@ export function AccountInfoView() {
                                   disabled={isApplying}
                                 >
                                   <Trash2 size={14} />
-                                  <span>刪除</span>
+                                  <span>{t('account.wardrobe.btn.delete')}</span>
                                 </button>
                               </div>
                             )}
@@ -1406,17 +1408,17 @@ export function AccountInfoView() {
             {activeDetailTab === 'capes' && (
               <div className={styles.sectionCard}>
                 <div className={styles.sectionHeader}>
-                  <span className={styles.sectionTitle}>擁有的披風列表</span>
+                  <span className={styles.sectionTitle}>{t('account.capes.title')}</span>
                   {activeCape && (
                     <span className={styles.statusLabel} style={{ color: 'var(--text-secondary)' }}>
-                      目前穿戴：<strong>{activeCape.alias}</strong>
+                      {t('account.capes.current_wear')}<strong>{activeCape.alias}</strong>
                     </span>
                   )}
                 </div>
 
                 {!profile.capes || profile.capes.length === 0 ? (
                   <div className={styles.emptyMessage}>
-                    目前您的帳號中沒有擁有的 Minecraft 官方披風。
+                    {t('account.capes.empty')}
                   </div>
                 ) : (
                   <div className={styles.capeGrid}>
@@ -1432,17 +1434,17 @@ export function AccountInfoView() {
                             if (isCapeActive) return;
                             setSelectedCapeId(isSelected ? null : cape.id);
                           }}
-                          title={isCapeActive ? "目前穿戴中" : "點擊可在左側角色 3D 模型上預覽此披風"}
+                          title={isCapeActive ? t('account.capes.status_active') : t('account.capes.click_preview')}
                         >
-                          {/* 預覽與穿戴提示：置於左上角 */}
+                          {/* 預覽與穿戴狀態 */}
                           {isCapeActive ? (
                             <div className={styles.activeBadge}>
-                              穿戴中
+                              {t('account.capes.badge_wearing')}
                             </div>
                           ) : (
                             isSelected && (
                               <div className={styles.cardPreviewBadge}>
-                                預覽中
+                                {t('account.capes.badge_previewing')}
                               </div>
                             )
                           )}
@@ -1459,7 +1461,7 @@ export function AccountInfoView() {
                                 <WifiOff className={styles.fallbackIcon} size={24} />
                               </div>
                             ) : (
-                              <Loader2 className={styles.spin} size={24} />
+                              <Loader2 className={`${styles.spin} animate-spin`} size={24} />
                             )}
                           </div>
 
@@ -1470,22 +1472,22 @@ export function AccountInfoView() {
                           <button
                             className={`${styles.capeBtn} ${isCapeActive ? styles.unequipBtn : styles.equipBtn}`}
                             onClick={(e) => {
-                              e.stopPropagation(); // 阻止觸發卡片點擊預覽
+                              e.stopPropagation(); // 阻止冒泡事件
                               handleToggleCape(cape);
                             }}
                             disabled={isUpdatingCape}
                           >
                             {isUpdatingCape ? (
-                              <Loader2 className={styles.spin} size={14} />
+                              <Loader2 className={`${styles.spin} animate-spin`} size={14} />
                             ) : isCapeActive ? (
                               <>
                                 <X size={14} />
-                                <span>卸下</span>
+                                <span>{t('account.capes.btn.unequip')}</span>
                               </>
                             ) : (
                               <>
                                 <Shirt size={14} />
-                                <span>穿戴</span>
+                                <span>{t('account.capes.btn.equip')}</span>
                               </>
                             )}
                           </button>

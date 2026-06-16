@@ -2,6 +2,7 @@ import { Loader } from 'lucide-react';
 import { marked } from 'marked';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { SafeImage } from '../../../components/common/SafeImage';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../CreateInstanceModal.module.css';
 
 interface ModrinthTabProps {
@@ -67,6 +68,7 @@ export function ModrinthTab({
   platform,
   setPlatform,
 }: ModrinthTabProps) {
+  const { t } = useI18n();
   return (
     <div className={styles.twoColumnLayout}>
       <div className={styles.leftColumn}>
@@ -92,7 +94,7 @@ export function ModrinthTab({
         <div className={styles.searchArea}>
           <input 
             type="text" 
-            placeholder={platform === 'modrinth' ? "搜尋 Modrinth 整合包..." : "搜尋 CurseForge 整合包..."}
+            placeholder={platform === 'modrinth' ? t('create.search.placeholder_mr') : t('create.search.placeholder_cf')}
             className={styles.input} 
             value={searchQuery}
             onChange={(e) => {
@@ -138,7 +140,7 @@ export function ModrinthTab({
             {isLoadingMore && (
               <div className={styles.loadingMoreSpinner}>
                 <Loader className="animate-spin" size={16} />
-                <span>正在載入更多整合包...</span>
+                <span>{t('create.status.loading_more')}</span>
               </div>
             )}
           </div>
@@ -149,7 +151,7 @@ export function ModrinthTab({
         {loadingDetails && !isModpackConfirmed ? (
           <div className={styles.loadingSpinner}>
             <Loader className="animate-spin" size={32} />
-            <span>正在讀取 Modpack 詳細說明...</span>
+            <span>{t('create.status.loading_details')}</span>
           </div>
         ) : selectedModpack ? (
           <div className={styles.modpackDetailLayout}>
@@ -165,7 +167,7 @@ export function ModrinthTab({
                     />
                     <div className={styles.detailHeaderInfo}>
                       <h3 className={styles.detailTitle}>{selectedModpack.title}</h3>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>專案 ID: {selectedModpack.project_id}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('create.label.project_id', { id: selectedModpack.project_id })}</span>
                     </div>
                   </div>
                 </div>
@@ -185,17 +187,17 @@ export function ModrinthTab({
                         onClick={() => setIsModpackConfirmed(false)}
                         type="button"
                       >
-                        ← 返回詳細敘述
+                        {t('create.btn.back_to_desc')}
                       </button>
                       
                       <div className={styles.versionSelectorContainer}>
-                        <label className={styles.fieldLabel}>選擇整合包版本</label>
+                        <label className={styles.fieldLabel}>{t('create.label.select_version')}</label>
                         <CustomSelect
                           value={selectedModpackVersionId}
                           onChange={handleVersionSelect}
                           options={modpackVersionOptions}
                           disabled={loadingDetails}
-                          placeholder="選擇整合包版本"
+                          placeholder={t('create.label.select_version')}
                           direction="down"
                         />
                       </div>
@@ -205,33 +207,33 @@ export function ModrinthTab({
                       {loadingDetails ? (
                         <div className={styles.loadingSpinnerSmall}>
                           <Loader className="animate-spin" size={24} />
-                          <span>正在讀取版本內容...</span>
+                          <span>{t('create.status.loading_version_details')}</span>
                         </div>
                       ) : modpackDetails ? (
                         <div className={styles.versionSummaryCard}>
                           <div className={styles.licenseHeader}>
-                            <span className={styles.modsCountTitle}>📦 整合包版本資訊</span>
+                            <span className={styles.modsCountTitle}>📦 {t('create.mrpack.info_title')}</span>
                           </div>
                           <div className={styles.detailRow}>
-                            <span className={styles.label}>遊戲版本</span>
+                            <span className={styles.label}>{t('create.label.version')}</span>
                             <span className={styles.value}>{modpackDetails.gameVersion}</span>
                           </div>
                           <div className={styles.detailRow}>
-                            <span className={styles.label}>載入器類型</span>
+                            <span className={styles.label}>{t('create.mrpack.loader_type')}</span>
                             <span className={styles.value}>{modpackDetails.modloader}</span>
                           </div>
                           <div className={styles.detailRow}>
-                            <span className={styles.label}>載入器版本</span>
-                            <span className={styles.value}>{modpackDetails.modloaderVersion || '未知'}</span>
+                            <span className={styles.label}>{t('create.label.loader_version')}</span>
+                            <span className={styles.value}>{modpackDetails.modloaderVersion || t('overview.unknown_version')}</span>
                           </div>
                           <div className={styles.detailRow}>
-                            <span className={styles.label}>包含的 Mod 總數</span>
-                            <span className={styles.value}>{modpackDetails.mods.length} 個</span>
+                            <span className={styles.label}>{t('create.mrpack.mods_count')}</span>
+                            <span className={styles.value}>{t('create.mrpack.mods_count_val', { count: modpackDetails.mods.length })}</span>
                           </div>
                         </div>
                       ) : (
                         <div className={styles.placeholderTextSmall}>
-                          <span>無法載入此版本的詳細資訊</span>
+                          <span>{t('create.status.load_version_details_failed')}</span>
                         </div>
                       )}
                     </div>
@@ -245,12 +247,12 @@ export function ModrinthTab({
                           className={styles.backToDescButton}
                           onClick={() => setIsSelectingMods(false)}
                         >
-                          ← 返回版本選擇
+                          {t('create.btn.back_to_versions')}
                         </button>
                       </div>
                       <div className={styles.licenseHeader}>
                         <span className={styles.modsCountTitle}>
-                          🛠️ 選擇要安裝的 Mod ({selectedMods.size} / {modpackDetails.mods.length} 個)
+                          🛠️ {t('create.mrpack.select_mods_title', { selected: selectedMods.size, total: modpackDetails.mods.length })}
                         </span>
                         <div className={styles.toggleAllContainer}>
                           <label className={styles.checkboxLabel}>
@@ -262,7 +264,7 @@ export function ModrinthTab({
                               }}
                               onChange={(e) => toggleAllMods(e.target.checked, modpackDetails.mods)}
                             />
-                            <span>全選</span>
+                            <span>{t('create.mrpack.select_all')}</span>
                           </label>
                         </div>
                       </div>
@@ -285,7 +287,7 @@ export function ModrinthTab({
                               </label>
                               <div className={styles.modMain}>
                                 <span className={styles.modName}>{mod.name}</span>
-                                <span className={styles.modAuthor}>作者: {mod.author}</span>
+                                <span className={styles.modAuthor}>{t('create.mrpack.author', { author: mod.author })}</span>
                               </div>
                               <span className={styles.modLicense}>{mod.license}</span>
                             </div>
@@ -293,7 +295,7 @@ export function ModrinthTab({
                         })}
                       </div>
                       <div className={styles.disclaimerText}>
-                        * 您已選取 {selectedMods.size} 個模組。未勾選的模組將不會被下載與安裝。
+                        {t('create.mrpack.disclaimer', { count: selectedMods.size })}
                       </div>
                     </div>
                   )
@@ -303,7 +305,7 @@ export function ModrinthTab({
           </div>
         ) : (
           <div className={styles.placeholderText}>
-            <span>請選擇一個整合包以查看詳細資訊</span>
+            <span>{t('create.status.select_modpack_placeholder')}</span>
           </div>
         )}
       </div>

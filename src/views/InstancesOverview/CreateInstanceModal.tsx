@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useAppStore } from '../../store/appStore';
+import { useI18n } from '../../utils/i18n';
 import { CustomTab } from './tabs/CustomTab';
 import { ModrinthTab } from './tabs/ModrinthTab';
 import { ImportMrpackTab } from './tabs/ImportMrpackTab';
@@ -36,6 +37,7 @@ import { getMajorVersionGroup } from '../../utils/versionUtils';
 export function CreateInstanceModal({ isOpen, onClose }: Props) {
   const { createInstance, importMrpack, downloadingInstanceId, downloadProgress, downloadStatusText, instances } = useInstanceStore();
   const { addNotification, setCurrentView: setAppView } = useAppStore();
+  const { t } = useI18n();
 
   const [activeTab, setActiveTab] = useState<'custom' | 'modrinth' | 'mrpack'>('custom');
   const [platform, setPlatform] = useState<'modrinth' | 'curseforge'>('modrinth');
@@ -44,7 +46,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   const [detectedImportFiles, setDetectedImportFiles] = useState<Record<string, string>>({});
   const [importedImportItems, setImportedImportItems] = useState<Set<string>>(new Set());
 
-  // Reset when platform changes
+  // 切換平台時重設狀態
   useEffect(() => {
     setSearchQuery('');
     setSearchResults([]);
@@ -61,7 +63,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     setSelectedMods(new Set());
   }, [platform]);
 
-  // Background Downloads scanner for blocked files
+  // 背景掃描下載資料夾以比對 SHA-1
   useEffect(() => {
     if (!isManualImportMode || blockedModsList.length === 0) return;
 
@@ -83,7 +85,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     return () => clearInterval(interval);
   }, [isManualImportMode, blockedModsList]);
 
-  // Custom tab states
+  // 自訂建立分頁狀態
   const [customName, setCustomName] = useState('');
   const [customVersion, setCustomVersion] = useState('1.20.4');
   const [selectedMajorVersion, setSelectedMajorVersion] = useState<string>('');
@@ -97,12 +99,12 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [errorLoadingVersions, setErrorLoadingVersions] = useState(false);
   
-  // Fabric Loader states
+  // Loader 版本狀態
   const [loaderVersions, setLoaderVersions] = useState<string[]>([]);
   const [selectedLoaderVersion, setSelectedLoaderVersion] = useState<string>('');
   const [loadingLoaderVersions, setLoadingLoaderVersions] = useState(false);
 
-  // Modrinth tab states
+  // 線上整合包狀態
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -120,12 +122,12 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   const [isSelectingMods, setIsSelectingMods] = useState(false);
   const [selectedMods, setSelectedMods] = useState<Set<string>>(new Set());
 
-  // Mrpack tab states
+  // 匯入本機包狀態
   const [mrpackPath, setMrpackPath] = useState('');
   const [mrpackDetails, setMrpackDetails] = useState<ModpackInfo | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Native Tauri Window Drag & Drop Listener
+  // 註冊原生視窗拖放事件
   useEffect(() => {
     if (!isOpen) {
       setIsDragOver(false);
@@ -171,7 +173,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     };
   }, [isOpen, activeTab, mrpackPath, customModloader]);
 
-  // Set default selection of all mods when modpack details are loaded
+  // 線上整合包載入後預設全選模組
   useEffect(() => {
     if (modpackDetails && modpackDetails.mods) {
       setSelectedMods(new Set(modpackDetails.mods.map((m) => m.name)));
@@ -180,7 +182,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     }
   }, [modpackDetails]);
 
-  // Set default selection of all mods when mrpack details are loaded
+  // 本機整合包載入後預設全選模組
   useEffect(() => {
     if (mrpackDetails && mrpackDetails.mods) {
       setSelectedMods(new Set(mrpackDetails.mods.map((m) => m.name)));
@@ -242,8 +244,8 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
       addNotification({
         type: 'warning',
-        title: '連線逾時',
-        message: '無法取得最新 Minecraft 版本資訊，已載入備用版本清單。'
+        title: t('create.notification.timeout.title'),
+        message: t('create.notification.timeout.msg')
       });
     } finally {
       setLoadingVersions(false);
@@ -313,7 +315,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
       console.error('Search failed:', error);
       addNotification({
         type: 'error',
-        title: '搜尋失敗',
+        title: t('notification.error'),
         message: String(error)
       });
     } finally {
@@ -340,7 +342,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     }
   };
 
-  // Real-time Modrinth search with debounce and default list loading
+  // 整合包搜尋防抖與載入
   useEffect(() => {
     if (activeTab !== 'modrinth' || !isOpen) return;
 
@@ -357,7 +359,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, activeTab, isOpen, platform]);
 
-  // Fetch loader versions when Minecraft version or Modloader changes
+  // 獲取支援的 Loader 版本列表
   useEffect(() => {
     const isSupportedLoader = customModloader === 'Fabric' || customModloader === 'Forge' || customModloader === 'NeoForge';
     if (isSupportedLoader && customVersion && isOpen) {
@@ -404,8 +406,8 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     if (!path.toLowerCase().endsWith('.jar')) {
       addNotification({
         type: 'warning',
-        title: '格式不符',
-        message: '僅支援 .jar 格式的自訂載入器檔案。'
+        title: t('create.notification.invalid_format.title'),
+        message: t('create.notification.invalid_format.msg_jar')
       });
       return;
     }
@@ -423,17 +425,17 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
       if (path === 'CANCELLED') return;
       handleCustomLoaderDropped(path);
     } catch (err) {
-      addNotification({ type: 'error', title: '選取檔案失敗', message: String(err) });
+      addNotification({ type: 'error', title: t('create.notification.select_file_failed'), message: String(err) });
     }
   };
 
-  // Custom Creation Handler
+  // 建立自訂實例
   const handleCustomCreate = async () => {
     if (!customName.trim()) {
       addNotification({
         type: 'warning',
-        title: '輸入錯誤',
-        message: '請輸入實例名稱'
+        title: t('overview.notification.name_required.title'),
+        message: t('overview.notification.name_required.msg')
       });
       return;
     }
@@ -441,8 +443,8 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     if (customModloader === 'Custom' && !customLoaderJarPath) {
       addNotification({
         type: 'warning',
-        title: '自訂載入器缺失',
-        message: '請先拖放或點選選擇自訂 Loader JAR 檔案。'
+        title: t('create.notification.missing_loader.title'),
+        message: t('create.notification.missing_loader.msg')
       });
       return;
     }
@@ -464,15 +466,15 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
       addNotification({
         type: 'success',
-        title: '實例建立成功',
-        message: `已建立實例 ${customName}`
+        title: t('create.notification.create_success.title'),
+        message: t('create.notification.create_success.msg', { name: customName })
       });
       handleClose();
       setAppView(id); // 切換視圖
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '建立失敗',
+        title: t('create.notification.create_failed.title'),
         message: String(error)
       });
     } finally {
@@ -480,7 +482,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     }
   };
 
-  // Modrinth Search Handler
+  // 線上整合包搜尋
   const handleModrinthSearch = () => {
     searchModpacks(searchQuery, 0, false);
   };
@@ -502,7 +504,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '下載或解析版本失敗',
+        title: t('create.notification.download_parse_failed'),
         message: String(error)
       });
     } finally {
@@ -518,7 +520,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     }
   };
 
-  // Modrinth Selection Handler (Browsing stage: only fetch detailed description)
+  // 選取整合包（獲取詳細描述）
   const handleSelectModpack = async (hit: any) => {
     setSelectedModpack(hit);
     setIsModpackConfirmed(false);
@@ -549,7 +551,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     }
   };
 
-  // Confirm Selection Handler (Starts downloading & parsing selected modpack)
+  // 確認選取整合包（下載與解析）
   const handleConfirmModpack = async () => {
     if (!selectedModpack) return;
     
@@ -616,7 +618,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '解析 Modpack 失敗',
+        title: t('create.notification.parse_failed'),
         message: String(error)
       });
       setIsModpackConfirmed(false);
@@ -624,7 +626,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     }
   };
 
-  // Local Mrpack File Select Handler
+  // 選擇本機 mrpack 檔案
   const handleLoadMrpackPath = async (path: string) => {
     setMrpackPath(path);
     setIsSelectingMods(false);
@@ -638,7 +640,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '解析 mrpack 失敗',
+        title: t('create.notification.parse_failed'),
         message: String(error)
       });
       setMrpackPath('');
@@ -662,10 +664,10 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     } catch (error: any) {
       if (error !== 'CANCELLED') {
         addNotification({
-          type: 'error',
-          title: '選取檔案失敗',
-          message: String(error)
-        });
+        type: 'error',
+        title: t('create.notification.select_file_failed'),
+        message: String(error)
+      });
       }
     }
   };
@@ -675,8 +677,8 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     if (!isPack) {
       addNotification({
         type: 'warning',
-        title: '格式不符',
-        message: '僅支援 .mrpack 與 .zip 格式的整合包檔案。'
+        title: t('create.notification.invalid_format.title'),
+        message: t('create.notification.invalid_format.msg_pack')
       });
       return;
     }
@@ -703,7 +705,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     });
   };
 
-  // Modpack Import Confirm Handler
+  // 執行匯入整合包
   const handleImportModpack = async (info: ModpackInfo, mrpackFilePath: string) => {
     setIsActionLoading(true);
     const id = generateUniqueId(info.name, instances);
@@ -731,14 +733,14 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
         setIsManualImportMode(true);
         addNotification({
           type: 'warning',
-          title: '部分檔案下載被封鎖',
-          message: `此整合包中有 ${blocked.length} 個模組被 CurseForge 封鎖直接下載，請手動下載。`
+          title: t('create.notification.blocked_downloads.title'),
+          message: t('create.notification.blocked_downloads.msg', { count: blocked.length })
         });
       } else {
         addNotification({
           type: 'success',
-          title: 'Modpack 匯入完成',
-          message: `已成功匯入 ${info.name}`
+          title: t('create.notification.import_success.title'),
+          message: t('create.notification.import_success.msg', { name: info.name })
         });
         handleClose();
         setAppView(id); // 切換視圖
@@ -746,7 +748,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     } catch (error: any) {
       addNotification({
         type: 'error',
-        title: '匯入失敗',
+        title: t('create.notification.import_failed.title'),
         message: String(error)
       });
       setTargetImportId(null);
@@ -786,13 +788,13 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
       });
       addNotification({ 
         type: 'success', 
-        title: '導入成功', 
-        message: `已成功導入 ${item.fileName}` 
+        title: t('create.notification.import_file_success.title'), 
+        message: t('create.notification.import_file_success.msg', { name: item.fileName }) 
       });
     } catch (err: any) {
       addNotification({ 
         type: 'error', 
-        title: '導入失敗', 
+        title: t('create.notification.import_failed.title'), 
         message: err.message || String(err) 
       });
     }
@@ -820,13 +822,13 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
       });
       addNotification({ 
         type: 'success', 
-        title: '導入成功', 
-        message: `成功導入 ${filePaths.length} 個檔案` 
+        title: t('create.notification.import_file_success.title'), 
+        message: t('create.notification.import_files_success.msg', { count: filePaths.length }) 
       });
     } catch (err: any) {
       addNotification({ 
         type: 'error', 
-        title: '導入失敗', 
+        title: t('create.notification.import_failed.title'), 
         message: err.message || String(err) 
       });
     }
@@ -835,7 +837,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   const handleFinishManualImport = () => {
     const remaining = blockedModsList.filter(item => !importedImportItems.has(item.sha1)).length;
     if (remaining > 0) {
-      if (!confirm(`尚有 ${remaining} 個檔案未導入。確定要完成並關閉嗎？`)) {
+      if (!confirm(t('create.manual.finish_confirm', { remaining }))) {
         return;
       }
     }
@@ -847,7 +849,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   };
 
   const handleClose = () => {
-    if (isImporting) return; // 正在匯入時禁止關閉
+    if (isImporting) return; // 匯入中禁止關閉
     // 重設狀態
     setCustomName('');
     setCustomLoaderJarPath('');
@@ -879,7 +881,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
   // Group and memoize major versions based on majorFilter, minorFilter and versions
   const majorVersionsData = useMemo(() => {
-    // 1. Group ALL versions first
+    // 版本分組
     const firstRelease = versions.find((v) => v.type === 'release');
     let activeGroup = '1.21.X';
     if (firstRelease) {
@@ -919,7 +921,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
       allGroupMap[g].push(v);
     });
 
-    // 2. Filter groups and items based on majorFilter and minorFilter
+    // 依據篩選過濾
     const groups: string[] = [];
     const groupMap: Record<string, typeof versions> = {};
 
@@ -959,7 +961,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     return { groups, groupMap };
   }, [versions, majorFilter, minorFilter]);
 
-  // Sync selected major version and minor version when the available grouped versions change
+  // 同步選取版本
   useEffect(() => {
     if (majorVersionsData.groups.length > 0) {
       if (!selectedMajorVersion || !majorVersionsData.groups.includes(selectedMajorVersion)) {
@@ -971,7 +973,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
           setCustomVersion(defaultMinor);
         }
       } else {
-        // If the selected major version is still valid, check if the custom version is still in the available options
+        // 檢查子版本是否有效
         const availableMinors = majorVersionsData.groupMap[selectedMajorVersion] || [];
         const isCurrentVersionValid = availableMinors.some((v) => v.id === customVersion);
         if (!isCurrentVersionValid && availableMinors.length > 0) {
@@ -1024,7 +1026,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     <div className={styles.overlay}>
       <div className={`${styles.modal} ${activeTab !== 'custom' ? styles.wideModal : ''}`}>
         <div className={styles.header}>
-          <h2>建立新實例</h2>
+          <h2>{t('create.modal.title')}</h2>
           <button className={styles.closeButton} onClick={handleClose} disabled={isImporting}>
             <X size={20} />
           </button>
@@ -1036,21 +1038,21 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
             onClick={() => !isImporting && setActiveTab('custom')}
             disabled={isImporting}
           >
-            自訂建立
+            {t('create.tab.custom')}
           </button>
           <button 
             className={`${styles.tab} ${activeTab === 'modrinth' ? styles.active : ''}`}
             onClick={() => !isImporting && setActiveTab('modrinth')}
             disabled={isImporting}
           >
-            線上整合包
+            {t('create.tab.online')}
           </button>
           <button 
             className={`${styles.tab} ${activeTab === 'mrpack' ? styles.active : ''}`}
             onClick={() => !isImporting && setActiveTab('mrpack')}
             disabled={isImporting}
           >
-            匯入本機包
+            {t('create.tab.mrpack')}
           </button>
         </div>
 
@@ -1061,7 +1063,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
           {isImporting ? (
             <div className={styles.progressContainer}>
               <div className={styles.progressLabel}>
-                <span className={styles.progressText}>正在匯入 Modpack 檔案...</span>
+                <span className={styles.progressText}>{t('create.status.importing_files')}</span>
                 <span className={styles.progressPercent}>{Math.round(downloadProgress)}%</span>
               </div>
               <div className={styles.progressBarOuter}>
@@ -1072,18 +1074,17 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
           ) : isManualImportMode ? (
             <div className={styles.manualContainer}>
               <div className={styles.manualHeader}>
-                <span className={styles.manualTitle}>⚠️ 防封鎖手動下載模式</span>
+                <span className={styles.manualTitle}>{t('create.manual.title')}</span>
                 <button 
                   className={styles.openPageBtn}
                   onClick={openAllBlockedPages}
                   type="button"
                 >
-                  一鍵開啟所有下載頁面
+                  {t('create.manual.open_all')}
                 </button>
               </div>
               <p className={styles.manualDesc}>
-                由於 CurseForge 限制第三方直接下載部分模組，請點擊「開啟下載頁」下載模組檔案（下載後檔案將位於本機的「下載 (Downloads)」資料夾）。
-                啟動器將會自動在背景掃描該資料夾，並在比對雜湊值成功後提示導入。
+                {t('create.manual.desc')}
               </p>
               <div className={`${styles.manualList} global-scrollbar`}>
                 {blockedModsList.map(item => {
@@ -1100,18 +1101,18 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                       </div>
                       <div className={styles.manualItemActions}>
                         {isImported ? (
-                          <span className={styles.importedTag}>已導入</span>
+                          <span className={styles.importedTag}>{t('create.manual.imported')}</span>
                         ) : isDetected ? (
                           <button 
                             className={styles.importBtn}
                             onClick={() => handleImportSingleBlocked(item)}
                             type="button"
                           >
-                            導入檔案
+                            {t('create.manual.import_btn')}
                           </button>
                         ) : (
                           <div className={`${styles.manualItemStatus} ${styles.waiting}`}>
-                            等待下載
+                            {t('create.manual.waiting')}
                           </div>
                         )}
                         {!isImported && (
@@ -1120,7 +1121,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                             onClick={() => invoke('open_in_browser', { url: `https://www.curseforge.com/projects/${item.projectId}/download/${item.fileId}` })}
                             type="button"
                           >
-                            下載頁
+                            {t('create.manual.download_page')}
                           </button>
                         )}
                       </div>
@@ -1222,7 +1223,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                 disabled={!blockedModsList.some(item => detectedImportFiles[item.sha1] && !importedImportItems.has(item.sha1))}
                 type="button"
               >
-                導入所有已偵測檔案
+                {t('create.manual.import_all_detected')}
               </button>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
@@ -1230,7 +1231,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   onClick={handleFinishManualImport}
                   type="button"
                 >
-                  完成
+                  {t('common.confirm')}
                 </button>
               </div>
             </div>
@@ -1243,12 +1244,12 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   disabled={isActionLoading || isImporting}
                   type="button"
                 >
-                  重新選擇檔案
+                  {t('create.btn.reselect')}
                 </button>
               )}
               
               <button className={styles.cancelButton} onClick={handleClose} disabled={isActionLoading || isImporting} type="button">
-                取消
+                {t('common.cancel')}
               </button>
               
               {activeTab === 'custom' && (
@@ -1257,12 +1258,11 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   onClick={handleCustomCreate}
                   disabled={
                     isActionLoading || 
-                    !customName.trim() || 
                     (customModloader !== 'Vanilla' && (!selectedLoaderVersion || loadingLoaderVersions))
                   }
                   type="button"
                 >
-                  建立
+                  {t('create.btn.create')}
                 </button>
               )}
 
@@ -1273,7 +1273,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   disabled={loadingDetails}
                   type="button"
                 >
-                  選擇此整合包
+                  {t('create.btn.confirm_modpack')}
                 </button>
               )}
 
@@ -1284,7 +1284,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   disabled={loadingDetails}
                   type="button"
                 >
-                  下一步 (選擇模組)
+                  {t('create.btn.next_step')}
                 </button>
               )}
 
@@ -1295,7 +1295,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   disabled={isActionLoading || isImporting || selectedMods.size === 0}
                   type="button"
                 >
-                  確認並匯入
+                  {t('create.btn.confirm_import')}
                 </button>
               )}
 
@@ -1306,7 +1306,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   disabled={loadingDetails}
                   type="button"
                 >
-                  下一步 (選擇模組)
+                  {t('create.btn.next_step')}
                 </button>
               )}
 
@@ -1317,7 +1317,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   disabled={isActionLoading || isImporting || selectedMods.size === 0}
                   type="button"
                 >
-                  確認並匯入
+                  {t('create.btn.confirm_import')}
                 </button>
               )}
             </>

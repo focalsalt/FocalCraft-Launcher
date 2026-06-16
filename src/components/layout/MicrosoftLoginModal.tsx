@@ -24,12 +24,12 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
   const pollingRef = useRef<number | null>(null);
   const countdownRef = useRef<number | null>(null);
 
-  // 開始 Device Flow 登入流程
+  // 執行微軟 Device Flow 登入
   const startLoginFlow = async () => {
     setStep('fetching_code');
     setErrorMsg('');
     try {
-      // 1. 取得 Device Code
+      // 取得 Device Code
       const res = await invoke<{
         device_code: string;
         user_code: string;
@@ -43,7 +43,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
       setTimeLeft(res.expires_in);
       setStep('waiting_user');
 
-      // 2. 開啟倒數計時
+      // 開啟倒數計時
       if (countdownRef.current) window.clearInterval(countdownRef.current);
       countdownRef.current = window.setInterval(() => {
         setTimeLeft((prev) => {
@@ -55,7 +55,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
         });
       }, 1000);
 
-      // 3. 開始輪詢 Token
+      // 開始輪詢 Token
       startPolling(res.device_code, res.interval);
     } catch (err) {
       console.error(err);
@@ -74,7 +74,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
           expires_in: number;
         }>('poll_device_token', { deviceCode: code });
 
-        // 輪詢成功，使用者已登入微軟帳號，開始驗證 Minecraft
+        // 驗證 Minecraft 帳號
         cleanup();
         setStep('verifying_mc');
         
@@ -83,7 +83,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
           msRefreshToken: tokenRes.refresh_token
         });
 
-        // 登入 Minecraft 成功，寫入 store
+        // 寫入帳號 Store
         await addAccount(account);
         setStep('success');
         addNotification({
@@ -93,7 +93,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
           duration: 4000
         });
 
-        // 1.5 秒後自動關閉 Modal
+        // 自動關閉對話框
         setTimeout(() => {
           onClose();
         }, 1500);
@@ -101,7 +101,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
       } catch (err: any) {
         const errMsg = String(err);
         if (errMsg === 'authorization_pending') {
-          // 繼續等待使用者操作
+          // 等待使用者操作
           return;
         } else if (errMsg === 'slow_down') {
           // 微軟要求放慢速度

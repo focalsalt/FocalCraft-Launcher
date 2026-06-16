@@ -2,6 +2,7 @@ import React from 'react';
 import { Edit2, ChevronLeft, ChevronRight, FolderOpen, Trash2, Copy, Loader } from 'lucide-react';
 import { Instance } from '../../../types';
 import { SafeImage } from '../../../components/common/SafeImage';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
 
 interface EditTabProps {
@@ -49,13 +50,14 @@ export function EditTab({
   prevActiveRef,
   convertFileSrc,
 }: EditTabProps) {
+  const { t } = useI18n();
   const iconSrc = getIconSrc();
 
   return (
     <div className={styles.editTabContainer}>
       <div className={styles.editHeader}>
         <div className={styles.editTitleArea}>
-          <div className={styles.iconManagerSmall} onClick={handleIconClick} title="點擊更換圖示">
+          <div className={styles.iconManagerSmall} onClick={handleIconClick} title={t('tabs.edit.change_icon')}>
             {instance.icon && iconSrc ? (
               <SafeImage 
                 src={iconSrc} 
@@ -68,7 +70,7 @@ export function EditTab({
                 {instance.icon || '📦'}
               </div>
             )}
-            <div className={styles.iconOverlaySmall}>更換</div>
+            <div className={styles.iconOverlaySmall}>{t('tabs.edit.change')}</div>
           </div>
 
           <div className={styles.nameArea}>
@@ -83,7 +85,7 @@ export function EditTab({
                 autoFocus
               />
             ) : (
-              <h1 onClick={() => setIsEditingName(true)} title="點擊更名">
+              <h1 onClick={() => setIsEditingName(true)} title={t('tabs.edit.rename_tooltip')}>
                 {instance.name}
                 <Edit2 size={18} className={styles.editIcon} />
               </h1>
@@ -91,7 +93,7 @@ export function EditTab({
           </div>
         </div>
 
-        <div className={styles.editVersionArea} onClick={handleOpenEditVersion} title="點擊編輯版本">
+        <div className={styles.editVersionArea} onClick={handleOpenEditVersion} title={t('tabs.edit.edit_version_tooltip')}>
           <span>Minecraft {instance.version} • {instance.modloader} {instance.loaderVersion ? `(${instance.loaderVersion})` : ''}</span>
           <Edit2 size={12} style={{ marginLeft: 6, opacity: 0.8 }} />
         </div>
@@ -101,7 +103,7 @@ export function EditTab({
         {loadingScreenshots ? (
           <div className={styles.screenshotsSpinner}>
             <Loader className="animate-spin" size={24} />
-            <span>讀取螢幕截圖中...</span>
+            <span>{t('tabs.edit.loading_screenshots')}</span>
           </div>
         ) : screenshots.length > 0 ? (
           <>
@@ -111,7 +113,7 @@ export function EditTab({
                   <div
                     className={`${styles.carouselItem} ${styles.active} ${isScreenshotZoomed ? styles.zoomed : ''}`}
                     onClick={() => setIsScreenshotZoomed(prev => !prev)}
-                    title="點擊切換動作選單"
+                    title={t('tabs.edit.screenshot_action_tooltip')}
                   >
                     <img src={convertFileSrc(screenshots[0])} alt="Screenshot" className={styles.screenshotImage} />
                   </div>
@@ -213,7 +215,7 @@ export function EditTab({
                       <button
                         className={`${styles.carouselArrow} ${styles.left}`}
                         onClick={() => setActiveScreenshotIndex((prev) => (prev - 1 + N) % N)}
-                        title="上一張"
+                        title={t('tabs.edit.prev_image')}
                       >
                         <ChevronLeft size={20} />
                       </button>
@@ -225,7 +227,7 @@ export function EditTab({
                             className={item.className}
                             style={item.style}
                             onClick={item.onClick}
-                            title={item.style.zIndex === 10 ? "點擊切換動作選單" : "點擊切換圖片"}
+                            title={item.style.zIndex === 10 ? t('tabs.edit.screenshot_action_tooltip') : ''}
                           >
                             <img
                               src={convertFileSrc(item.path)}
@@ -239,7 +241,7 @@ export function EditTab({
                       <button
                         className={`${styles.carouselArrow} ${styles.right}`}
                         onClick={() => setActiveScreenshotIndex((prev) => (prev + 1) % N)}
-                        title="下一張"
+                        title={t('tabs.edit.next_image')}
                       >
                         <ChevronRight size={20} />
                       </button>
@@ -249,24 +251,24 @@ export function EditTab({
               )}
             </div>
             <div className={`${styles.screenshotActions} ${isScreenshotZoomed ? styles.active : ''}`}>
-              <button onClick={handleOpenActiveScreenshot} title="開啟檔案">
+              <button onClick={handleOpenActiveScreenshot} title={t('tabs.edit.open_file')}>
                 <FolderOpen size={16} />
-                <span>開啟</span>
+                <span>{t('tabs.edit.open_file')}</span>
               </button>
-              <button onClick={handleCopyActiveScreenshot} title="複製到剪貼簿">
+              <button onClick={handleCopyActiveScreenshot} title={t('tabs.edit.copy_file')}>
                 <Copy size={16} />
-                <span>複製</span>
+                <span>{t('tabs.edit.copy_file')}</span>
               </button>
-              <button onClick={handleDeleteActiveScreenshotClick} className={styles.deleteBtn} title="刪除截圖">
+              <button onClick={handleDeleteActiveScreenshotClick} className={styles.deleteBtn} title={t('tabs.edit.delete_file')}>
                 <Trash2 size={16} />
-                <span>刪除</span>
+                <span>{t('tabs.edit.delete_file')}</span>
               </button>
             </div>
           </>
         ) : (
           <div className={styles.screenshotPlaceholder}>
-            <span>目前尚無螢幕截圖</span>
-            <span className={styles.placeholderTip}>（可在遊戲中按下 F2 進行截圖）</span>
+            <span>{t('tabs.edit.no_screenshots')}</span>
+            <span className={styles.placeholderTip}>{t('tabs.edit.screenshots_tip')}</span>
           </div>
         )}
       </div>

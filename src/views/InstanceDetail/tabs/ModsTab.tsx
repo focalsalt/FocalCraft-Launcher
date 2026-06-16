@@ -1,6 +1,6 @@
-
 import { Upload, Download, RefreshCw, Loader, FolderOpen, ArrowUpCircle, Trash2, Puzzle } from 'lucide-react';
 import { ModItem } from '../../../types';
+import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
 
 interface ModsTabProps {
@@ -32,6 +32,8 @@ export function ModsTab({
   handleUpdateMod,
   handleDeleteMod,
 }: ModsTabProps) {
+  const { t } = useI18n();
+
   const onDownloadClick = () => {
     setModrinthModalType('mod');
     setIsModrinthModalOpen(true);
@@ -43,20 +45,20 @@ export function ModsTab({
         <div className={styles.btnRow}>
           <button className={styles.primaryBtn} onClick={handleImportMods}>
             <Upload size={16} />
-            <span>匯入模組</span>
+            <span>{t('tabs.mods.btn.import')}</span>
           </button>
           <button className={styles.secBtn} onClick={onDownloadClick}>
             <Download size={16} />
-            <span>下載模組</span>
+            <span>{t('tabs.mods.btn.download')}</span>
           </button>
           <button className={styles.secBtn} onClick={handleCheckModsUpdates} disabled={isCheckingModsUpdates || mods.length === 0}>
             {isCheckingModsUpdates ? <Loader className="animate-spin" size={16} /> : <RefreshCw size={16} />}
-            <span>一鍵檢查更新</span>
+            <span>{t('tabs.mods.btn.check_updates')}</span>
           </button>
         </div>
         <button className={styles.actionBtn} onClick={() => handleOpenFolder('mods')}>
           <FolderOpen size={16} />
-          <span>開啟模組資料夾</span>
+          <span>{t('tabs.mods.btn.folder')}</span>
         </button>
       </div>
 
@@ -69,10 +71,10 @@ export function ModsTab({
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>名稱</th>
-                <th>版本</th>
-                <th>環境</th>
-                <th style={{ width: 140, textAlign: 'center' }}>操作</th>
+                <th>{t('tabs.mods.label.name')}</th>
+                <th>{t('tabs.mods.label.version')}</th>
+                <th>{t('tabs.mods.label.env')}</th>
+                <th style={{ width: 140, textAlign: 'center' }}>{t('tabs.mods.label.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -82,7 +84,7 @@ export function ModsTab({
                   <tr key={mod.fileName} className={!mod.enabled ? styles.disabledMod : ''}>
                     <td>
                       <div className={styles.modNameCol}>
-                        <label className={styles.switch} title={mod.enabled ? '已啟用' : '已停用'}>
+                        <label className={styles.switch} title={mod.enabled ? t('tabs.mods.status.enabled') : t('tabs.mods.status.disabled')}>
                           <input
                             type="checkbox"
                             checked={mod.enabled}
@@ -99,7 +101,7 @@ export function ModsTab({
                     <td>{mod.version}</td>
                     <td>
                       <span className={`${styles.badge} ${mod.environment === 'client' ? styles.clientBadge : mod.environment === 'server' ? styles.serverBadge : styles.bothBadge}`}>
-                        {mod.environment === 'client' ? '個人端' : mod.environment === 'server' ? '伺服端' : '雙端'}
+                        {mod.environment === 'client' ? t('tabs.mods.env.client') : mod.environment === 'server' ? t('tabs.mods.env.server') : t('tabs.mods.env.both')}
                       </span>
                     </td>
                     <td>
@@ -108,7 +110,7 @@ export function ModsTab({
                           <button
                             className={styles.updateIconBtn}
                             onClick={() => handleUpdateMod(mod, update)}
-                            title={`有可用更新: ${update.version_number}`}
+                            title={t('tabs.mods.update_available', { version: update.version_number })}
                           >
                             <ArrowUpCircle size={18} />
                           </button>
@@ -126,18 +128,18 @@ export function ModsTab({
         ) : (
           <div className={styles.emptyStateContainer}>
             <Puzzle className={styles.emptyStateIcon} size={48} />
-            <div className={styles.emptyStateTitle}>目前無安裝模組</div>
+            <div className={styles.emptyStateTitle}>{t('tabs.mods.empty_title')}</div>
             <div className={styles.emptyStateDesc}>
-              這個實例尚未安裝任何遊戲模組 (Mods)。您可以點選下方的下載按鈕來安裝熱門模組，或點選匯入自行上傳。
+              {t('tabs.mods.empty_desc')}
             </div>
             <div className={styles.btnRow}>
               <button className={styles.primaryBtn} onClick={onDownloadClick}>
                 <Download size={14} />
-                <span>從 Modrinth 下載</span>
+                <span>{t('tabs.mods.btn.download_modrinth')}</span>
               </button>
               <button className={styles.secBtn} onClick={handleImportMods}>
                 <Upload size={14} />
-                <span>手動匯入模組</span>
+                <span>{t('tabs.mods.btn.import_manual')}</span>
               </button>
             </div>
           </div>
