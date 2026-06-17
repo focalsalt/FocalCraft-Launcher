@@ -1,27 +1,51 @@
 :root {
   --font-family: 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
-  
+
   /* 色彩變數 */
   --bg-sidebar: #222222;
   --bg-sidebar-hover: #333333;
   --bg-sidebar-active: #444444;
   --bg-main: #111111;
   --bg-topnav: rgba(17, 17, 17, 0.85);
-  
+
   --text-primary: #FFFFFF;
   --text-secondary: #AAAAAA;
   --text-muted: #777777;
-  
+
   --accent-green: #3C8527;
+  --accent-green-rgb: 60, 133, 39;
   --accent-green-hover: #4C9F33;
+  --accent-green-hover-rgb: 76, 159, 51;
   --accent-green-active: #2F691F;
-  
+  --accent-green-active-rgb: 47, 105, 31;
+
+  --danger-red: #d83030;
+  --danger-red-rgb: 216, 48, 48;
+  --danger-red-hover: #e84040;
+  --danger-red-hover-rgb: 232, 64, 64;
+  --danger-red-active: #c72a2a;
+  --danger-red-active-rgb: 199, 42, 42;
+
+  --warning-orange: #d8a32e;
+  --warning-orange-rgb: 216, 163, 46;
+  --warning-orange-hover: #e9ba4e;
+  --warning-orange-hover-rgb: 233, 186, 78;
+  --warning-orange-active: #b88c26;
+  --warning-orange-active-rgb: 184, 140, 38;
+
+  --info-blue: #2ea0d8;
+  --info-blue-rgb: 46, 160, 216;
+  --info-blue-hover: #4ec4e9;
+  --info-blue-hover-rgb: 78, 196, 233;
+  --info-blue-active: #2688b8;
+  --info-blue-active-rgb: 38, 136, 184;
+
   --border-color: #333333;
-  
+
   --border-radius-sm: 4px;
   --border-radius-md: 8px;
   --border-radius-lg: 12px;
-  
+
   --transition-fast: 0.15s ease-in-out;
   --transition-normal: 0.25s ease-in-out;
 }
@@ -36,8 +60,10 @@ body {
   font-family: var(--font-family);
   background-color: var(--bg-main);
   color: var(--text-primary);
-  overflow: hidden; /* 隱藏全域捲動條 */
-  user-select: none; /* 禁用網頁文字選取 */
+  overflow: hidden;
+  /* 隱藏全域捲動條 */
+  user-select: none;
+  /* 禁用網頁文字選取 */
   -webkit-font-smoothing: antialiased;
 }
 
@@ -91,6 +117,7 @@ a {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -106,23 +133,29 @@ input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 input[type=number] {
   -moz-appearance: textfield;
 }
 
 /* 限制原生拖拽行為 */
-img, a {
+img,
+a {
   -webkit-user-drag: none;
   user-drag: none;
 }
 
 /* 支援輸入框選取文字 */
-input, textarea {
+input,
+textarea {
   user-select: text !important;
   -webkit-user-select: text !important;
 }
 
 /* 收斂焦點外框 */
-input:focus, textarea:focus, select:focus, button:focus {
+input:focus,
+textarea:focus,
+select:focus,
+button:focus {
   outline: none !important;
 }

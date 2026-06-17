@@ -66,7 +66,7 @@ export function ServerEditModal({ isOpen, server, onSave, onCancel }: Props) {
             <input 
               type="text" 
               className={styles.input} 
-              placeholder="例如：Hypixel" 
+              placeholder={t('tabs.servers.modal.placeholder.name')} 
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -78,7 +78,7 @@ export function ServerEditModal({ isOpen, server, onSave, onCancel }: Props) {
             <input 
               type="text" 
               className={styles.input} 
-              placeholder="例如：mc.hypixel.net" 
+              placeholder={t('tabs.servers.modal.placeholder.ip')} 
               value={ip}
               onChange={(e) => setIp(e.target.value)}
               required

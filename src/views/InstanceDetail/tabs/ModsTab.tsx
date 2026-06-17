@@ -16,6 +16,7 @@ interface ModsTabProps {
   handleToggleMod: (mod: ModItem, enabled: boolean) => void;
   handleUpdateMod: (mod: ModItem, update: any) => void;
   handleDeleteMod: (fileName: string) => void;
+  onOpenModVersionModal: (mod: ModItem) => void;
 }
 
 export function ModsTab({
@@ -31,6 +32,7 @@ export function ModsTab({
   handleToggleMod,
   handleUpdateMod,
   handleDeleteMod,
+  onOpenModVersionModal,
 }: ModsTabProps) {
   const { t } = useI18n();
 
@@ -115,6 +117,14 @@ export function ModsTab({
                             <ArrowUpCircle size={18} />
                           </button>
                         )}
+                        <button
+                          className={styles.deleteIconBtn}
+                          style={{ color: 'var(--text-secondary)' }}
+                          onClick={() => onOpenModVersionModal(mod)}
+                          title={t('mod_version.title')}
+                        >
+                          <RefreshCw size={15} />
+                        </button>
                         <button className={styles.deleteIconBtn} onClick={() => handleDeleteMod(mod.fileName)}>
                           <Trash2 size={16} />
                         </button>

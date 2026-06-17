@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, Link, RotateCcw, Smile } from 'lucide-react';
+import { useI18n } from '../../utils/i18n';
 import styles from './IconEditModal.module.css';
 
 interface Props {
@@ -30,6 +31,7 @@ export function IconEditModal({
   const [urlInput, setUrlInput] = useState('');
   const [urlError, setUrlError] = useState('');
   const [activeTab, setActiveTab] = useState<'preset' | 'url' | 'local'>('preset');
+  const { t } = useI18n();
 
   useEffect(() => {
     if (isOpen) {
@@ -52,7 +54,7 @@ export function IconEditModal({
     e.preventDefault();
     const trimmed = urlInput.trim();
     if (!trimmed || !trimmed.startsWith('https://')) {
-      setUrlError('請輸入以 https:// 開頭的有效網址');
+      setUrlError(t('icon_edit.url_invalid'));
       return;
     }
     setUrlError('');
@@ -63,7 +65,7 @@ export function IconEditModal({
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2>自訂實例圖示</h2>
+          <h2>{t('icon_edit.title')}</h2>
           <button type="button" className={styles.closeBtn} onClick={onCancel}>
             <X size={18} />
           </button>
@@ -77,7 +79,7 @@ export function IconEditModal({
             onClick={() => setActiveTab('preset')}
           >
             <Smile size={16} />
-            <span>內建圖示</span>
+            <span>{t('icon_edit.tab.preset')}</span>
           </button>
           <button 
             type="button" 
@@ -85,7 +87,7 @@ export function IconEditModal({
             onClick={() => setActiveTab('local')}
           >
             <Upload size={16} />
-            <span>本機上傳</span>
+            <span>{t('icon_edit.tab.local')}</span>
           </button>
           <button 
             type="button" 
@@ -93,7 +95,7 @@ export function IconEditModal({
             onClick={() => setActiveTab('url')}
           >
             <Link size={16} />
-            <span>網路網址</span>
+            <span>{t('icon_edit.tab.url')}</span>
           </button>
         </div>
 
@@ -101,7 +103,7 @@ export function IconEditModal({
           {/* 內建圖示分頁 */}
           {activeTab === 'preset' && (
             <div className={styles.presetSection}>
-              <p className={styles.sectionTitle}>請選擇一個內建圖示：</p>
+              <p className={styles.sectionTitle}>{t('icon_edit.preset.prompt')}</p>
               <div className={styles.emojiGrid}>
                 {PRESET_EMOJIS.map((emoji) => (
                   <button 
@@ -122,8 +124,8 @@ export function IconEditModal({
             <div className={styles.localSection}>
               <div className={styles.uploadArea} onClick={onSelectLocal}>
                 <Upload size={40} className={styles.uploadIcon} />
-                <p className={styles.uploadTitle}>點擊選擇本機圖片檔案</p>
-                <p className={styles.uploadSub}>支援 PNG, JPG, JPEG, WEBP 格式</p>
+                <p className={styles.uploadTitle}>{t('icon_edit.local.prompt')}</p>
+                <p className={styles.uploadSub}>{t('icon_edit.local.supported')}</p>
               </div>
             </div>
           )}
@@ -132,7 +134,7 @@ export function IconEditModal({
           {activeTab === 'url' && (
             <form className={styles.urlForm} onSubmit={handleUrlSubmit}>
               <div className={styles.formGroup}>
-                <label>請輸入網路圖片網址</label>
+                <label>{t('icon_edit.url.prompt')}</label>
                 <div className={styles.inputRow}>
                   <input
                     type="text"
@@ -143,7 +145,7 @@ export function IconEditModal({
                     required
                   />
                   <button type="submit" className={styles.saveBtn}>
-                    套用
+                    {t('common.apply')}
                   </button>
                 </div>
                 {urlError && <span className={styles.fieldError}>{urlError}</span>}
@@ -156,11 +158,11 @@ export function IconEditModal({
           {currentIcon && (
             <button type="button" className={styles.clearBtn} onClick={onClear}>
               <RotateCcw size={14} />
-              <span>重設為預設圖示</span>
+              <span>{t('icon_edit.btn.reset')}</span>
             </button>
           )}
           <button type="button" className={styles.cancelBtn} onClick={onCancel}>
-            關閉
+            {t('common.close')}
           </button>
         </div>
       </div>

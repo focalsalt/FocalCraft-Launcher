@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
+import { useI18n } from '../../utils/i18n';
 import styles from './CustomSelect.module.css';
 
 export interface CustomSelectOption {
@@ -94,6 +95,8 @@ export function CustomSelect({ value, onChange, options, disabled, placeholder, 
       : { boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)' }),
   };
 
+  const { t } = useI18n();
+
   return (
     <div className={styles.customSelectContainer} ref={containerRef}>
       <button
@@ -102,7 +105,7 @@ export function CustomSelect({ value, onChange, options, disabled, placeholder, 
         onClick={handleOpen}
         disabled={disabled}
       >
-        <span>{selectedOption ? selectedOption.label : (placeholder || '請選擇...')}</span>
+        <span>{selectedOption ? selectedOption.label : (placeholder || t('common.select_placeholder'))}</span>
         <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </button>
 

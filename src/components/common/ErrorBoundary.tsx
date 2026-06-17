@@ -1,4 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from "react";
+import { useSettingsStore } from "../../store/settingsStore";
+import { getActiveLanguage, translations } from "../../utils/i18n";
 
 interface Props {
   children: ReactNode;
@@ -47,6 +49,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      const configLang = useSettingsStore.getState().config.language;
+      const activeLang = getActiveLanguage(configLang);
+      const t = (key: string) => {
+        const currentTranslations = translations[activeLang] || translations['zh-TW'];
+        return (currentTranslations as any)[key] || (translations['zh-TW'] as any)[key] || key;
+      };
+
       return (
         <div style={{
           padding: "40px",
@@ -74,10 +83,10 @@ export class ErrorBoundary extends Component<Props, State> {
           }}>
             <span style={{ fontSize: "48px" }}>⚠️</span>
             <h1 style={{ fontSize: "24px", margin: "16px 0 8px 0", color: "#ff5252" }}>
-              系統發生非預期錯誤
+              {t('error_boundary.title')}
             </h1>
             <p style={{ color: "#aaaaaa", fontSize: "14px", marginBottom: "24px" }}>
-              啟動器遇到未預期的 React 渲染錯誤。你可以嘗試重新整理頁面。
+              {t('error_boundary.desc')}
             </p>
             
             <div style={{
@@ -120,13 +129,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.15)")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.08)")}
               >
-                {this.state.copied ? "已複製！" : "複製錯誤訊息"}
+                {this.state.copied ? t('error_boundary.btn.copied') : t('error_boundary.btn.copy')}
               </button>
 
               <button
                 onClick={this.handleReload}
                 style={{
-                  backgroundColor: "#3C8527",
+                  backgroundColor: "var(--accent-green)",
                   color: "#ffffff",
                   border: "none",
                   padding: "10px 24px",
@@ -135,10 +144,10 @@ export class ErrorBoundary extends Component<Props, State> {
                   cursor: "pointer",
                   transition: "background-color 0.2s"
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4C9F33")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#3C8527")}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-green-hover)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-green)")}
               >
-                重新整理頁面
+                {t('error_boundary.btn.reload')}
               </button>
             </div>
           </div>

@@ -98,7 +98,7 @@
 .input:focus, .select:focus {
   outline: none;
   border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(59, 180, 74, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
 }
 
 .select option {
@@ -144,12 +144,12 @@
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(59, 180, 74, 0.2);
+  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.2);
 }
 
 .saveBtn:hover:not(:disabled) {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(59, 180, 74, 0.4);
+  box-shadow: 0 4px 16px rgba(var(--accent-green-rgb), 0.4);
 }
 
 .saveBtn:disabled {

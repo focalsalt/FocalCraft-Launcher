@@ -320,9 +320,9 @@
 }
 
 .errorMessage {
-  background-color: rgba(239, 83, 80, 0.1);
-  border: 1px solid rgba(239, 83, 80, 0.2);
-  color: #ef5350;
+  background-color: rgba(var(--danger-red-rgb), 0.1);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.2);
+  color: var(--danger-red);
   padding: 12px;
   border-radius: var(--border-radius-md);
   font-size: 13px;
@@ -346,12 +346,12 @@
   font-size: 13px;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 10px rgba(59, 180, 74, 0.2);
+  box-shadow: 0 4px 10px rgba(var(--accent-green-rgb), 0.2);
 }
 
 .confirmBtn:hover {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 14px rgba(59, 180, 74, 0.35);
+  box-shadow: 0 4px 14px rgba(var(--accent-green-rgb), 0.35);
   transform: translateY(-1px);
 }
 

@@ -2,9 +2,10 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, emit } from '@tauri-apps/api/event';
 import { Instance, InstanceStateDetail } from '../types';
-import { useSettingsStore } from './settingsStore';
 import { useAppStore } from './appStore';
 import { useAccountStore } from './accountStore';
+import { getTranslation } from '../utils/i18n';
+
 
 interface ProgressPayload {
   instanceId?: string;
@@ -217,8 +218,8 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         if (isCrash) {
           useAppStore.getState().addNotification({
             type: 'error',
-            title: '遊戲崩潰',
-            message: `遊戲異常退出（錯誤碼 ${exitCode}），請至「遊戲日誌」查看原因。`
+            title: getTranslation('instance.notification.crash.title'),
+            message: getTranslation('instance.notification.crash.msg', { exitCode: exitCode !== undefined ? exitCode : -1 })
           });
           useAppStore.getState().setActiveDetailTab('log');
         }
@@ -312,14 +313,14 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       return {
         downloadingInstanceId: instanceId,
         downloadProgress: 0,
-        downloadStatusText: '正在匯入 Modpack...',
+        downloadStatusText: getTranslation('modpack.import.status'),
         instanceStates: {
           ...state.instanceStates,
           [instanceId]: {
             ...s,
             isDownloading: true,
             downloadProgress: 0,
-            downloadStatusText: '正在匯入 Modpack...'
+            downloadStatusText: getTranslation('modpack.import.status')
           }
         }
       };
@@ -362,7 +363,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         crashedInstanceId: null,
         launchPhase: 'java_check',
         downloadProgress: 0,
-        downloadStatusText: '正在初始化啟動會話...',
+        downloadStatusText: getTranslation('instance.launch.initializing'),
         instanceLogs: {
           ...state.instanceLogs,
           [id]: []
@@ -375,7 +376,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
             isCrashed: false,
             launchPhase: 'java_check',
             downloadProgress: 0,
-            downloadStatusText: '正在初始化啟動會話...'
+            downloadStatusText: getTranslation('instance.launch.initializing')
           }
         }
       };
@@ -393,31 +394,31 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       // 初始化後端啟動會話
       await invoke('init_launch_session', { instanceId: id });
       const instance = get().instances.find(i => i.id === id);
-      if (!instance) throw new Error('找不到該實例');
+      if (!instance) throw new Error(getTranslation('detail.not_found'));
 
-      logInfo(`=== 準備啟動實例: ${instance.name} ===`);
+      logInfo(getTranslation('instance.launch.log.preparing', { name: instance.name }));
       
       // 驗證微軟憑證並視需要自動重新整理
-      logInfo('正在驗證微軟登入狀態與憑證效期...');
+      logInfo(getTranslation('instance.launch.log.verifying_ms'));
       const originalAccount = JSON.parse(accountJson);
       const accountStore = useAccountStore.getState();
       let account = accountStore.accounts.find(a => a.id === originalAccount.id);
       
       if (!account) {
-        throw new Error('找不到該帳號的登入資訊！');
+        throw new Error(getTranslation('detail.notification.cannot_launch.account_missing'));
       }
       
       const now = Date.now();
       if (account.tokenExpiresAt - now < 10 * 60 * 1000) {
-        logInfo('微軟登入憑證已過期或即將過期，正在自動刷新憑證...');
+        logInfo(getTranslation('instance.launch.log.refreshing_ms'));
         const refreshed = await accountStore.refreshAccountToken(account.id);
         if (!refreshed) {
-          throw new Error('自動重新整理憑證失敗，請重新登入您的微軟帳號！');
+          throw new Error(getTranslation('account.err.session_expired'));
         }
         account = refreshed;
-        logInfo('微軟登入憑證自動刷新成功！');
+        logInfo(getTranslation('instance.launch.log.refresh_success'));
       } else {
-        logInfo('微軟登入憑證有效。');
+        logInfo(getTranslation('instance.launch.log.ms_valid'));
       }
       
       const finalAccountJson = JSON.stringify({
@@ -426,66 +427,35 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         mcAccessToken: account.mcAccessToken
       });
 
-      logInfo(`遊戲版本: ${instance.version}`);
+      logInfo(getTranslation('instance.launch.log.version', { version: instance.version }));
       logInfo(`Mod Loader: ${instance.modloader} ${instance.loaderVersion ? `(${instance.loaderVersion})` : ''}`);
 
       const reqVersion = await invoke<number>('get_required_java_version', { instanceId: id });
       let javaPath = '';
 
       // 準備 Java 執行環境
-      logInfo('正在進行 Java 環境準備...');
+      logInfo(getTranslation('instance.launch.log.preparing_java'));
 
-      const customJavaPath = instance.javaPath || useSettingsStore.getState().config.customJavaPath;
+      const customJavaPath = instance.javaPath;
       let useCustomJava = false;
 
       if (customJavaPath && customJavaPath.trim() !== '') {
-        logInfo(`檢測到自訂 Java 設定路徑: ${customJavaPath}`);
-        try {
-          const verified = await invoke<{ path: string; version: string; major: number } | null>(
-            'verify_custom_java', { path: customJavaPath }
-          );
-          if (verified && verified.major >= reqVersion) {
-            javaPath = customJavaPath;
-            useCustomJava = true;
-            logInfo(`自訂 Java 驗證成功，版本: ${verified.version}`);
-            set((state) => {
-              const s = state.instanceStates[id] || getInitialInstanceState();
-              return {
-                downloadStatusText: `使用自訂 Java ${verified.version}`,
-                instanceStates: {
-                  ...state.instanceStates,
-                  [id]: {
-                    ...s,
-                    downloadStatusText: `使用自訂 Java ${verified.version}`
-                  }
-                }
-              };
-            });
-          } else if (verified) {
-            logInfo(`自訂 Java 版本為 ${verified.major}，低於需求版本 Java ${reqVersion}，將自動尋找相容版本。`);
-            useAppStore.getState().addNotification({
-              type: 'warning',
-              title: 'Java 版本不相容',
-              message: `自訂的 Java ${verified.major} 低於遊戲所需版本 Java ${reqVersion}，將自動尋找相容版本。`
-            });
-          }
-        } catch (err) {
-          logInfo(`自訂 Java 驗證失敗: ${err}`);
-          console.error('Failed to verify custom Java:', err);
-        }
+        logInfo(getTranslation('instance.launch.log.custom_java_path', { path: customJavaPath }));
+        javaPath = customJavaPath;
+        useCustomJava = true;
       }
 
       if (!useCustomJava) {
-        logInfo(`正在系統中掃描所需的 Java ${reqVersion} 相容環境...`);
+        logInfo(getTranslation('instance.launch.log.scanning_java', { version: reqVersion }));
         set((state) => {
           const s = state.instanceStates[id] || getInitialInstanceState();
           return {
-            downloadStatusText: '正在掃描系統 Java...',
+            downloadStatusText: getTranslation('instance.launch.log.scanning_java_ui'),
             instanceStates: {
               ...state.instanceStates,
               [id]: {
                 ...s,
-                downloadStatusText: '正在掃描系統 Java...'
+                downloadStatusText: getTranslation('instance.launch.log.scanning_java_ui')
               }
             }
           };
@@ -493,49 +463,45 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         const javaInstalls = await invoke<{ path: string; version: string; major: number }[]>('detect_java');
 
         const exactMatch = javaInstalls.find(j => j.major === reqVersion);
-        const higherMatch = javaInstalls
-          .filter(j => j.major > reqVersion)
-          .sort((a, b) => a.major - b.major)[0];
-
-        const foundJava = exactMatch ?? higherMatch;
+        const foundJava = exactMatch;
 
         if (foundJava) {
           javaPath = foundJava.path;
-          logInfo(`找到系統 Java ${foundJava.major} (${foundJava.version})，路徑: ${foundJava.path}`);
+          logInfo(getTranslation('instance.launch.log.found_java', { major: foundJava.major, version: foundJava.version, path: foundJava.path }));
           set((state) => {
             const s = state.instanceStates[id] || getInitialInstanceState();
             return {
-              downloadStatusText: `找到 Java ${foundJava.major}`,
+              downloadStatusText: getTranslation('instance.launch.status.found_java', { version: foundJava.major }),
               instanceStates: {
                 ...state.instanceStates,
                 [id]: {
                   ...s,
-                  downloadStatusText: `找到 Java ${foundJava.major}`
+                  downloadStatusText: getTranslation('instance.launch.status.found_java', { version: foundJava.major })
                 }
               }
             };
           });
         } else {
-          logInfo(`系統中未找到 Java ${reqVersion} 相容環境，準備自動下載...`);
+          logInfo(getTranslation('instance.launch.log.no_java', { version: reqVersion }));
           set((state) => {
             const s = state.instanceStates[id] || getInitialInstanceState();
             return {
               launchPhase: 'java_download',
               downloadingInstanceId: id,
-              downloadStatusText: `找不到 Java ${reqVersion}，準備下載...`,
+              downloadStatusText: getTranslation('instance.launch.status.downloading_java', { version: reqVersion }),
               instanceStates: {
                 ...state.instanceStates,
                 [id]: {
                   ...s,
                   launchPhase: 'java_download',
                   isDownloading: true,
-                  downloadStatusText: `找不到 Java ${reqVersion}，準備下載...`
+                  downloadStatusText: getTranslation('instance.launch.status.downloading_java', { version: reqVersion })
                 }
               }
             };
           });
           javaPath = await invoke<string>('download_java', { majorVersion: reqVersion, instanceId: id });
-          logInfo(`Java ${reqVersion} 下載與安裝完成，路徑: ${javaPath}`);
+          logInfo(getTranslation('instance.launch.log.java_download_complete', { version: reqVersion, path: javaPath }));
           set((state) => {
             const s = state.instanceStates[id] || getInitialInstanceState();
             return {
@@ -553,26 +519,26 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       }
 
       // 下載與準備遊戲核心/依賴檔案
-      logInfo('正在檢查與準備遊戲核心檔案、依賴庫 (Libraries)、資源包索引 (Assets) 等...');
+      logInfo(getTranslation('instance.launch.log.preparing_files'));
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
         return {
           launchPhase: 'files',
           downloadingInstanceId: id,
-          downloadStatusText: '正在準備遊戲檔案...',
+          downloadStatusText: getTranslation('instance.launch.status.preparing_files'),
           instanceStates: {
             ...state.instanceStates,
             [id]: {
               ...s,
               launchPhase: 'files',
               isDownloading: true,
-              downloadStatusText: '正在準備遊戲檔案...'
+              downloadStatusText: getTranslation('instance.launch.status.preparing_files')
             }
           }
         };
       });
       await invoke('install_instance_files', { instanceId: id, javaPath });
-      logInfo('遊戲檔案與依賴庫準備完成！');
+      logInfo(getTranslation('instance.launch.log.files_ready'));
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
         return {
@@ -588,24 +554,24 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       });
 
       // 組裝啟動參數並執行遊戲
-      logInfo('正在組裝啟動參數，並呼叫 Java 啟動遊戲進程...');
+      logInfo(getTranslation('instance.launch.log.assembling_args'));
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
         return {
           launchPhase: 'launching',
-          downloadStatusText: '正在啟動遊戲...',
+          downloadStatusText: getTranslation('instance.launch.status.launching'),
           instanceStates: {
             ...state.instanceStates,
             [id]: {
               ...s,
               launchPhase: 'launching',
-              downloadStatusText: '正在啟動遊戲...'
+              downloadStatusText: getTranslation('instance.launch.status.launching')
             }
           }
         };
       });
       await invoke('launch_instance', { instanceId: id, javaPath, accountJson: finalAccountJson });
-      logInfo('遊戲啟動指令發送成功！');
+      logInfo(getTranslation('instance.launch.log.launch_sent'));
 
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
@@ -631,7 +597,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
 
     } catch (error: any) {
       const errStr = error?.message || String(error);
-      logInfo(`[錯誤] 啟動失敗: ${errStr}`);
+      logInfo(getTranslation('instance.launch.log.launch_failed', { error: errStr }));
       console.error('Launch failed:', error);
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
@@ -650,14 +616,14 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
               isCrashed: true,
               launchPhase: 'idle',
               downloadProgress: 0,
-              downloadStatusText: `啟動失敗: ${errStr}`
+              downloadStatusText: getTranslation('instance.launch.status.launch_failed', { error: errStr })
             }
           }
         };
       });
       useAppStore.getState().addNotification({
         type: 'error',
-        title: '啟動失敗',
+        title: getTranslation('detail.notification.cannot_launch.title'),
         message: errStr
       });
       throw error;
@@ -723,7 +689,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
             isDownloading: false,
             launchPhase: 'idle',
             downloadProgress: 0,
-            downloadStatusText: '已取消'
+            downloadStatusText: getTranslation('instance.launch.status.cancelled')
           }
         }
       };

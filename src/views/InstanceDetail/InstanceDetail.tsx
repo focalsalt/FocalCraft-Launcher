@@ -3,7 +3,7 @@ import { useInstanceStore, getInitialInstanceState } from '../../store/instanceS
 import { useAppStore } from '../../store/appStore';
 import { useAccountStore } from '../../store/accountStore';
 import { useSettingsStore } from '../../store/settingsStore';
-import { useI18n } from '../../utils/i18n';
+import { useI18n, translateBackendStatus } from '../../utils/i18n';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { getInstanceIconSrc } from '../../utils/versionUtils';
 import { listen } from '@tauri-apps/api/event';
@@ -13,6 +13,8 @@ import { ServerEditModal } from './ServerEditModal';
 import { ModrinthDownloadModal } from './ModrinthDownloadModal';
 import { IconEditModal } from './IconEditModal';
 import { VersionEditModal } from './VersionEditModal';
+import { JavaSelectorModal } from './JavaSelectorModal';
+import { ModVersionModal } from './ModVersionModal';
 
 import { EditTab } from './tabs/EditTab';
 import { LogTab } from './tabs/LogTab';
@@ -66,7 +68,7 @@ interface ServerItem {
 
 
 export function InstanceDetail({ instanceId }: Props) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const instances = useInstanceStore((state) => state.instances);
   const updateInstanceSettings = useInstanceStore((state) => state.updateInstanceSettings);
   const updateInstanceConfig = useInstanceStore((state) => state.updateInstanceConfig);
@@ -149,6 +151,9 @@ export function InstanceDetail({ instanceId }: Props) {
   const [isModrinthModalOpen, setIsModrinthModalOpen] = useState(false);
   const [modrinthModalType, setModrinthModalType] = useState<'mod' | 'resourcepack' | 'shader' | 'datapack'>('mod');
   const [isIconModalOpen, setIsIconModalOpen] = useState(false);
+  const [isJavaSelectorOpen, setIsJavaSelectorOpen] = useState(false);
+  const [activeModForVersionChange, setActiveModForVersionChange] = useState<ModItem | null>(null);
+  const [isModVersionModalOpen, setIsModVersionModalOpen] = useState(false);
 
   const logConsoleRef = useRef<HTMLDivElement>(null);
   const lastLoadIdRef = useRef(0);
@@ -536,7 +541,7 @@ export function InstanceDetail({ instanceId }: Props) {
     try {
       const path = await invoke<string>('select_single_file', {
         title: t('detail.select.instance_icon'),
-        filter: "圖片檔案 (*.png;*.jpg;*.jpeg;*.webp)|*.png;*.jpg;*.jpeg;*.webp"
+        filter: `${t('detail.select.icon_filter')} (*.png;*.jpg;*.jpeg;*.webp)|*.png;*.jpg;*.jpeg;*.webp`
       });
       if (path === 'CANCELLED') return;
       await invoke('update_instance_icon', { id: instance.id, filePath: path });
@@ -680,6 +685,11 @@ export function InstanceDetail({ instanceId }: Props) {
     setConfirmDeleteTarget({ type: 'mod', fileName });
   };
 
+  const handleOpenModVersionModal = (mod: ModItem) => {
+    setActiveModForVersionChange(mod);
+    setIsModVersionModalOpen(true);
+  };
+
   const handleImportMods = async () => {
     try {
       const paths = await invoke<string[]>('select_multiple_files', {
@@ -773,7 +783,7 @@ export function InstanceDetail({ instanceId }: Props) {
     try {
       const paths = await invoke<string[]>('select_multiple_files', {
         title: t('detail.select.shaderpack'),
-        filter: "光影包檔案 (*.zip)|*.zip"
+        filter: `${t('detail.select.shaderpack_filter')} (*.zip)|*.zip`
       });
       if (paths && paths !== ('CANCELLED' as any)) {
         await invoke('import_files', { instanceId: instance.id, folderName: 'shaderpacks', filePaths: paths });
@@ -846,7 +856,7 @@ export function InstanceDetail({ instanceId }: Props) {
     try {
       const paths = await invoke<string[]>('select_multiple_files', {
         title: t('detail.select.datapack'),
-        filter: "資料包壓縮檔 (*.zip)|*.zip"
+        filter: `${t('detail.select.datapack_filter')} (*.zip)|*.zip`
       });
       if (paths && paths !== ('CANCELLED' as any)) {
         await invoke('import_files', {
@@ -930,21 +940,8 @@ export function InstanceDetail({ instanceId }: Props) {
   };
 
   // 瀏覽並選取此實例專用 Java 執行檔路徑
-  const handleBrowseJavaPath = async () => {
-    try {
-      const selected = await invoke<string>('select_java_file');
-      if (selected && selected !== 'CANCELLED') {
-        setCustomJava(selected);
-      }
-    } catch (err) {
-      if (err !== 'CANCELLED') {
-        addNotification({
-          type: 'error',
-          title: t('settings.notification.browse_java_failed.title'),
-          message: String(err)
-        });
-      }
-    }
+  const handleBrowseJavaPath = () => {
+    setIsJavaSelectorOpen(true);
   };
 
   // 清除此實例的自訂 Java 路徑（回復使用全域設定）
@@ -982,7 +979,7 @@ export function InstanceDetail({ instanceId }: Props) {
       addNotification({ type: 'info', title: t('detail.notification.modpack_update.preparing'), message: t('detail.notification.modpack_update.preparing_msg') });
 
       const file = latestModpackVersion.files.find((f: any) => f.filename.endsWith('.mrpack'));
-      if (!file) throw new Error('此版本缺少相容的 .mrpack 檔案');
+      if (!file) throw new Error(t('detail.notification.modpack_update.missing_mrpack'));
 
       // 下載整合包檔案
       const localPath = await invoke<string>('download_mrpack', { url: file.url });
@@ -1087,7 +1084,7 @@ export function InstanceDetail({ instanceId }: Props) {
                   </span>
                 </div>
                 <div className={styles.hudDetail}>
-                  {downloadStatusText || t('detail.status.initializing')}
+                  {(downloadStatusText ? translateBackendStatus(downloadStatusText, language) : '') || t('detail.status.initializing')}
                 </div>
                 <div className={styles.hudProgressContainer}>
                   <div className={styles.hudProgressBar}>
@@ -1152,6 +1149,7 @@ export function InstanceDetail({ instanceId }: Props) {
               handleToggleMod={handleToggleMod}
               handleUpdateMod={handleUpdateMod}
               handleDeleteMod={handleDeleteMod}
+              onOpenModVersionModal={handleOpenModVersionModal}
             />
           )}
 
@@ -1409,6 +1407,26 @@ export function InstanceDetail({ instanceId }: Props) {
           setIsEditingVersion(false);
           await loadInstances();
         }}
+      />
+
+      <JavaSelectorModal
+        isOpen={isJavaSelectorOpen}
+        onClose={() => setIsJavaSelectorOpen(false)}
+        onSelect={(path) => setCustomJava(path)}
+        currentPath={customJava}
+      />
+
+      <ModVersionModal
+        isOpen={isModVersionModalOpen}
+        onClose={() => {
+          setIsModVersionModalOpen(false);
+          setActiveModForVersionChange(null);
+        }}
+        mod={activeModForVersionChange}
+        mcVersion={instance.version}
+        loader={instance.modloader}
+        instanceId={instance.id}
+        onUpdateComplete={loadTabData}
       />
 
     </div>

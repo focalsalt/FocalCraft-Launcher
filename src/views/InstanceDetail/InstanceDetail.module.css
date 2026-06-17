@@ -168,8 +168,8 @@
 
 .iconManagerSmall:hover {
   border-color: var(--accent-green);
-  background-color: rgba(59, 180, 74, 0.08);
-  box-shadow: 0 0 12px rgba(59, 180, 74, 0.2);
+  background-color: rgba(var(--accent-green-rgb), 0.08);
+  box-shadow: 0 0 12px rgba(var(--accent-green-rgb), 0.2);
 }
 
 .smallIcon {
@@ -589,13 +589,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 4px 12px rgba(59, 180, 74, 0.2);
+  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.2);
   transform: translateY(1px);
 }
 
 .primaryBtn:hover {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(59, 180, 74, 0.35);
+  box-shadow: 0 4px 16px rgba(var(--accent-green-rgb), 0.35);
   transform: translateY(0px);
 }
 
@@ -892,7 +892,7 @@
 
 .textBtn:hover {
   color: var(--accent-green-hover);
-  background-color: rgba(59, 180, 74, 0.08);
+  background-color: rgba(var(--accent-green-rgb), 0.08);
 }
 
 /* 7. DETAILED SETTINGS TAB */
@@ -939,7 +939,7 @@
 
 .btnIcon:hover {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 0 8px rgba(59, 180, 74, 0.3);
+  box-shadow: 0 0 8px rgba(var(--accent-green-rgb), 0.3);
 }
 
 /* 設定分頁：圖示按鈕（次要色）*/
@@ -1041,7 +1041,7 @@
 .select:focus {
   outline: none;
   border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(59, 180, 74, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
 }
 
 .textarea {
@@ -1060,12 +1060,12 @@
   font-size: 14px;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(59, 180, 74, 0.2);
+  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.2);
 }
 
 .saveBtn:hover {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(59, 180, 74, 0.35);
+  box-shadow: 0 4px 16px rgba(var(--accent-green-rgb), 0.35);
   transform: translateY(-1px);
 }
 
@@ -1134,8 +1134,8 @@
 }
 
 .projectPill {
-  background-color: rgba(59, 180, 74, 0.15);
-  border: 1px solid rgba(59, 180, 74, 0.3);
+  background-color: rgba(var(--accent-green-rgb), 0.15);
+  border: 1px solid rgba(var(--accent-green-rgb), 0.3);
   color: var(--accent-green);
   padding: 4px 10px;
   border-radius: 20px;
@@ -1204,13 +1204,13 @@
   font-size: 14.5px;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 14px rgba(59, 180, 74, 0.25);
+  box-shadow: 0 4px 14px rgba(var(--accent-green-rgb), 0.25);
   text-align: center;
 }
 
 .primaryBtnLarge:hover {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 6px 20px rgba(59, 180, 74, 0.4);
+  box-shadow: 0 6px 20px rgba(var(--accent-green-rgb), 0.4);
   transform: translateY(-1px);
 }
 
@@ -1281,7 +1281,7 @@
   height: 100%;
   background: linear-gradient(90deg, var(--accent-green), #7de88a);
   border-radius: 2px;
-  box-shadow: 0 0 8px rgba(59, 180, 74, 0.5);
+  box-shadow: 0 0 8px rgba(var(--accent-green-rgb), 0.5);
   transition: width 0.3s ease;
 }
 
@@ -1298,13 +1298,13 @@
   font-size: 16px;
   color: white;
   background-color: var(--accent-green);
-  box-shadow: 0 6px 20px rgba(59, 180, 74, 0.35);
+  box-shadow: 0 6px 20px rgba(var(--accent-green-rgb), 0.35);
   backdrop-filter: blur(4px);
 }
 
 .playBtn:hover:not(:disabled) {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 8px 24px rgba(59, 180, 74, 0.55);
+  box-shadow: 0 8px 24px rgba(var(--accent-green-rgb), 0.55);
   transform: scale(1.02) translateY(-2px);
 }
 
@@ -1315,14 +1315,14 @@
 .playBtnActive {
   opacity: 0.85;
   cursor: not-allowed;
-  background-color: rgba(59, 180, 74, 0.65);
-  box-shadow: 0 4px 12px rgba(59, 180, 74, 0.25);
+  background-color: rgba(var(--accent-green-rgb), 0.65);
+  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.25);
 }
 
 .playBtn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-  background-color: rgba(59, 180, 74, 0.5);
+  background-color: rgba(var(--accent-green-rgb), 0.5);
   box-shadow: none;
 }
 
@@ -1535,7 +1535,7 @@
 }
 
 .updateIconBtn:hover {
-  background-color: rgba(59, 180, 74, 0.15);
+  background-color: rgba(var(--accent-green-rgb), 0.15);
   color: var(--accent-green-hover);
   transform: scale(1.1);
 }
@@ -1592,7 +1592,7 @@
   background-color: var(--accent-green);
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(59, 180, 74, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--accent-green-rgb), 0.3);
 }
 
 .filterSegmentButton:disabled {
@@ -1800,7 +1800,7 @@
   background: var(--accent-green);
   cursor: pointer;
   transition: transform 0.1s, background-color var(--transition-fast);
-  box-shadow: 0 0 6px rgba(59, 180, 74, 0.5);
+  box-shadow: 0 0 6px rgba(var(--accent-green-rgb), 0.5);
 }
 
 .memorySlider::-webkit-slider-thumb:hover {
@@ -1824,7 +1824,7 @@
 .numInput:focus {
   outline: none;
   border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(59, 180, 74, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
 }
 
 /* 精緻空狀態完全置中排版樣式 */
@@ -1847,7 +1847,7 @@
   color: var(--accent-green);
   margin-bottom: 20px;
   opacity: 0.85;
-  filter: drop-shadow(0 4px 10px rgba(59, 180, 74, 0.25));
+  filter: drop-shadow(0 4px 10px rgba(var(--accent-green-rgb), 0.25));
 }
 
 .emptyStateTitle {
@@ -1883,13 +1883,13 @@
 
 .dropzone:hover {
   border-color: var(--accent-green);
-  background-color: rgba(59, 180, 74, 0.03);
+  background-color: rgba(var(--accent-green-rgb), 0.03);
 }
 
 .dropzoneActive {
   border-color: var(--accent-green);
-  background-color: rgba(59, 180, 74, 0.08);
-  box-shadow: 0 0 12px rgba(59, 180, 74, 0.2);
+  background-color: rgba(var(--accent-green-rgb), 0.08);
+  box-shadow: 0 0 12px rgba(var(--accent-green-rgb), 0.2);
 }
 
 .dropzoneIcon {
@@ -1975,8 +1975,8 @@
 }
 
 .logActionSuccess {
-  background: rgba(59, 180, 74, 0.15) !important;
-  border-color: rgba(59, 180, 74, 0.4) !important;
+  background: rgba(var(--accent-green-rgb), 0.15) !important;
+  border-color: rgba(var(--accent-green-rgb), 0.4) !important;
   color: rgb(100, 220, 100) !important;
 }
 
@@ -2046,4 +2046,16 @@
 .crashBanner span {
   font-size: 12.5px;
   opacity: 0.85;
+}
+
+.compactSelectWrapper {
+  display: flex;
+  width: 100%;
+}
+
+.compactSelectWrapper button {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: var(--border-radius-sm);
+  background-color: rgba(0, 0, 0, 0.45);
 }

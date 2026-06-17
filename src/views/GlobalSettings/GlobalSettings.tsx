@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useAppStore } from '../../store/appStore';
-import { useI18n } from '../../utils/i18n';
+import { useI18n, getTranslation } from '../../utils/i18n';
 import { invoke } from '@tauri-apps/api/core';
-import { Loader, FolderOpen, RefreshCw, Trash2, Save } from 'lucide-react';
+import { Loader, FolderOpen, RefreshCw, Save } from 'lucide-react';
 import { getVersion } from '@tauri-apps/api/app';
 import { CustomSelect } from '../../components/common/CustomSelect';
 import styles from './GlobalSettings.module.css';
@@ -15,7 +15,6 @@ export function GlobalSettings() {
 
   const [defaultMaxMemory, setDefaultMaxMemory] = useState(4096);
   const [defaultJvmArgs, setDefaultJvmArgs] = useState('');
-  const [customJavaPath, setCustomJavaPath] = useState('');
   const [instancesPath, setInstancesPath] = useState('');
   const [language, setLanguage] = useState<string | null>(null);
   const [baseDir, setBaseDir] = useState('');
@@ -45,7 +44,6 @@ export function GlobalSettings() {
   useEffect(() => {
     setDefaultMaxMemory(config.defaultMaxMemory || 4096);
     setDefaultJvmArgs(config.defaultJvmArgs || '');
-    setCustomJavaPath(config.customJavaPath || '');
     setInstancesPath(config.instancesPath || '');
     setLanguage(config.language || null);
   }, [config]);
@@ -71,33 +69,13 @@ export function GlobalSettings() {
     setInstancesPath('');
   };
 
-  const handleBrowseJavaPath = async () => {
-    try {
-      const selected = await invoke<string>('select_java_file');
-      if (selected && selected !== 'CANCELLED') {
-        setCustomJavaPath(selected);
-      }
-    } catch (err) {
-      if (err !== 'CANCELLED') {
-        addNotification({
-          type: 'error',
-          title: t('settings.notification.browse_java_failed.title'),
-          message: String(err)
-        });
-      }
-    }
-  };
 
-  const handleClearJavaPath = () => {
-    setCustomJavaPath('');
-  };
 
   const handleSave = async () => {
     try {
       const newConfig = {
         defaultMaxMemory,
         defaultJvmArgs: defaultJvmArgs.trim() || null,
-        customJavaPath: customJavaPath.trim() || null,
         instancesPath: instancesPath.trim() || null,
         language,
       };
@@ -106,13 +84,13 @@ export function GlobalSettings() {
 
       addNotification({
         type: 'success',
-        title: t('settings.notification.save_success.title'),
-        message: t('settings.notification.save_success.msg')
+        title: getTranslation('settings.notification.save_success.title'),
+        message: getTranslation('settings.notification.save_success.msg')
       });
     } catch (err) {
       addNotification({
         type: 'error',
-        title: t('settings.notification.save_failed.title'),
+        title: getTranslation('settings.notification.save_failed.title'),
         message: String(err)
       });
     }
@@ -173,34 +151,7 @@ export function GlobalSettings() {
             </div>
           </div>
 
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>{t('settings.card.java')}</h2>
-            <div className={styles.formGroup}>
-              <label>{t('settings.label.java_path')}</label>
-              <div className={styles.inputGroup}>
-                <input
-                  type="text"
-                  className={styles.input}
-                  placeholder={t('settings.placeholder.java_path')}
-                  value={customJavaPath}
-                  onChange={(e) => setCustomJavaPath(e.target.value)}
-                />
-                <button className={styles.btnIcon} onClick={handleBrowseJavaPath} title={t('settings.btn.browse')}>
-                  <FolderOpen size={18} />
-                  <span>{t('settings.btn.browse')}</span>
-                </button>
-                {customJavaPath && (
-                  <button className={styles.btnIconSec} onClick={handleClearJavaPath} title="Clear">
-                    <Trash2 size={18} />
-                    <span>{t('tabs.settings.btn.clear')}</span>
-                  </button>
-                )}
-              </div>
-              <span className={styles.helpText}>
-                {t('settings.help.java_path')}
-              </span>
-            </div>
-          </div>
+
 
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>{t('settings.card.launch')}</h2>

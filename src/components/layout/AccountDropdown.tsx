@@ -5,8 +5,10 @@ import styles from './AccountDropdown.module.css';
 import { MicrosoftLoginModal } from './MicrosoftLoginModal';
 import { Account } from '../../types';
 import { CustomConfirmModal } from '../common/CustomConfirmModal';
+import { useI18n } from '../../utils/i18n';
 
 export function AccountDropdown() {
+  const { t } = useI18n();
   const { accounts, selectedAccountId, selectAccount, removeAccount, refreshStatuses } = useAccountStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -25,7 +27,7 @@ export function AccountDropdown() {
       return (
         <div className={`${styles.statusWrapper} ${styles.updating}`}>
           <Loader2 className={`${styles.statusIcon} ${styles.spin}`} size={12} />
-          <span>驗證中</span>
+          <span>{t('account.dropdown.verifying')}</span>
         </div>
       );
     }
@@ -34,7 +36,7 @@ export function AccountDropdown() {
       return (
         <div className={`${styles.statusWrapper} ${styles.failed}`}>
           <AlertCircle className={styles.statusIcon} size={12} />
-          <span>驗證過期</span>
+          <span>{t('account.dropdown.expired')}</span>
         </div>
       );
     }
@@ -42,7 +44,7 @@ export function AccountDropdown() {
     return (
       <div className={`${styles.statusWrapper} ${styles.valid}`}>
         <span className={styles.onlineDot}>●</span>
-        <span>線上</span>
+        <span>{t('account.dropdown.online')}</span>
       </div>
     );
   };
@@ -91,13 +93,13 @@ export function AccountDropdown() {
         </div>
         <div className={styles.info}>
           <div className={styles.name}>
-            {selectedAccount ? selectedAccount.mcId : '尚未登入'}
+            {selectedAccount ? selectedAccount.mcId : t('account.dropdown.not_logged_in')}
           </div>
           {selectedAccount ? (
             renderAccountStatus(selectedAccount)
           ) : (
             <div className={`${styles.statusWrapper} ${styles.empty}`}>
-              <span>無作用中帳號</span>
+              <span>{t('account.dropdown.no_active_account')}</span>
             </div>
           )}
         </div>
@@ -142,13 +144,13 @@ export function AccountDropdown() {
 
           <button className={styles.menuItem} onClick={handleAddAccount}>
             <Plus size={16} />
-            <span>新增帳號</span>
+            <span>{t('account.dropdown.add_account')}</span>
           </button>
 
           {selectedAccount && (
             <button className={`${styles.menuItem} ${styles.dangerItem}`} onClick={handleLogoutClick}>
               <LogOut size={16} />
-              <span>登出帳號</span>
+              <span>{t('account.dropdown.logout_btn')}</span>
             </button>
           )}
         </div>
@@ -159,8 +161,8 @@ export function AccountDropdown() {
 
       <CustomConfirmModal
         isOpen={isConfirmLogoutOpen}
-        title="登出帳號警告"
-        message={`您確定要登出並移除帳號 "${selectedAccount?.mcId}" 嗎？這將會清除本機的登入工作階段，下次啟動該實例前需要重新進行登入。`}
+        title={t('account.dropdown.logout_title')}
+        message={t('account.dropdown.logout_confirm', { name: selectedAccount?.mcId || '' })}
         onConfirm={handleConfirmLogout}
         onCancel={() => setIsConfirmLogoutOpen(false)}
       />

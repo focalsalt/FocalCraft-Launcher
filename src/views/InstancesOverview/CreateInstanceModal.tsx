@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useAppStore } from '../../store/appStore';
-import { useI18n } from '../../utils/i18n';
+import { useI18n, translateVersionGroup } from '../../utils/i18n';
 import { CustomTab } from './tabs/CustomTab';
 import { ModrinthTab } from './tabs/ModrinthTab';
 import { ImportMrpackTab } from './tabs/ImportMrpackTab';
@@ -39,14 +39,14 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   const { addNotification, setCurrentView: setAppView } = useAppStore();
   const { t } = useI18n();
 
-  const [activeTab, setActiveTab] = useState<'custom' | 'modrinth' | 'mrpack'>('custom');
-  const [platform, setPlatform] = useState<'modrinth' | 'curseforge'>('modrinth');
+  const [activeTab, setActiveTab] = useState<'custom' | 'modrinth' | 'curseforge' | 'mrpack'>('custom');
+  const platform = activeTab === 'curseforge' ? 'curseforge' : 'modrinth';
   const [isManualImportMode, setIsManualImportMode] = useState(false);
   const [blockedModsList, setBlockedModsList] = useState<any[]>([]);
   const [detectedImportFiles, setDetectedImportFiles] = useState<Record<string, string>>({});
   const [importedImportItems, setImportedImportItems] = useState<Set<string>>(new Set());
 
-  // 切換平台時重設狀態
+  // 切換分頁時重設狀態
   useEffect(() => {
     setSearchQuery('');
     setSearchResults([]);
@@ -61,7 +61,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     setIsLoadingMore(false);
     setIsSelectingMods(false);
     setSelectedMods(new Set());
-  }, [platform]);
+  }, [activeTab]);
 
   // 背景掃描下載資料夾以比對 SHA-1
   useEffect(() => {
@@ -87,6 +87,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
   // 自訂建立分頁狀態
   const [customName, setCustomName] = useState('');
+  const [isNameManuallyEdited, setIsNameManuallyEdited] = useState(false);
   const [customVersion, setCustomVersion] = useState('1.20.4');
   const [selectedMajorVersion, setSelectedMajorVersion] = useState<string>('');
   const [customModloader, setCustomModloader] = useState<string>('Vanilla');
@@ -255,8 +256,30 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   useEffect(() => {
     if (isOpen) {
       loadVersions();
+      setIsNameManuallyEdited(false);
     }
   }, [isOpen]);
+
+  const handleNameChange = (val: string) => {
+    setCustomName(val);
+    if (val.trim() !== '') {
+      setIsNameManuallyEdited(true);
+    } else {
+      setIsNameManuallyEdited(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isNameManuallyEdited) {
+      if (customModloader === 'Vanilla') {
+        setCustomName(customVersion);
+      } else if (customModloader === 'Custom') {
+        setCustomName(`${customVersion}-Custom`);
+      } else {
+        setCustomName(`${customVersion}-${customModloader}${selectedLoaderVersion}`);
+      }
+    }
+  }, [customVersion, customModloader, selectedLoaderVersion, isNameManuallyEdited]);
 
   const LIMIT = 20;
 
@@ -344,7 +367,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
   // 整合包搜尋防抖與載入
   useEffect(() => {
-    if (activeTab !== 'modrinth' || !isOpen) return;
+    if ((activeTab !== 'modrinth' && activeTab !== 'curseforge') || !isOpen) return;
 
     const query = searchQuery;
     if (!query.trim()) {
@@ -419,7 +442,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   const handleSelectCustomLoaderJar = async () => {
     try {
       const path = await invoke<string>('select_single_file', {
-        title: "選擇自訂 ModLoader JAR 檔案",
+        title: t('create.custom.select_loader_jar'),
         filter: "Java Archive (*.jar)|*.jar"
       });
       if (path === 'CANCELLED') return;
@@ -492,7 +515,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     setModpackDetails(null);
     try {
       const file = versionObj.files.find((f: any) => f.filename.endsWith('.mrpack') || platform === 'curseforge');
-      if (!file) throw new Error('該版本沒有相容的檔案');
+      if (!file) throw new Error(t('create.modpack.missing_files'));
 
       // 下載到本地臨時目錄
       const localPath = await invoke<string>('download_mrpack', { url: file.url });
@@ -567,7 +590,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
       if (platform === 'modrinth') {
         // 獲取所有版本
         const res = await fetch(`https://api.modrinth.com/v2/project/${selectedModpack.project_id}/version`);
-        if (!res.ok) throw new Error('無法取得 Modpack 版本列表');
+        if (!res.ok) throw new Error(t('create.modpack.versions_failed'));
         
         const versionsList = await res.json();
         // 過濾出含有 .mrpack 的版本
@@ -578,7 +601,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
         setModpackVersions(validVersions);
 
         if (validVersions.length === 0) {
-          throw new Error('此 Modpack 沒有提供相容的 .mrpack 檔案');
+          throw new Error(t('create.modpack.missing_mrpack'));
         }
 
         // 預設選取第一個版本並載入
@@ -596,7 +619,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
             version_number: v.displayName || v.fileName,
             game_versions: v.gameVersions.filter((gv: any) => !['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
             loaders: v.gameVersions.filter((gv: any) => ['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
-            changelog: v.releaseNotes || '無更新日誌描述',
+            changelog: v.releaseNotes || t('create.modpack.no_changelog'),
             files: [{
               filename: v.fileName,
               url: v.downloadUrl,
@@ -608,7 +631,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
         setModpackVersions(compatible);
 
         if (compatible.length === 0) {
-          throw new Error('此 Modpack 沒有可用的版本');
+          throw new Error(t('create.modpack.no_versions'));
         }
 
         const defaultVersion = compatible[0];
@@ -852,6 +875,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     if (isImporting) return; // 匯入中禁止關閉
     // 重設狀態
     setCustomName('');
+    setIsNameManuallyEdited(false);
     setCustomLoaderJarPath('');
     setCustomLoaderJarName('');
     setIsDragOverCustom(false);
@@ -871,11 +895,9 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
     setIsLoadingMore(false);
     setIsSelectingMods(false);
     setSelectedMods(new Set());
-    setIsManualImportMode(false);
     setBlockedModsList([]);
     setDetectedImportFiles({});
     setImportedImportItems(new Set());
-    setPlatform('modrinth');
     onClose();
   };
 
@@ -993,7 +1015,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
   const majorVersionOptions = majorVersionsData.groups.map((g) => ({
     value: g,
-    label: g
+    label: translateVersionGroup(g, t)
   }));
 
   const minorVersions = majorVersionsData.groupMap[selectedMajorVersion] || [];
@@ -1003,11 +1025,11 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
   }));
 
   const modloaderOptions = [
-    { value: 'Vanilla', label: 'Vanilla (原版)' },
+    { value: 'Vanilla', label: t('version_edit.loader.vanilla') },
     { value: 'Fabric', label: 'Fabric' },
     { value: 'Forge', label: 'Forge' },
     { value: 'NeoForge', label: 'NeoForge' },
-    { value: 'Custom', label: '自訂 ModLoader' }
+    { value: 'Custom', label: t('version_edit.loader.custom') }
   ];
 
   const loaderVersionOptions = loaderVersions.map((v) => ({
@@ -1045,7 +1067,14 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
             onClick={() => !isImporting && setActiveTab('modrinth')}
             disabled={isImporting}
           >
-            {t('create.tab.online')}
+            Modrinth
+          </button>
+          <button 
+            className={`${styles.tab} ${activeTab === 'curseforge' ? styles.active : ''}`}
+            onClick={() => !isImporting && setActiveTab('curseforge')}
+            disabled={isImporting}
+          >
+            CurseForge
           </button>
           <button 
             className={`${styles.tab} ${activeTab === 'mrpack' ? styles.active : ''}`}
@@ -1135,7 +1164,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
               {activeTab === 'custom' && (
                 <CustomTab
                   customName={customName}
-                  setCustomName={setCustomName}
+                  setCustomName={handleNameChange}
                   minorFilter={minorFilter}
                   majorFilter={majorFilter}
                   setMajorFilter={setMajorFilter}
@@ -1162,7 +1191,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                 />
               )}
 
-              {activeTab === 'modrinth' && (
+              {(activeTab === 'modrinth' || activeTab === 'curseforge') && (
                 <ModrinthTab
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
@@ -1192,7 +1221,6 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   toggleAllMods={toggleAllMods}
                   toggleModSelection={toggleModSelection}
                   platform={platform}
-                  setPlatform={setPlatform}
                 />
               )}
 
@@ -1266,7 +1294,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                 </button>
               )}
 
-              {activeTab === 'modrinth' && selectedModpack && !isModpackConfirmed && (
+              {(activeTab === 'modrinth' || activeTab === 'curseforge') && selectedModpack && !isModpackConfirmed && (
                 <button 
                   className={styles.createButton} 
                   onClick={handleConfirmModpack}
@@ -1277,7 +1305,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                 </button>
               )}
 
-              {activeTab === 'modrinth' && modpackDetails && isModpackConfirmed && !isSelectingMods && (
+              {(activeTab === 'modrinth' || activeTab === 'curseforge') && modpackDetails && isModpackConfirmed && !isSelectingMods && (
                 <button 
                   className={styles.createButton} 
                   onClick={() => setIsSelectingMods(true)}
@@ -1288,7 +1316,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                 </button>
               )}
 
-              {activeTab === 'modrinth' && modpackDetails && isModpackConfirmed && isSelectingMods && (
+              {(activeTab === 'modrinth' || activeTab === 'curseforge') && modpackDetails && isModpackConfirmed && isSelectingMods && (
                 <button 
                   className={styles.createButton} 
                   onClick={() => handleImportModpack(modpackDetails, downloadedMrpackPath)}

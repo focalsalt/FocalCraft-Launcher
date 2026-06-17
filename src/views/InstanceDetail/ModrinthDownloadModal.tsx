@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import { useAppStore } from '../../store/appStore';
 import { CustomSelect } from '../../components/common/CustomSelect';
 import { SafeImage } from '../../components/common/SafeImage';
+import { useI18n } from '../../utils/i18n';
 import styles from './ModrinthDownloadModal.module.css';
 
 interface Props {
@@ -18,38 +19,38 @@ interface Props {
   onClose: () => void;
 }
 
-const RECOMMEND_CATEGORIES: Record<string, { label: string; value: string }[]> = {
+const RECOMMEND_CATEGORIES: Record<string, { labelKey: string; value: string; defaultLabel: string }[]> = {
   mod: [
-    { label: '全部', value: '' },
-    { label: '優化', value: 'optimization' },
-    { label: '科技', value: 'technology' },
-    { label: '魔法', value: 'magic' },
-    { label: '冒險', value: 'adventure' },
-    { label: '裝飾', value: 'decoration' },
-    { label: '工具', value: 'utility' },
+    { labelKey: 'common.all', value: '', defaultLabel: '全部' },
+    { labelKey: 'category.optimization', value: 'optimization', defaultLabel: '優化' },
+    { labelKey: 'category.technology', value: 'technology', defaultLabel: '科技' },
+    { labelKey: 'category.magic', value: 'magic', defaultLabel: '魔法' },
+    { labelKey: 'category.adventure', value: 'adventure', defaultLabel: '冒險' },
+    { labelKey: 'category.decoration', value: 'decoration', defaultLabel: '裝飾' },
+    { labelKey: 'category.utility', value: 'utility', defaultLabel: '工具' },
   ],
   resourcepack: [
-    { label: '全部', value: '' },
-    { label: '16x', value: '16x' },
-    { label: '32x', value: '32x' },
-    { label: 'PvP', value: 'pvp' },
-    { label: '寫實', value: 'realistic' },
-    { label: '中世紀', value: 'medieval' },
-    { label: '現代風', value: 'modern' },
+    { labelKey: 'common.all', value: '', defaultLabel: '全部' },
+    { labelKey: 'category.16x', value: '16x', defaultLabel: '16x' },
+    { labelKey: 'category.32x', value: '32x', defaultLabel: '32x' },
+    { labelKey: 'category.pvp', value: 'pvp', defaultLabel: 'PvP' },
+    { labelKey: 'category.realistic', value: 'realistic', defaultLabel: '寫實' },
+    { labelKey: 'category.medieval', value: 'medieval', defaultLabel: '中世紀' },
+    { labelKey: 'category.modern', value: 'modern', defaultLabel: '現代風' },
   ],
   shader: [
-    { label: '全部', value: '' },
-    { label: '真實光源', value: 'realistic' },
-    { label: '效能輕量', value: 'performance' },
-    { label: 'OptiFine', value: 'optifine' },
-    { label: 'Iris', value: 'iris' },
+    { labelKey: 'common.all', value: '', defaultLabel: '全部' },
+    { labelKey: 'category.realistic_light', value: 'realistic', defaultLabel: '真實光源' },
+    { labelKey: 'category.performance', value: 'performance', defaultLabel: '效能輕量' },
+    { labelKey: 'category.optifine', value: 'optifine', defaultLabel: 'OptiFine' },
+    { labelKey: 'category.iris', value: 'iris', defaultLabel: 'Iris' },
   ],
   datapack: [
-    { label: '全部', value: '' },
-    { label: '世界生成', value: 'worldgen' },
-    { label: '實用工具', value: 'utility' },
-    { label: '遊戲機制', value: 'gameplay' },
-    { label: '魔法', value: 'magic' },
+    { labelKey: 'common.all', value: '', defaultLabel: '全部' },
+    { labelKey: 'category.worldgen', value: 'worldgen', defaultLabel: '世界生成' },
+    { labelKey: 'category.utility', value: 'utility', defaultLabel: '實用工具' },
+    { labelKey: 'category.gameplay', value: 'gameplay', defaultLabel: '遊戲機制' },
+    { labelKey: 'category.magic', value: 'magic', defaultLabel: '魔法' },
   ],
 };
 
@@ -64,6 +65,7 @@ export function ModrinthDownloadModal({
   onClose,
 }: Props) {
   const addNotification = useAppStore((state) => state.addNotification);
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -367,7 +369,7 @@ export function ModrinthDownloadModal({
           if (compatible.length > 0) {
             const firstVer = compatible[0];
             setSelectedVersionId(firstVer.id);
-            setSelectedVersionChangelog(firstVer.changelog || '無更新日誌描述');
+            setSelectedVersionChangelog(firstVer.changelog || t('downloader.no_changelog'));
 
             setSelectedProjects((prev) => {
               if (!prev.has(hit.project_id)) return prev;
@@ -401,7 +403,7 @@ export function ModrinthDownloadModal({
             version_number: v.displayName || v.fileName,
             game_versions: v.gameVersions.filter((gv: any) => !['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
             loaders: v.gameVersions.filter((gv: any) => ['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
-            changelog: v.releaseNotes || '無更新日誌描述',
+            changelog: v.releaseNotes || t('downloader.no_changelog'),
             files: [{
               filename: v.fileName,
               url: v.downloadUrl,
@@ -415,7 +417,7 @@ export function ModrinthDownloadModal({
         if (compatible.length > 0) {
           const firstVer = compatible[0];
           setSelectedVersionId(firstVer.id);
-          setSelectedVersionChangelog(firstVer.changelog || '無更新日誌描述');
+          setSelectedVersionChangelog(firstVer.changelog || t('downloader.no_changelog'));
 
           setSelectedProjects((prev) => {
             if (!prev.has(hit.project_id)) return prev;
@@ -439,7 +441,7 @@ export function ModrinthDownloadModal({
     setSelectedVersionId(versionId);
     const ver = projectVersions.find((v) => v.id === versionId);
     if (ver) {
-      setSelectedVersionChangelog(ver.changelog || '無更新日誌描述');
+      setSelectedVersionChangelog(ver.changelog || t('downloader.no_changelog'));
 
       setSelectedProjects((prev) => {
         if (!prev.has(selectedProject.project_id)) return prev;
@@ -511,7 +513,7 @@ export function ModrinthDownloadModal({
                 version_number: v.displayName || v.fileName,
                 game_versions: v.gameVersions.filter((gv: any) => !['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
                 loaders: v.gameVersions.filter((gv: any) => ['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
-                changelog: v.releaseNotes || '無更新日誌描述',
+                changelog: v.releaseNotes || t('downloader.no_changelog'),
                 files: [{
                   filename: v.fileName,
                   url: v.downloadUrl,
@@ -589,9 +591,17 @@ export function ModrinthDownloadModal({
         next.add(item.project.project_id);
         return next;
       });
-      addNotification({ type: 'success', title: '導入成功', message: `已成功導入 ${item.project.title}` });
+      addNotification({
+        type: 'success',
+        title: t('downloader.import_success_title'),
+        message: t('downloader.import_success', { name: item.project.title })
+      });
     } catch (err: any) {
-      addNotification({ type: 'error', title: '導入失敗', message: err.message || String(err) });
+      addNotification({
+        type: 'error',
+        title: t('downloader.import_failed_title'),
+        message: err.message || String(err)
+      });
     }
   };
 
@@ -623,9 +633,17 @@ export function ModrinthDownloadModal({
         toImport.forEach(item => next.add(item.project.project_id));
         return next;
       });
-      addNotification({ type: 'success', title: '導入成功', message: `成功導入 ${filePaths.length} 個檔案` });
+      addNotification({
+        type: 'success',
+        title: t('downloader.import_success_title'),
+        message: t('downloader.import_success_plural', { count: filePaths.length })
+      });
     } catch (err: any) {
-      addNotification({ type: 'error', title: '導入失敗', message: err.message || String(err) });
+      addNotification({
+        type: 'error',
+        title: t('downloader.import_failed_title'),
+        message: err.message || String(err)
+      });
     }
   };
 
@@ -697,8 +715,8 @@ export function ModrinthDownloadModal({
       if (successCount > 0) {
         addNotification({
           type: 'success',
-          title: '已下載部分檔案',
-          message: `已成功下載 ${successCount} 個允許直接下載的項目。其餘項目被 CurseForge 封鎖，請手動下載。`
+          title: t('downloader.partial_success'),
+          message: t('downloader.partial_success_desc', { count: successCount })
         });
       }
     } else {
@@ -707,8 +725,12 @@ export function ModrinthDownloadModal({
       if (failedNames.length > 0) {
         addNotification({
           type: 'warning',
-          title: '部分下載失敗',
-          message: `成功: ${successCount} 個，失敗: ${failedNames.length} 個 (${failedNames.join(', ')})`
+          title: t('downloader.partial_failed'),
+          message: t('downloader.partial_failed_desc', {
+            success: successCount,
+            failed: failedNames.length,
+            names: failedNames.join(', ')
+          })
         });
       }
 
@@ -720,11 +742,14 @@ export function ModrinthDownloadModal({
     }
   };
 
-  const placeholderText = 
-    projectType === 'mod' ? `搜尋 ${platform === 'modrinth' ? 'Modrinth' : 'CurseForge'} 模組...` : 
-    projectType === 'resourcepack' ? `搜尋 ${platform === 'modrinth' ? 'Modrinth' : 'CurseForge'} 資源包...` : 
-    projectType === 'shader' ? `搜尋 ${platform === 'modrinth' ? 'Modrinth' : 'CurseForge'} 光影包...` : 
-    `搜尋 ${platform === 'modrinth' ? 'Modrinth' : 'CurseForge'} 資料包...`;
+  const placeholderText = t('downloader.search.placeholder_prefix', {
+    platform: platform === 'modrinth' ? 'Modrinth' : 'CurseForge'
+  }) + (
+    projectType === 'mod' ? ` ${t('downloader.type.mod')}...` :
+    projectType === 'resourcepack' ? ` ${t('downloader.type.resourcepack')}...` :
+    projectType === 'shader' ? ` ${t('downloader.type.shader')}...` :
+    ` ${t('downloader.type.datapack')}...`
+  );
 
   const versionOptions = projectVersions.map((v) => ({
     value: v.id,
@@ -735,13 +760,29 @@ export function ModrinthDownloadModal({
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h2>{
-            projectType === 'mod' ? `下載模組 (${platform === 'modrinth' ? 'Modrinth' : 'CurseForge'})` :
-            projectType === 'resourcepack' ? `下載資源包 (${platform === 'modrinth' ? 'Modrinth' : 'CurseForge'})` :
-            projectType === 'shader' ? `下載光影包 (${platform === 'modrinth' ? 'Modrinth' : 'CurseForge'})` :
-            `下載資料包 (${platform === 'modrinth' ? 'Modrinth' : 'CurseForge'})`
-          }</h2>
-          <button className={styles.closeBtn} onClick={onClose}>
+          {!isSelectingConfirm && !isManualMode ? (
+            <div className={styles.platformTabs}>
+              <button 
+                className={`${styles.platformTab} ${platform === 'modrinth' ? styles.active : ''}`}
+                onClick={() => setPlatform('modrinth')}
+                type="button"
+              >
+                Modrinth
+              </button>
+              <button 
+                className={`${styles.platformTab} ${platform === 'curseforge' ? styles.active : ''}`}
+                onClick={() => setPlatform('curseforge')}
+                type="button"
+              >
+                CurseForge
+              </button>
+            </div>
+          ) : (
+            <h2 className={styles.headerTitle}>
+              {isManualMode ? t('downloader.manual_mode_title') : t('downloader.confirm_title', { confirmed: confirmedSelection.size, total: confirmMods.length })}
+            </h2>
+          )}
+          <button className={styles.closeBtn} onClick={onClose} type="button">
             <X size={18} />
           </button>
         </div>
@@ -749,17 +790,16 @@ export function ModrinthDownloadModal({
         {isManualMode ? (
           <div className={styles.manualContainer}>
             <div className={styles.manualHeader}>
-              <span className={styles.manualTitle}>⚠️ 防封鎖手動下載模式</span>
               <button 
                 className={styles.openPageBtn}
                 onClick={openAllBlockedPages}
+                type="button"
               >
-                一鍵開啟所有下載頁面
+                {t('downloader.btn.open_all_pages')}
               </button>
             </div>
             <p className={styles.manualDesc}>
-              由於 CurseForge 限制第三方直接下載部分模組，請點擊「開啟下載頁」下載模組檔案（下載後檔案將位於本機的「下載 (Downloads)」資料夾）。
-              啟動器將會自動在背景掃描該資料夾，並在比對雜湊值成功後提示導入。
+              {t('downloader.manual_mode_desc')}
             </p>
             <div className={`${styles.manualList} global-scrollbar`}>
               {blockedItems.map(item => {
@@ -776,20 +816,20 @@ export function ModrinthDownloadModal({
                     </div>
                     <div className={styles.manualItemActions}>
                       {isImported ? (
-                        <span className={styles.importedTag}>已導入</span>
+                        <span className={styles.importedTag}>{t('downloader.status.imported')}</span>
                       ) : isDetected ? (
                         <>
-                          <span className={`${styles.manualItemStatus} ${styles.found}`}>已偵測到檔案</span>
+                          <span className={`${styles.manualItemStatus} ${styles.found}`}>{t('downloader.status.detected')}</span>
                           <button 
                             className={styles.importBtn}
                             onClick={() => handleImportBlockedItem(item)}
                           >
-                            立即導入
+                            {t('downloader.btn.import_now')}
                           </button>
                         </>
                       ) : (
                         <>
-                          <span className={`${styles.manualItemStatus} ${styles.waiting}`}>等待下載...</span>
+                          <span className={`${styles.manualItemStatus} ${styles.waiting}`}>{t('downloader.status.waiting')}</span>
                           <button 
                             className={styles.openPageBtn}
                             onClick={() => {
@@ -798,7 +838,7 @@ export function ModrinthDownloadModal({
                               invoke('open_in_browser', { url: `https://www.curseforge.com/projects/${projectId}/download/${fileId}` });
                             }}
                           >
-                            開啟下載頁
+                            {t('downloader.btn.open_download_page')}
                           </button>
                         </>
                       )}
@@ -811,9 +851,6 @@ export function ModrinthDownloadModal({
         ) : isSelectingConfirm ? (
           <div className={styles.confirmContainer}>
             <div className={styles.confirmHeader}>
-              <span className={styles.modsCountTitle}>
-                📥 確認下載清單 ({confirmedSelection.size} / {confirmMods.length} 個)
-              </span>
               <div className={styles.toggleAllContainer}>
                 <label className={styles.checkboxLabel}>
                   <input 
@@ -837,7 +874,7 @@ export function ModrinthDownloadModal({
                       }
                     }}
                   />
-                  <span>全選</span>
+                  <span>{t('downloader.btn.select_all')}</span>
                 </label>
               </div>
             </div>
@@ -894,9 +931,9 @@ export function ModrinthDownloadModal({
                       <span className={styles.confirmTitle}>{item.project.title}</span>
                       <span className={styles.confirmDesc}>
                         {isCompatible ? (
-                          `相容版本: ${item.version.version_number}`
+                          t('downloader.label.compatible_version', { version: item.version.version_number })
                         ) : (
-                          <span className={styles.errorText}>找不到相容當前遊戲版本的 Modrinth 檔案</span>
+                          <span className={styles.errorText}>{t('downloader.label.no_compatible_modrinth')}</span>
                         )}
                       </span>
                     </div>
@@ -904,10 +941,10 @@ export function ModrinthDownloadModal({
                     <div className={styles.confirmItemMeta}>
                       {isCompatible ? (
                         <span className={styles.sizeText}>
-                          {item.version.files[0] ? `${(item.version.files[0].size / 1024 / 1024).toFixed(2)} MB` : '未知大小'}
+                          {item.version.files[0] ? `${(item.version.files[0].size / 1024 / 1024).toFixed(2)} MB` : t('downloader.label.unknown_size')}
                         </span>
                       ) : (
-                        <span className={`${styles.tag} ${styles.errorTag}`}>不相容</span>
+                        <span className={`${styles.tag} ${styles.errorTag}`}>{t('downloader.label.incompatible')}</span>
                       )}
                     </div>
                   </div>
@@ -919,49 +956,35 @@ export function ModrinthDownloadModal({
           <div className={styles.container}>
             {/* Left Column: Search & List */}
             <div className={styles.leftColumn}>
-              <div className={styles.platformTabs}>
-                <button 
-                  className={`${styles.platformTab} ${platform === 'modrinth' ? styles.active : ''}`}
-                  onClick={() => setPlatform('modrinth')}
-                  type="button"
-                >
-                  Modrinth
-                </button>
-                <button 
-                  className={`${styles.platformTab} ${platform === 'curseforge' ? styles.active : ''}`}
-                  onClick={() => setPlatform('curseforge')}
-                  type="button"
-                >
-                  CurseForge
-                </button>
-              </div>
               <div className={styles.searchArea}>
                 <div className={styles.searchBarRow}>
-                  <input 
-                    type="text" 
-                    placeholder={placeholderText} 
-                    className={styles.input} 
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
+                  <div className={styles.searchInputWrapper}>
+                    <input 
+                      type="text" 
+                      placeholder={placeholderText} 
+                      className={styles.input} 
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                    />
+                    {isSearching && (
+                      <div className={styles.searchLoader}>
+                        <Loader className="animate-spin" size={18} />
+                      </div>
+                    )}
+                  </div>
                   <button 
                     className={`${styles.filterToggleBtn} ${showFilters ? styles.active : ''}`}
                     onClick={() => setShowFilters(prev => !prev)}
                   >
-                    篩選條件
+                    {t('downloader.filter.title')}
                   </button>
-                  {isSearching && (
-                    <div className={styles.searchLoader}>
-                      <Loader className="animate-spin" size={18} />
-                    </div>
-                  )}
                 </div>
 
                 {/* 進階篩選面板 */}
                 {showFilters && (
                   <div className={styles.filterPanel}>
                     <div className={styles.filterGroup}>
-                      <span className={styles.filterLabel}>Minecraft 版本篩選 (多選)</span>
+                      <span className={styles.filterLabel}>{t('downloader.filter.mc_version')}</span>
                       <div className={styles.checkboxGroup}>
                         {popularVersions.map(ver => {
                           const isChecked = selectedVersions.includes(ver);
@@ -990,13 +1013,13 @@ export function ModrinthDownloadModal({
 
                     {projectType === 'mod' && (
                       <div className={styles.filterGroup}>
-                        <span className={styles.filterLabel}>載入器篩選 (Loader)</span>
+                        <span className={styles.filterLabel}>{t('downloader.filter.loader')}</span>
                         <div className={styles.loaderSelectWrapper}>
                           <CustomSelect
                             value={selectedLoader}
                             onChange={(val) => setSelectedLoader(val)}
                             options={[
-                              { value: 'all', label: '全部' },
+                              { value: 'all', label: t('downloader.filter.loader_all') },
                               { value: 'Fabric', label: 'Fabric' },
                               { value: 'Forge', label: 'Forge' },
                               { value: 'NeoForge', label: 'NeoForge' },
@@ -1019,7 +1042,7 @@ export function ModrinthDownloadModal({
                         className={`${styles.categoryTag} ${selectedCategory === cat.value ? styles.active : ''}`}
                         onClick={() => setSelectedCategory(cat.value)}
                       >
-                        {cat.label}
+                        {t(cat.labelKey as any) || cat.defaultLabel}
                       </button>
                     ))}
                   </div>
@@ -1029,14 +1052,19 @@ export function ModrinthDownloadModal({
                       className={styles.categoriesToggleBtn}
                       onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
                     >
-                      {isCategoriesExpanded ? '收合' : '更多'}
+                      {isCategoriesExpanded ? t('downloader.btn.collapse') : t('downloader.btn.more')}
                     </button>
                   )}
                 </div>
               </div>
 
               <div key={platform} className={`${styles.list} global-scrollbar`}>
-                {results.length > 0 ? (
+                {isSearching && results.length === 0 ? (
+                  <div className={styles.loadingSpinner}>
+                    <Loader className="animate-spin" size={32} />
+                    <span>{t('downloader.status.searching')}</span>
+                  </div>
+                ) : results.length > 0 ? (
                   results.map((hit) => {
                     const isSelected = selectedProject?.project_id === hit.project_id;
                     const isChecked = selectedProjects.has(hit.project_id);
@@ -1064,9 +1092,9 @@ export function ModrinthDownloadModal({
                           <div className={styles.titleRow}>
                             <div className={styles.title}>{hit.title}</div>
                             {updateProjectIds.has(hit.project_id) ? (
-                              <span className={`${styles.tag} ${styles.updateTag}`}>可更新</span>
+                              <span className={`${styles.tag} ${styles.updateTag}`}>{t('downloader.label.updatable')}</span>
                             ) : installedProjectIds.has(hit.project_id) ? (
-                              <span className={`${styles.tag} ${styles.installedTag}`}>已安裝</span>
+                              <span className={`${styles.tag} ${styles.installedTag}`}>{t('downloader.label.installed')}</span>
                             ) : null}
                           </div>
                           <div className={styles.description}>{hit.description}</div>
@@ -1076,7 +1104,7 @@ export function ModrinthDownloadModal({
                   })
                 ) : (
                   <div className={styles.placeholder}>
-                    {query ? '無符合條件的結果' : '輸入關鍵字開始搜尋'}
+                    {query ? t('downloader.label.no_results') : t('downloader.label.start_search')}
                   </div>
                 )}
               </div>
@@ -1087,7 +1115,7 @@ export function ModrinthDownloadModal({
               {loadingDetails && !selectedProject ? (
                 <div className={styles.loadingSpinner}>
                   <Loader className="animate-spin" size={32} />
-                  <span>讀取中...</span>
+                  <span>{t('downloader.status.loading')}</span>
                 </div>
               ) : selectedProject ? (
                 <div className={styles.detailLayout}>
@@ -1101,20 +1129,20 @@ export function ModrinthDownloadModal({
                     />
                     <div className={styles.detailHeaderInfo}>
                       <h3 className={styles.detailTitle}>{selectedProject.title}</h3>
-                      <span className={styles.detailProjectMeta}>專案 ID: {selectedProject.project_id}</span>
+                      <span className={styles.detailProjectMeta}>{t('downloader.label.project_id', { id: selectedProject.project_id })}</span>
                     </div>
                   </div>
 
                   {/* 安裝與版本選擇 */}
                   <div className={styles.installationBar}>
                     <div className={styles.versionSelector}>
-                      <label className={styles.fieldLabel}>適用版本</label>
+                      <label className={styles.fieldLabel}>{t('downloader.label.supported_versions')}</label>
                       <CustomSelect
                         value={selectedVersionId}
                         onChange={handleVersionChange}
                         options={versionOptions}
                         disabled={loadingDetails || projectVersions.length === 0}
-                        placeholder={projectVersions.length === 0 ? '無相容的版本' : '選擇版本'}
+                        placeholder={projectVersions.length === 0 ? t('downloader.label.no_compatible_versions') : t('downloader.btn.select_version')}
                       />
                     </div>
                     {selectedProjects.has(selectedProject.project_id) ? (
@@ -1122,7 +1150,7 @@ export function ModrinthDownloadModal({
                         className={styles.unselectBtn} 
                         onClick={() => handleToggleSelectProject(selectedProject)}
                       >
-                        <span>取消選取</span>
+                        <span>{t('downloader.btn.deselect')}</span>
                       </button>
                     ) : (
                       <button 
@@ -1130,7 +1158,7 @@ export function ModrinthDownloadModal({
                         onClick={() => handleToggleSelectProject(selectedProject)}
                         disabled={projectVersions.length === 0}
                       >
-                        <span>選取此項目</span>
+                        <span>{t('downloader.btn.select_this')}</span>
                       </button>
                     )}
                   </div>
@@ -1138,7 +1166,7 @@ export function ModrinthDownloadModal({
                   {/* 詳細內容與更新日誌 */}
                   <div className={`${styles.detailContent} global-scrollbar`}>
                     <div className={styles.contentSection}>
-                      <h4>詳細說明</h4>
+                      <h4>{t('downloader.btn.details')}</h4>
                       <div 
                         className={styles.projectBody}
                         dangerouslySetInnerHTML={{ 
@@ -1151,7 +1179,7 @@ export function ModrinthDownloadModal({
 
                     {selectedVersionId && (
                       <div className={styles.contentSection}>
-                        <h4>更新日誌 (Changelog)</h4>
+                        <h4>{t('downloader.label.changelog')}</h4>
                         <div 
                           className={styles.changelogBody}
                           dangerouslySetInnerHTML={{ 
@@ -1166,7 +1194,7 @@ export function ModrinthDownloadModal({
                 </div>
               ) : (
                 <div className={styles.placeholder}>
-                  <span>請選擇一個項目以查看詳細資訊</span>
+                  <span>{t('downloader.status.select_prompt')}</span>
                 </div>
               )}
             </div>
@@ -1177,14 +1205,19 @@ export function ModrinthDownloadModal({
           {isManualMode ? (
             <>
               <div className={styles.selectionStatus}>
-                <span>已導入 <strong>{importedItems.size}</strong> / {blockedItems.length} 個檔案</span>
+                <span dangerouslySetInnerHTML={{
+                  __html: t('downloader.status.imported_count', {
+                    imported: `<strong>${importedItems.size}</strong>`,
+                    total: blockedItems.length
+                  })
+                }} />
               </div>
               <div className={styles.footerButtons}>
                 <button 
                   className={styles.cancelBtn} 
                   onClick={onClose}
                 >
-                  關閉
+                  {t('common.close')}
                 </button>
                 <button 
                   className={styles.confirmInstallBtn} 
@@ -1194,7 +1227,7 @@ export function ModrinthDownloadModal({
                     return sha1 && detectedFiles[sha1] && !importedItems.has(item.project.project_id);
                   }).length === 0}
                 >
-                  一鍵導入已偵測檔案
+                  {t('downloader.btn.import_all_detected')}
                 </button>
               </div>
             </>
@@ -1202,9 +1235,13 @@ export function ModrinthDownloadModal({
             <>
               <div className={styles.selectionStatus}>
                 {selectedProjects.size > 0 ? (
-                  <span>已選取 <strong>{selectedProjects.size}</strong> 個項目</span>
+                  <span dangerouslySetInnerHTML={{
+                    __html: t('downloader.status.selected_count', {
+                      count: `<strong>${selectedProjects.size}</strong>`
+                    })
+                  }} />
                 ) : (
-                  <span>請在左側勾選或右側選取要下載的項目</span>
+                  <span>{t('downloader.status.select_checkbox_prompt')}</span>
                 )}
               </div>
               <div className={styles.footerButtons}>
@@ -1212,7 +1249,7 @@ export function ModrinthDownloadModal({
                   className={styles.cancelBtn} 
                   onClick={onClose}
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
                 <button 
                   className={styles.nextBtn} 
@@ -1222,10 +1259,10 @@ export function ModrinthDownloadModal({
                   {isTransitioning ? (
                     <>
                       <Loader className="animate-spin" size={14} />
-                      <span>解析中...</span>
+                      <span>{t('downloader.status.parsing')}</span>
                     </>
                   ) : (
-                    <span>下一步 (選擇版本)</span>
+                    <span>{t('downloader.btn.next_step_versions')}</span>
                   )}
                 </button>
               </div>
@@ -1233,7 +1270,11 @@ export function ModrinthDownloadModal({
           ) : (
             <>
               <div className={styles.selectionStatus}>
-                <span>已選取 <strong>{confirmedSelection.size}</strong> 個項目準備下載</span>
+                <span dangerouslySetInnerHTML={{
+                  __html: t('downloader.status.ready_count', {
+                    count: `<strong>${confirmedSelection.size}</strong>`
+                  })
+                }} />
               </div>
               <div className={styles.footerButtons}>
                 <button 
@@ -1241,7 +1282,7 @@ export function ModrinthDownloadModal({
                   onClick={() => setIsSelectingConfirm(false)}
                   disabled={isDownloading}
                 >
-                  返回修改
+                  {t('downloader.btn.back_to_edit')}
                 </button>
                 <button 
                   className={styles.confirmInstallBtn} 
@@ -1251,10 +1292,10 @@ export function ModrinthDownloadModal({
                   {isDownloading ? (
                     <>
                       <Loader className="animate-spin" size={14} />
-                      <span>下載中...</span>
+                      <span>{t('downloader.status.downloading')}</span>
                     </>
                   ) : (
-                    <span>確認並下載</span>
+                    <span>{t('downloader.btn.confirm_download')}</span>
                   )}
                 </button>
               </div>
@@ -1268,7 +1309,7 @@ export function ModrinthDownloadModal({
           <div className={styles.progressCard}>
             <Loader className="animate-spin" size={32} />
             <div className={styles.progressText}>
-              正在下載項目 ({installProgress.current} / {installProgress.total})
+              {t('downloader.status.download_progress', { current: installProgress.current, total: installProgress.total })}
             </div>
             <div className={styles.progressName}>{installProgress.name}</div>
             <div className={styles.progressBar}>

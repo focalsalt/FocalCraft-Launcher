@@ -34,7 +34,6 @@ interface ModrinthTabProps {
   toggleAllMods: (checked: boolean, mods: any[]) => void;
   toggleModSelection: (name: string) => void;
   platform: 'modrinth' | 'curseforge';
-  setPlatform: (val: 'modrinth' | 'curseforge') => void;
 }
 
 export function ModrinthTab({
@@ -66,30 +65,11 @@ export function ModrinthTab({
   toggleAllMods,
   toggleModSelection,
   platform,
-  setPlatform,
 }: ModrinthTabProps) {
   const { t } = useI18n();
   return (
     <div className={styles.twoColumnLayout}>
       <div className={styles.leftColumn}>
-        {!isModpackConfirmed && (
-          <div className={styles.platformTabs}>
-            <button 
-              className={`${styles.platformTab} ${platform === 'modrinth' ? styles.active : ''}`}
-              onClick={() => setPlatform('modrinth')}
-              type="button"
-            >
-              Modrinth
-            </button>
-            <button 
-              className={`${styles.platformTab} ${platform === 'curseforge' ? styles.active : ''}`}
-              onClick={() => setPlatform('curseforge')}
-              type="button"
-            >
-              CurseForge
-            </button>
-          </div>
-        )}
 
         <div className={styles.searchArea}>
           <input 
@@ -117,7 +97,12 @@ export function ModrinthTab({
           )}
         </div>
 
-        {searchResults.length > 0 && (
+        {isSearching && searchResults.length === 0 ? (
+          <div className={styles.loadingSpinner} style={{ flex: 1 }}>
+            <Loader className="animate-spin" size={28} />
+            <span>{t('create.status.searching')}</span>
+          </div>
+        ) : searchResults.length > 0 ? (
           <div className={styles.modpackList} onScroll={handleScroll}>
             {searchResults.map((hit) => (
               <div 
@@ -143,6 +128,10 @@ export function ModrinthTab({
                 <span>{t('create.status.loading_more')}</span>
               </div>
             )}
+          </div>
+        ) : (
+          <div className={styles.placeholderText} style={{ flex: 1 }}>
+            <span>{t('create.label.no_results')}</span>
           </div>
         )}
       </div>

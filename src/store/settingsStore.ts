@@ -4,7 +4,6 @@ import { invoke } from '@tauri-apps/api/core';
 export interface GlobalConfig {
   defaultMaxMemory: number | null;
   defaultJvmArgs: string | null;
-  customJavaPath: string | null;
   instancesPath: string | null;
   language: string | null;
 }
@@ -21,7 +20,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   config: {
     defaultMaxMemory: 4096,
     defaultJvmArgs: null,
-    customJavaPath: null,
     instancesPath: null,
     language: null,
   },

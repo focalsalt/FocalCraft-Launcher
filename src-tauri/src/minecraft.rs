@@ -872,10 +872,11 @@ pub async fn install_instance_files(
     let version_id = cfg.version.clone();
     let modloader = cfg.modloader.clone();
 
-    // 確保下載所需的全域目錄存在
+    // 確保下載所需的目錄存在
     let versions_dir = base_dir.join("version");
-    let libraries_dir = base_dir.join("libraries");
-    let assets_dir = base_dir.join("assets");
+    let instance_dir = get_instances_dir()?.join(&instance_id);
+    let libraries_dir = instance_dir.join("libraries");
+    let assets_dir = instance_dir.join("assets");
     fs::create_dir_all(&versions_dir).ok();
     fs::create_dir_all(&libraries_dir).ok();
     fs::create_dir_all(&assets_dir).ok();
@@ -2336,7 +2337,7 @@ pub async fn launch_instance(
     }
 
     // 2. 解壓 Native Libraries (適用舊版本)
-    let libraries_dir = base_dir.join("libraries");
+    let libraries_dir = instance_dir.join("libraries");
     let mut libraries_for_natives = vanilla_info.libraries.clone();
     if let Some(ref base_info) = base_vanilla_info {
         libraries_for_natives.extend(base_info.libraries.clone());
@@ -2578,7 +2579,7 @@ pub async fn launch_instance(
     }
 
     // 設置變數替換對照表
-    let assets_dir = base_dir.join("assets");
+    let assets_dir = instance_dir.join("assets");
     let asset_index_id = vanilla_info
         .asset_index
         .as_ref()

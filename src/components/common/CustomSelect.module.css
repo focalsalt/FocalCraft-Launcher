@@ -29,7 +29,7 @@
 .customSelectTrigger:focus {
   outline: none;
   border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(59, 180, 74, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
 }
 
 .customSelectTrigger.disabled {
@@ -61,12 +61,12 @@
 }
 
 .customSelectOption:hover {
-  background-color: rgba(59, 180, 74, 0.1);
+  background-color: rgba(var(--accent-green-rgb), 0.1);
   color: var(--text-primary);
 }
 
 .customSelectOption.selected {
-  background-color: rgba(59, 180, 74, 0.15);
+  background-color: rgba(var(--accent-green-rgb), 0.15);
   color: var(--accent-green);
   font-weight: 600;
 }

@@ -25,9 +25,9 @@
 }
 
 .modal {
-  width: 90%;
-  max-width: 1200px;
-  height: 85vh;
+  width: 95%;
+  max-width: 95%;
+  height: 95%;
   background-color: rgba(30, 30, 30, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -61,7 +61,8 @@
   flex-shrink: 0;
 }
 
-.header h2 {
+.header h2,
+.headerTitle {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
@@ -90,8 +91,9 @@
 .container {
   display: flex;
   flex: 1;
-  overflow: visible;
+  overflow: hidden;
   height: 100%;
+  min-height: 0;
 }
 
 /* Left Column: Search & List */
@@ -101,7 +103,8 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: visible;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .searchArea {
@@ -131,18 +134,25 @@
 
 .input:focus {
   border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(59, 180, 74, 0.2), 0 0 10px rgba(59, 180, 74, 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.2), 0 0 10px rgba(var(--accent-green-rgb), 0.1);
   background-color: rgba(0, 0, 0, 0.45);
+}
+
+.searchInputWrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
 }
 
 .searchLoader {
   position: absolute;
-  right: 32px;
+  right: 14px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--accent-green);
   display: flex;
   align-items: center;
+  pointer-events: none;
 }
 
 .list {
@@ -169,7 +179,7 @@
 
 .card:hover {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.08) 100%);
-  border-color: rgba(59, 180, 74, 0.35);
+  border-color: rgba(var(--accent-green-rgb), 0.35);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
@@ -178,9 +188,9 @@
 }
 
 .card.selected {
-  background: linear-gradient(135deg, rgba(59, 180, 74, 0.08) 0%, rgba(59, 180, 74, 0.15) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-green-rgb), 0.08) 0%, rgba(var(--accent-green-rgb), 0.15) 100%);
   border-color: var(--accent-green);
-  box-shadow: 0 0 10px rgba(59, 180, 74, 0.2);
+  box-shadow: 0 0 10px rgba(var(--accent-green-rgb), 0.2);
 }
 
 .icon {
@@ -250,10 +260,10 @@
 }
 
 .updateTag {
-  background-color: rgba(59, 180, 74, 0.15);
+  background-color: rgba(var(--accent-green-rgb), 0.15);
   color: #a5d6a7;
-  border: 1px solid rgba(59, 180, 74, 0.4);
-  box-shadow: 0 0 8px rgba(59, 180, 74, 0.2);
+  border: 1px solid rgba(var(--accent-green-rgb), 0.4);
+  box-shadow: 0 0 8px rgba(var(--accent-green-rgb), 0.2);
   border-radius: 4px;
   padding: 2px 6px;
 }
@@ -277,6 +287,7 @@
   background-color: rgba(0, 0, 0, 0.2);
   padding: 24px;
   overflow: visible;
+  min-height: 0;
 }
 
 .loadingSpinner {
@@ -404,7 +415,7 @@
 
 .installBtn:hover:not(:disabled) {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 0 12px rgba(59, 180, 74, 0.4);
+  box-shadow: 0 0 12px rgba(var(--accent-green-rgb), 0.4);
   transform: translateY(-1px);
 }
 
@@ -578,7 +589,7 @@
 
 .selectBtn:hover:not(:disabled) {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 0 12px rgba(59, 180, 74, 0.4);
+  box-shadow: 0 0 12px rgba(var(--accent-green-rgb), 0.4);
   transform: translateY(-1px);
 }
 
@@ -663,7 +674,7 @@
 .nextBtn:hover:not(:disabled),
 .confirmInstallBtn:hover:not(:disabled) {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 0 12px rgba(59, 180, 74, 0.3);
+  box-shadow: 0 0 12px rgba(var(--accent-green-rgb), 0.3);
 }
 
 .nextBtn:disabled,
@@ -753,8 +764,8 @@
 }
 
 .confirmItem.checked {
-  background-color: rgba(59, 180, 74, 0.04);
-  border-color: rgba(59, 180, 74, 0.15);
+  background-color: rgba(var(--accent-green-rgb), 0.04);
+  border-color: rgba(var(--accent-green-rgb), 0.15);
   border-left: 3px solid var(--accent-green);
 }
 
@@ -918,8 +929,8 @@
 }
 
 .filterToggleBtn.active {
-  background-color: rgba(59, 180, 74, 0.12);
-  border-color: rgba(59, 180, 74, 0.3);
+  background-color: rgba(var(--accent-green-rgb), 0.12);
+  border-color: rgba(var(--accent-green-rgb), 0.3);
   color: var(--accent-green);
 }
 
@@ -1050,11 +1061,11 @@
 }
 
 .categoryTag.active {
-  background: linear-gradient(135deg, rgba(59, 180, 74, 0.18) 0%, rgba(59, 180, 74, 0.3) 100%);
+  background: linear-gradient(135deg, rgba(var(--accent-green-rgb), 0.18) 0%, rgba(var(--accent-green-rgb), 0.3) 100%);
   border-color: var(--accent-green);
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 10px rgba(59, 180, 74, 0.25);
+  box-shadow: 0 2px 10px rgba(var(--accent-green-rgb), 0.25);
 }
 
 /* Platform Tabs */
@@ -1065,8 +1076,8 @@
   border-radius: 10px;
   padding: 3px;
   gap: 2px;
-  width: calc(100% - 40px);
-  margin: 16px 20px 0 20px;
+  width: 280px;
+  margin: 0;
   box-sizing: border-box;
 }
 
@@ -1091,8 +1102,8 @@
 
 .platformTab.active {
   color: white;
-  background-color: var(--accent-green, #3bb44a);
-  box-shadow: 0 2px 8px rgba(59, 180, 74, 0.35);
+  background-color: var(--accent-green);
+  box-shadow: 0 2px 8px rgba(var(--accent-green-rgb), 0.35);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
@@ -1151,8 +1162,8 @@
 }
 
 .manualItem.detected {
-  border-color: rgba(59, 180, 74, 0.4);
-  background-color: rgba(59, 180, 74, 0.03);
+  border-color: rgba(var(--accent-green-rgb), 0.4);
+  background-color: rgba(var(--accent-green-rgb), 0.03);
 }
 
 .manualItemIcon {
@@ -1200,9 +1211,9 @@
 }
 
 .manualItemStatus.found {
-  background-color: rgba(59, 180, 74, 0.15);
+  background-color: rgba(var(--accent-green-rgb), 0.15);
   color: var(--accent-green);
-  border: 1px solid rgba(59, 180, 74, 0.3);
+  border: 1px solid rgba(var(--accent-green-rgb), 0.3);
 }
 
 .manualItemActions {
@@ -1238,12 +1249,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 2px 6px rgba(59, 180, 74, 0.25);
+  box-shadow: 0 2px 6px rgba(var(--accent-green-rgb), 0.25);
 }
 
 .importBtn:hover {
   background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 12px rgba(59, 180, 74, 0.45);
+  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.45);
 }
 
 .importedTag {

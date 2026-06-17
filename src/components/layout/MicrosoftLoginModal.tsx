@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { X, Copy, ExternalLink, Loader2, CheckCircle, AlertCircle, ShieldAlert } from 'lucide-react';
 import { useAccountStore } from '../../store/accountStore';
 import { useAppStore } from '../../store/appStore';
+import { useI18n } from '../../utils/i18n';
 import styles from './MicrosoftLoginModal.module.css';
 
 interface MicrosoftLoginModalProps {
@@ -20,6 +21,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
   const [copied, setCopied] = useState(false);
   const { addAccount } = useAccountStore();
   const { addNotification } = useAppStore();
+  const { t } = useI18n();
 
   const pollingRef = useRef<number | null>(null);
   const countdownRef = useRef<number | null>(null);
@@ -48,7 +50,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
       countdownRef.current = window.setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            handleError('驗證碼已過期，請重新嘗試。');
+            handleError(t('account.login.code_expired'));
             return 0;
           }
           return prev - 1;
@@ -88,8 +90,8 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
         setStep('success');
         addNotification({
           type: 'success',
-          title: '登入成功',
-          message: `歡迎回來，${account.mcId}！`,
+          title: t('account.notification.login_success.title'),
+          message: t('account.login.welcome_back', { name: account.mcId }),
           duration: 4000
         });
 
@@ -107,15 +109,15 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
           // 微軟要求放慢速度
           return;
         } else if (errMsg === 'expired_token') {
-          handleError('登入超時，驗證碼已失效，請重新發送。');
+          handleError(t('account.login.timeout'));
         } else if (errMsg === 'XSTS_NO_XBOX_ACCOUNT') {
-          handleError('登入失敗：您的微軟帳號尚未註冊 Xbox Live 帳號，請先前往 Xbox 官網註冊後再登入。');
+          handleError(t('account.login.no_xbox_account'));
         } else if (errMsg === 'XSTS_CHILD_ACCOUNT') {
-          handleError('登入失敗：此微軟帳號受家長監護限制，無法登入 Xbox Live 服務。');
+          handleError(t('account.login.child_account'));
         } else if (errMsg === 'NO_MINECRAFT_LICENSE') {
-          handleError('登入失敗：此帳號未購買 Minecraft 遊戲。請使用擁有正版遊戲的帳號。');
+          handleError(t('account.login.no_license'));
         } else {
-          handleError(`驗證失敗：${errMsg}`);
+          handleError(t('account.login.verification_failed', { error: errMsg }));
         }
       }
     }, intervalSeconds * 1000);
@@ -127,8 +129,8 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
     setStep('error');
     addNotification({
       type: 'error',
-      title: '登入失敗',
-      message: msg.length > 55 ? '驗證過程中發生錯誤。' : msg,
+      title: t('account.notification.login_failed.title'),
+      message: msg.length > 55 ? t('account.login.process_error') : msg,
       duration: 5000
     });
   };
@@ -185,46 +187,46 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
         {step === 'fetching_code' && (
           <div className={styles.content}>
             <Loader2 className={`${styles.spinner} ${styles.primarySpinner}`} size={48} />
-            <h2>正在獲取驗證代碼...</h2>
-            <p>與微軟伺服器安全連線中，請稍候</p>
+            <h2>{t('account.login.fetching_code')}</h2>
+            <p>{t('account.login.connecting_ms')}</p>
           </div>
         )}
 
         {step === 'waiting_user' && (
           <div className={styles.content}>
-            <h2>微軟帳號安全登入</h2>
-            <p className={styles.subtitle}>請在您的瀏覽器中輸入下方代碼完成驗證</p>
+            <h2>{t('account.login.title')}</h2>
+            <p className={styles.subtitle}>{t('account.login.subtitle')}</p>
             
             <div className={styles.codeContainer}>
               <div className={styles.userCode}>{userCode}</div>
               <button className={styles.copyBtn} onClick={handleCopyCode}>
                 <Copy size={16} />
-                <span>{copied ? '已複製' : '複製代碼'}</span>
+                <span>{copied ? t('account.login.copied') : t('account.login.copy_code')}</span>
               </button>
             </div>
 
             <div className={styles.stepsInfo}>
               <div className={styles.stepRow}>
                 <span className={styles.stepNum}>1</span>
-                <span>打開驗證網址：<a href="#" onClick={(e) => { e.preventDefault(); handleOpenBrowser(); }} className={styles.link}>{verificationUri}</a></span>
+                <span>{t('account.login.step1')}<a href="#" onClick={(e) => { e.preventDefault(); handleOpenBrowser(); }} className={styles.link}>{verificationUri}</a></span>
               </div>
               <div className={styles.stepRow}>
                 <span className={styles.stepNum}>2</span>
-                <span>輸入上方顯示的 {userCode} 驗證碼</span>
+                <span>{t('account.login.step2', { code: userCode })}</span>
               </div>
               <div className={styles.stepRow}>
                 <span className={styles.stepNum}>3</span>
-                <span>在微軟網頁完成登入後回到此啟動器</span>
+                <span>{t('account.login.step3')}</span>
               </div>
             </div>
 
             <button className={styles.actionBtn} onClick={handleOpenBrowser}>
-              <span>開啟驗證網頁</span>
+              <span>{t('account.login.btn.open_browser')}</span>
               <ExternalLink size={16} />
             </button>
 
             <div className={styles.countdown}>
-              代碼有效剩餘時間：<span className={styles.timer}>{formatTime(timeLeft)}</span>
+              {t('account.login.remaining_time')}<span className={styles.timer}>{formatTime(timeLeft)}</span>
             </div>
           </div>
         )}
@@ -232,16 +234,16 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
         {step === 'verifying_mc' && (
           <div className={styles.content}>
             <Loader2 className={`${styles.spinner} ${styles.accentSpinner}`} size={48} />
-            <h2>正在驗證 Minecraft 帳號...</h2>
-            <p>取得 Xbox Live 與 Minecraft Services 憑證中</p>
+            <h2>{t('account.login.verifying')}</h2>
+            <p>{t('account.login.fetching_tokens')}</p>
           </div>
         )}
 
         {step === 'success' && (
           <div className={styles.content}>
             <CheckCircle className={styles.successIcon} size={54} />
-            <h2 className={styles.successTitle}>登入成功！</h2>
-            <p>已成功連結您的 Minecraft 角色，即將關閉視窗...</p>
+            <h2 className={styles.successTitle}>{t('account.login.success_title')}</h2>
+            <p>{t('account.login.success_desc')}</p>
           </div>
         )}
 
@@ -252,15 +254,15 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
             ) : (
               <AlertCircle className={styles.errorIcon} size={54} />
             )}
-            <h2>登入失敗</h2>
+            <h2>{t('account.login.failed_title')}</h2>
             <p className={styles.errorDesc}>{errorMsg}</p>
             
             <div className={styles.btnGroup}>
               <button className={styles.secondaryBtn} onClick={startLoginFlow}>
-                重新嘗試
+                {t('account.login.btn.retry')}
               </button>
               <button className={styles.primaryBtn} onClick={onClose}>
-                關閉視窗
+                {t('account.login.btn.close')}
               </button>
             </div>
           </div>

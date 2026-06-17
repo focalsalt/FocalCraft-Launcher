@@ -48,6 +48,35 @@ export function useI18n() {
 }
 
 /**
+ * 取得非 React 元件環境下的多國語言翻譯 (例如在 Zustand store 中)
+ */
+export function getTranslation(key: TranslationKeys, params?: Record<string, string | number>): string {
+  const configLang = useSettingsStore.getState().config.language;
+  const activeLang = getActiveLanguage(configLang);
+  const currentTranslations = translations[activeLang] || translations['zh-TW'];
+
+  let value = currentTranslations[key] || translations['zh-TW'][key] || String(key);
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      value = value.replace(`{${k}}`, String(v));
+    });
+  }
+  return value;
+}
+
+/**
+ * 依內部群組名稱取得多國語言標籤
+ */
+export function translateVersionGroup(g: string, t: (key: TranslationKeys) => string): string {
+  if (g === 'Beta 測試版 (Beta)') return t('version.group.beta');
+  if (g === 'Alpha 測試版 (Alpha)') return t('version.group.alpha');
+  if (g === '其他測試版本') return t('version.group.other');
+  return g;
+}
+
+
+
+/**
  * 動態將後端發送的中文進度詳細資訊 (detail) 翻譯為英文 (若當前語系為英文)
  */
 export function translateBackendStatus(detail: string, lang: Language): string {
