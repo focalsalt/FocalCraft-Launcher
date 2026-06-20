@@ -3,6 +3,7 @@
 use notify::Watcher;
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
@@ -42,6 +43,7 @@ pub struct GlobalConfig {
     pub custom_java_path: Option<String>,
     pub instances_path: Option<String>,
     pub language: Option<String>,
+    pub main_color: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -218,7 +220,9 @@ pub struct ModpackInfo {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ModInfo {
+    pub id: String,       // Unique key for matching: filename (Modrinth) or project_id string (CurseForge)
     pub name: String,
+    pub version: String,  // The mod's version in the modpack
     pub author: String,
     pub license: String,
     pub size: u64,
@@ -1596,36 +1600,166 @@ pub async fn search_modrinth_modpacks(
     Ok(json)
 }
 
+/// Extract a version number from a mod filename.
+/// e.g. "sodium-fabric-mc1.20.1-0.5.3.jar" -> "0.5.3"
+///      "fabric-api-0.91.0+1.20.4.jar" -> "0.91.0+1.20.4"
+fn extract_version_from_filename(filename: &str) -> String {
+    let stem = filename.trim_end_matches(".jar");
+    // Try to find the last segment that starts with a digit after a '-'
+    let parts: Vec<&str> = stem.split('-').collect();
+    // Walk backwards to find the last version-like segment
+    for part in parts.iter().rev() {
+        if part.starts_with(|c: char| c.is_ascii_digit()) {
+            return part.to_string();
+        }
+    }
+    // Fallback: return the full stem
+    stem.to_string()
+}
+
 #[tauri::command]
-pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String> {
+pub async fn parse_pack_info(file_path: String) -> Result<ModpackInfo, String> {
     let path = Path::new(&file_path);
     if !path.exists() {
         return Err("找不到選擇的整合包檔案".to_string());
     }
 
-    let (is_modrinth, index_opt, manifest_opt) = {
+    let (pack_type, index_opt, manifest_opt, mmc_opt) = {
         let file = fs::File::open(path).map_err(|e| format!("無法開啟檔案: {}", e))?;
         let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip 失敗: {}", e))?;
 
         let is_modrinth = archive.by_name("modrinth.index.json").is_ok();
+        let is_curseforge = archive.by_name("manifest.json").is_ok();
+
         if is_modrinth {
             let mut index_entry = archive.by_name("modrinth.index.json").unwrap();
             let index: ModrinthIndex = serde_json::from_reader(&mut index_entry)
                 .map_err(|e| format!("解析 modrinth.index.json 失敗: {}", e))?;
-            (true, Some(index), None)
-        } else if archive.by_name("manifest.json").is_ok() {
+            ("modrinth", Some(index), None, None)
+        } else if is_curseforge {
             let mut manifest_entry = archive.by_name("manifest.json").unwrap();
             let manifest: CurseForgeManifest = serde_json::from_reader(&mut manifest_entry)
                 .map_err(|e| format!("解析 manifest.json 失敗: {}", e))?;
-            (false, None, Some(manifest))
+            ("curseforge", None, Some(manifest), None)
         } else {
-            return Err(
-                "不支援的整合包格式（未找到 modrinth.index.json 或 manifest.json）".to_string(),
-            );
+            let mut instance_cfg_entry = None;
+            let mut mmc_pack_entry = None;
+            for i in 0..archive.len() {
+                if let Ok(entry) = archive.by_index(i) {
+                    let name = entry.name();
+                    if name.ends_with("instance.cfg") {
+                        instance_cfg_entry = Some(name.to_string());
+                    } else if name.ends_with("mmc-pack.json") {
+                        mmc_pack_entry = Some(name.to_string());
+                    }
+                }
+            }
+
+            if instance_cfg_entry.is_some() || mmc_pack_entry.is_some() {
+                ("multimc", None, None, Some((instance_cfg_entry, mmc_pack_entry)))
+            } else {
+                return Err("不支援的整合包格式（未找到 modrinth.index.json、manifest.json 或 instance.cfg）".to_string());
+            }
         }
     };
 
-    if is_modrinth {
+    if pack_type == "multimc" {
+        let (inst_cfg_name, mmc_pack_name) = mmc_opt.unwrap();
+        let file = fs::File::open(path).map_err(|e| format!("無法開啟檔案: {}", e))?;
+        let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip 失敗: {}", e))?;
+
+        let mut name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("MultiMC Pack").to_string();
+        if let Some(cfg_name) = inst_cfg_name {
+            if let Ok(mut entry) = archive.by_name(&cfg_name) {
+                let mut content = String::new();
+                use std::io::Read;
+                if entry.read_to_string(&mut content).is_ok() {
+                    for line in content.lines() {
+                        if line.starts_with("name=") {
+                            name = line.strip_prefix("name=").unwrap().to_string();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut game_version = "1.20.1".to_string();
+        let mut modloader = "Vanilla".to_string();
+        let mut modloader_version = "".to_string();
+
+        if let Some(pack_json_name) = mmc_pack_name {
+            if let Ok(mut entry) = archive.by_name(&pack_json_name) {
+                #[derive(Deserialize)]
+                struct MmcComponent {
+                    uid: String,
+                    version: Option<String>,
+                }
+                #[derive(Deserialize)]
+                struct MmcPackJson {
+                    components: Vec<MmcComponent>,
+                }
+                if let Ok(pack_json) = serde_json::from_reader::<_, MmcPackJson>(&mut entry) {
+                    for comp in pack_json.components {
+                        if comp.uid == "net.minecraft" || comp.uid == "org.multimc.minecraft" {
+                            if let Some(v) = comp.version {
+                                game_version = v;
+                            }
+                        } else if comp.uid == "net.fabricmc.fabric-loader" {
+                            modloader = "Fabric".to_string();
+                            if let Some(v) = comp.version {
+                                modloader_version = v;
+                            }
+                        } else if comp.uid == "net.minecraftforge" {
+                            modloader = "Forge".to_string();
+                            if let Some(v) = comp.version {
+                                modloader_version = v;
+                            }
+                        } else if comp.uid == "org.neoforged" || comp.uid == "org.neoforge" {
+                            modloader = "NeoForge".to_string();
+                            if let Some(v) = comp.version {
+                                modloader_version = v;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut mods = vec![];
+        for i in 0..archive.len() {
+            if let Ok(entry) = archive.by_index(i) {
+                let entry_name = entry.name();
+                let is_jar = entry_name.to_lowercase().ends_with(".jar");
+                let is_in_mods = entry_name.contains("/mods/") || entry_name.contains("\\mods\\") || entry_name.starts_with("mods/") || entry_name.starts_with("mods\\");
+                if is_jar && is_in_mods {
+                    let filename = Path::new(entry_name)
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or(entry_name)
+                        .to_string();
+                    let version = extract_version_from_filename(&filename);
+                    mods.push(ModInfo {
+                        id: entry_name.to_string(),
+                        name: filename.clone(),
+                        version,
+                        author: "Local".to_string(),
+                        license: "Local Mod".to_string(),
+                        size: entry.size(),
+                    });
+                }
+            }
+        }
+
+        Ok(ModpackInfo {
+            name,
+            version_id: "1.0.0".to_string(),
+            game_version,
+            modloader,
+            modloader_version,
+            mods,
+        })
+    } else if pack_type == "modrinth" {
         let index = index_opt.unwrap();
         let game_version = index
             .dependencies
@@ -1643,7 +1777,6 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
             modloader_version = v.clone();
         }
 
-        // 批次查詢 Modrinth 以取得 Mod 的詳細授權條款與名稱
         let mut mod_files = vec![];
         for f in &index.files {
             let is_mod = f.path.starts_with("mods/") || f.path.starts_with("mods\\");
@@ -1662,7 +1795,6 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
         let mut mods = vec![];
         let client = reqwest::Client::new();
 
-        // Modrinth Hash 雜湊值批次查詢（每包最多 300 個）
         if !sha1_hashes.is_empty() {
             let lookup_url = "https://api.modrinth.com/v2/version_files";
             let body = serde_json::json!({
@@ -1681,21 +1813,22 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
                     .json::<std::collections::HashMap<String, serde_json::Value>>()
                     .await
                 {
-                    // 提取 project ids
                     let mut project_ids = vec![];
                     let mut hash_to_project = std::collections::HashMap::new();
+                    let mut hash_to_version = std::collections::HashMap::new();
 
                     for (hash, val) in lookup_data {
                         if let Some(p_id) = val.get("project_id").and_then(|p| p.as_str()) {
                             project_ids.push(p_id.to_string());
-                            hash_to_project.insert(hash, p_id.to_string());
+                            hash_to_project.insert(hash.clone(), p_id.to_string());
+                        }
+                        if let Some(v_num) = val.get("version_number").and_then(|v| v.as_str()) {
+                            hash_to_version.insert(hash, v_num.to_string());
                         }
                     }
 
-                    // 批次查詢 projects
                     let mut id_to_proj = std::collections::HashMap::new();
                     if !project_ids.is_empty() {
-                        // 去重
                         project_ids.sort();
                         project_ids.dedup();
 
@@ -1718,17 +1851,21 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
                         }
                     }
 
-                    // 使用 API 返回的乾淨專案資訊來建立 Mod 元件清單
                     for f in &mod_files {
-                        let mut name = Path::new(&f.path)
+                        let filename = Path::new(&f.path)
                             .file_name()
                             .and_then(|n| n.to_str())
                             .unwrap_or(&f.path)
                             .to_string();
+                        let mut name = filename.clone();
                         let author = "Modrinth".to_string();
                         let mut license = "Open Source / Custom".to_string();
+                        let mut version = String::new();
 
                         if let Some(sha1) = f.hashes.get("sha1") {
+                            if let Some(ver) = hash_to_version.get(sha1) {
+                                version = ver.clone();
+                            }
                             if let Some(p_id) = hash_to_project.get(sha1) {
                                 if let Some(proj) = id_to_proj.get(p_id) {
                                     name = proj.title.clone();
@@ -1739,8 +1876,14 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
                             }
                         }
 
+                        if version.is_empty() {
+                            version = extract_version_from_filename(&filename);
+                        }
+
                         mods.push(ModInfo {
+                            id: filename,
                             name,
+                            version,
                             author,
                             license,
                             size: f.file_size,
@@ -1752,13 +1895,16 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
 
         if mods.is_empty() {
             for f in &mod_files {
-                let name = Path::new(&f.path)
+                let filename = Path::new(&f.path)
                     .file_name()
                     .and_then(|n| n.to_str())
                     .unwrap_or(&f.path)
                     .to_string();
+                let version = extract_version_from_filename(&filename);
                 mods.push(ModInfo {
-                    name,
+                    id: filename.clone(),
+                    name: filename,
+                    version,
                     author: "Unknown".to_string(),
                     license: "Unspecified".to_string(),
                     size: f.file_size,
@@ -1794,22 +1940,19 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
             }
         }
 
-        // 批次向 CurseForge 查詢模組詳細資訊
         let project_ids: Vec<u32> = manifest.files.iter().map(|f| f.project_id).collect();
+        let proj_to_file: std::collections::HashMap<u32, u32> = manifest.files.iter()
+            .map(|f| (f.project_id, f.file_id)).collect();
         let mut mods = vec![];
 
         if !project_ids.is_empty() {
             let client = reqwest::Client::new();
+            let mut proj_meta: std::collections::HashMap<u32, serde_json::Value> = std::collections::HashMap::new();
             for chunk in project_ids.chunks(100) {
-                let body = serde_json::json!({
-                    "modIds": chunk
-                });
+                let body = serde_json::json!({ "modIds": chunk });
                 if let Ok(res) = client
                     .post("https://api.curseforge.com/v1/mods")
-                    .header(
-                        "x-api-key",
-                        "$2a$10$bL4bIL5pUWqfcO7KQtnMReakwtfHbNKh6v1uTpKlzhwoueEJQnPnm",
-                    )
+                    .header("x-api-key", "$2a$10$bL4bIL5pUWqfcO7KQtnMReakwtfHbNKh6v1uTpKlzhwoueEJQnPnm")
                     .json(&body)
                     .send()
                     .await
@@ -1818,33 +1961,87 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
                         if let Ok(resp_val) = res.json::<serde_json::Value>().await {
                             if let Some(data_arr) = resp_val["data"].as_array() {
                                 for m_val in data_arr {
-                                    let name = m_val["name"].as_str().unwrap_or("").to_string();
-                                    let author = m_val["authors"]
-                                        .as_array()
-                                        .and_then(|a| a.first())
-                                        .and_then(|a| a["name"].as_str())
-                                        .unwrap_or("CurseForge")
-                                        .to_string();
-                                    let summary =
-                                        m_val["summary"].as_str().unwrap_or("").to_string();
-                                    mods.push(ModInfo {
-                                        name,
-                                        author,
-                                        license: summary,
-                                        size: 0,
-                                    });
+                                    if let Some(mid) = m_val["id"].as_u64() {
+                                        proj_meta.insert(mid as u32, m_val.clone());
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+
+            let file_ids: Vec<u32> = project_ids.iter().filter_map(|pid| proj_to_file.get(pid)).cloned().collect();
+            let mut file_meta: std::collections::HashMap<u32, serde_json::Value> = std::collections::HashMap::new();
+            for chunk in file_ids.chunks(100) {
+                let body = serde_json::json!({ "fileIds": chunk });
+                if let Ok(res) = client
+                    .post("https://api.curseforge.com/v1/mods/files")
+                    .header("x-api-key", "$2a$10$bL4bIL5pUWqfcO7KQtnMReakwtfHbNKh6v1uTpKlzhwoueEJQnPnm")
+                    .json(&body)
+                    .send()
+                    .await
+                {
+                    if res.status().is_success() {
+                        if let Ok(resp_val) = res.json::<serde_json::Value>().await {
+                            if let Some(data_arr) = resp_val["data"].as_array() {
+                                for f_val in data_arr {
+                                    if let Some(fid) = f_val["id"].as_u64() {
+                                        file_meta.insert(fid as u32, f_val.clone());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            for pid in &project_ids {
+                let m_val = proj_meta.get(pid);
+                let name = m_val
+                    .and_then(|v| v["name"].as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let name = if name.is_empty() { format!("Mod ID: {}", pid) } else { name };
+                let author = m_val
+                    .and_then(|v| v["authors"].as_array())
+                    .and_then(|a| a.first())
+                    .and_then(|a| a["name"].as_str())
+                    .unwrap_or("CurseForge")
+                    .to_string();
+                let summary = m_val
+                    .and_then(|v| v["summary"].as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let version = if let Some(fid) = proj_to_file.get(pid) {
+                    if let Some(f_val) = file_meta.get(fid) {
+                        let display_name = f_val["displayName"].as_str().unwrap_or("");
+                        let file_name = f_val["fileName"].as_str().unwrap_or("");
+                        if !display_name.is_empty() {
+                            extract_version_from_filename(display_name)
+                        } else {
+                            extract_version_from_filename(file_name)
+                        }
+                    } else { String::new() }
+                } else { String::new() };
+
+                mods.push(ModInfo {
+                    id: pid.to_string(),
+                    name,
+                    version,
+                    author,
+                    license: summary,
+                    size: 0,
+                });
+            }
         }
 
         if mods.is_empty() {
             for f in &manifest.files {
                 mods.push(ModInfo {
+                    id: f.project_id.to_string(),
                     name: format!("Mod ID: {}", f.project_id),
+                    version: String::new(),
                     author: "CurseForge".to_string(),
                     license: "Manual Download".to_string(),
                     size: 0,
@@ -1864,7 +2061,7 @@ pub async fn parse_mrpack_info(file_path: String) -> Result<ModpackInfo, String>
 }
 
 #[tauri::command]
-pub async fn import_mrpack(
+pub async fn import_pack(
     app: AppHandle,
     instance_id: String,
     file_path: String,
@@ -1875,32 +2072,45 @@ pub async fn import_mrpack(
 
     fs::create_dir_all(&mc_dir).ok();
 
-    // 限制 ZIP 讀取生命週期，確保在任何非同步 await 前釋放 ZipArchive 與 ZipFile
-    let (is_modrinth, modrinth_files, curseforge_files) = {
+    let (pack_type, modrinth_files, curseforge_files) = {
         let file = fs::File::open(&file_path).map_err(|e| format!("無法開啟整合包檔案: {}", e))?;
         let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip 失敗: {}", e))?;
 
-        let is_mod = archive.by_name("modrinth.index.json").is_ok();
-        if is_mod {
+        let is_modrinth = archive.by_name("modrinth.index.json").is_ok();
+        let is_curseforge = archive.by_name("manifest.json").is_ok();
+
+        if is_modrinth {
             let mut index_entry = archive.by_name("modrinth.index.json").unwrap();
             let index: ModrinthIndex = serde_json::from_reader(&mut index_entry)
                 .map_err(|e| format!("解析 modrinth.index.json 失敗: {}", e))?;
-            (true, Some(index.files), None)
-        } else if archive.by_name("manifest.json").is_ok() {
+            ("modrinth", Some(index.files), None)
+        } else if is_curseforge {
             let mut manifest_entry = archive.by_name("manifest.json").unwrap();
             let manifest: CurseForgeManifest = serde_json::from_reader(&mut manifest_entry)
                 .map_err(|e| format!("解析 manifest.json 失敗: {}", e))?;
-            (false, None, Some(manifest.files))
+            ("curseforge", None, Some(manifest.files))
         } else {
-            return Err(
-                "不支援的整合包格式（未找到 modrinth.index.json 或 manifest.json）".to_string(),
-            );
+            let mut is_mmc = false;
+            for i in 0..archive.len() {
+                if let Ok(entry) = archive.by_index(i) {
+                    let name = entry.name();
+                    if name.ends_with("instance.cfg") || name.ends_with("mmc-pack.json") {
+                        is_mmc = true;
+                        break;
+                    }
+                }
+            }
+            if is_mmc {
+                ("multimc", None, None)
+            } else {
+                return Err("不支援的整合包格式（未找到 modrinth.index.json、manifest.json 或 instance.cfg）".to_string());
+            }
         }
     };
 
     let mut blocked_mods = vec![];
 
-    if is_modrinth {
+    if pack_type == "modrinth" {
         let files = modrinth_files.unwrap();
         let mut files_to_download = vec![];
         for f in files {
@@ -1913,7 +2123,7 @@ pub async fn import_mrpack(
                         .unwrap_or(&f.path)
                         .to_string();
                     if !sel.contains(&f.path) && !sel.contains(&filename) {
-                        continue; // 跳過未被選取的項目
+                        continue;
                     }
                 }
             }
@@ -1932,7 +2142,6 @@ pub async fn import_mrpack(
         )
         .ok();
 
-        // 1. 下載所有 modpack 指定的檔案
         let downloaded_count = Arc::new(tokio::sync::Mutex::new(0));
         let semaphore = Arc::new(Semaphore::new(10));
         let mut tasks = vec![];
@@ -1946,7 +2155,6 @@ pub async fn import_mrpack(
             let inst_id = instance_id.clone();
             let dest = mc_dir.join(f.path.replace('/', "\\"));
 
-            // 取得下載連結
             let download_url = f
                 .downloads
                 .first()
@@ -1956,14 +2164,12 @@ pub async fn import_mrpack(
             tasks.push(tokio::spawn(async move {
                 let _permit = sem.acquire().await.unwrap();
                 let client = reqwest::Client::new();
-
                 if let Some(parent) = dest.parent() {
                     fs::create_dir_all(parent).ok();
                 }
 
                 let mut success = false;
                 let mut retries = 3;
-
                 while retries > 0 && !success {
                     if let Ok(res) = client.get(&download_url).send().await {
                         if res.status().is_success() {
@@ -1983,7 +2189,6 @@ pub async fn import_mrpack(
                 let mut c = count.lock().await;
                 *c += 1;
                 let progress = (*c as f64 / total_files as f64) * 80.0;
-
                 app_h
                     .emit(
                         "download-progress",
@@ -1991,7 +2196,7 @@ pub async fn import_mrpack(
                             instance_id: Some(inst_id),
                             status: "importing_modpack".to_string(),
                             progress,
-                            detail: format!("匯入進度：{}/{} 個 Mod", *c, total_files),
+                            detail: format!("匯入進度：{}/{} 個檔案", *c, total_files),
                         },
                     )
                     .ok();
@@ -2002,7 +2207,6 @@ pub async fn import_mrpack(
             let _ = t.await;
         }
 
-        // 2. 粹取 overrides (覆蓋設定檔等)
         app.emit(
             "download-progress",
             ProgressPayload {
@@ -2014,10 +2218,8 @@ pub async fn import_mrpack(
         )
         .ok();
 
-        // 重新開啟 zip 以解壓 overrides 資料夾
-        let file = fs::File::open(&file_path).map_err(|e| format!("無法再次開啟 mrpack: {}", e))?;
-        let mut archive =
-            ZipArchive::new(file).map_err(|e| format!("解析 mrpack zip 失敗: {}", e))?;
+        let file = fs::File::open(&file_path).map_err(|e| format!("無法再次開啟整合包檔案: {}", e))?;
+        let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip 失敗: {}", e))?;
 
         for i in 0..archive.len() {
             let mut entry = archive.by_index(i).unwrap();
@@ -2040,15 +2242,13 @@ pub async fn import_mrpack(
                 }
             }
         }
-    } else {
+    } else if pack_type == "curseforge" {
         let manifest_files = curseforge_files.unwrap();
         let mut file_ids = vec![];
         for f in &manifest_files {
             if let Some(ref sel) = selected_mods {
-                // 檢查專案 ID 是否已被選取
                 let id_str = f.project_id.to_string();
                 let name_filter = format!("Mod ID: {}", f.project_id);
-                // 同時檢查是否有任何被選取的 Mod 匹配
                 if !sel.contains(&id_str) && !sel.contains(&name_filter) {
                     continue;
                 }
@@ -2068,7 +2268,6 @@ pub async fn import_mrpack(
         )
         .ok();
 
-        // 批次查詢檔案詳細資訊
         let mut curseforge_files = vec![];
         let client = reqwest::Client::new();
         for chunk in file_ids.chunks(100) {
@@ -2121,7 +2320,6 @@ pub async fn import_mrpack(
                     file_name,
                     sha1,
                 });
-                // 將受阻擋的檔案計為已處理，使進度能達到 80%
                 let count_clone = count.clone();
                 let app_h = app_handle.clone();
                 let inst_id = instance_id.clone();
@@ -2197,7 +2395,6 @@ pub async fn import_mrpack(
             let _ = t.await;
         }
 
-        // 2. 解壓 overrides 資料夾
         app.emit(
             "download-progress",
             ProgressPayload {
@@ -2233,6 +2430,109 @@ pub async fn import_mrpack(
                     let mut outfile = fs::File::create(&out_path).unwrap();
                     std::io::copy(&mut entry, &mut outfile).ok();
                 }
+            }
+        }
+    } else if pack_type == "multimc" {
+        app.emit(
+            "download-progress",
+            ProgressPayload {
+                instance_id: Some(instance_id.clone()),
+                status: "importing_modpack".to_string(),
+                progress: 10.0,
+                detail: "正在解壓縮 MultiMC 整合包...".to_string(),
+            },
+        )
+        .ok();
+
+        let file = fs::File::open(&file_path).map_err(|e| format!("無法開啟整合包檔案: {}", e))?;
+        let mut archive = ZipArchive::new(file).map_err(|e| format!("解析 zip 失敗: {}", e))?;
+
+        let mut cfg_name = None;
+        for i in 0..archive.len() {
+            if let Ok(entry) = archive.by_index(i) {
+                let name = entry.name();
+                if name.ends_with("instance.cfg") {
+                    cfg_name = Some(name.to_string());
+                    break;
+                }
+            }
+        }
+        let mut found_prefix = String::new();
+        if let Some(name) = cfg_name {
+            if let Some(idx) = name.rfind("instance.cfg") {
+                found_prefix = name[..idx].to_string();
+            }
+        }
+
+        let mut mc_prefix = found_prefix.clone();
+        for i in 0..archive.len() {
+            if let Ok(entry) = archive.by_index(i) {
+                let name = entry.name();
+                if name.starts_with(&(found_prefix.clone() + "minecraft/")) || name.starts_with(&(found_prefix.clone() + "minecraft\\")) {
+                    mc_prefix = found_prefix.clone() + "minecraft/";
+                    break;
+                } else if name.starts_with(&(found_prefix.clone() + ".minecraft/")) || name.starts_with(&(found_prefix.clone() + ".minecraft\\")) {
+                    mc_prefix = found_prefix.clone() + ".minecraft/";
+                    break;
+                }
+            }
+        }
+
+        let total_entries = archive.len();
+        for i in 0..total_entries {
+            let mut entry = archive.by_index(i).map_err(|e| format!("讀取 entry 失敗: {}", e))?;
+            let entry_name = entry.name().to_string();
+
+            let name_lower = entry_name.to_lowercase();
+            if name_lower.contains("assets/") || name_lower.contains("assets\\") || name_lower.contains("libraries/") || name_lower.contains("libraries\\") {
+                continue;
+            }
+
+            if !entry_name.starts_with(&mc_prefix) {
+                continue;
+            }
+            let relative_path = entry_name.strip_prefix(&mc_prefix).unwrap().replace('/', "\\");
+            if relative_path.is_empty() || relative_path == "instance.cfg" || relative_path == "mmc-pack.json" {
+                continue;
+            }
+
+            if let Some(ref sel) = selected_mods {
+                let is_mod = relative_path.starts_with("mods/") || relative_path.starts_with("mods\\");
+                if is_mod {
+                    let filename = Path::new(&relative_path)
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or(&relative_path)
+                        .to_string();
+                    if !sel.contains(&entry_name) && !sel.contains(&relative_path) && !sel.contains(&filename) {
+                        continue;
+                    }
+                }
+            }
+
+            let out_path = mc_dir.join(&relative_path);
+            if entry.is_dir() {
+                fs::create_dir_all(&out_path).ok();
+            } else {
+                if let Some(parent) = out_path.parent() {
+                    fs::create_dir_all(parent).ok();
+                }
+                let mut outfile = fs::File::create(&out_path).map_err(|e| format!("無法建立檔案: {}", e))?;
+                std::io::copy(&mut entry, &mut outfile).ok();
+            }
+
+            if i % 10 == 0 {
+                let progress = 10.0 + (i as f64 / total_entries as f64) * 80.0;
+                app.emit(
+                    "download-progress",
+                    ProgressPayload {
+                        instance_id: Some(instance_id.clone()),
+                        status: "importing_modpack".to_string(),
+                        progress,
+                        detail: format!("解壓縮進度：{}/{}...", i, total_entries),
+                    },
+                )
+                .ok();
             }
         }
     }
@@ -2517,6 +2817,7 @@ pub async fn launch_instance(
     classpath_items.push(client_jar_path);
 
     // 建立 Classpath 參數（Windows 使用分號分隔）
+    let classpath_items = resolve_classpath_duplicates(classpath_items);
     let classpath_str = classpath_items
         .iter()
         .map(|p| p.to_string_lossy().to_string())
@@ -2874,19 +3175,19 @@ pub async fn select_mrpack_file() -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn download_mrpack(url: String) -> Result<String, String> {
+pub async fn download_pack(url: String) -> Result<String, String> {
     let base_dir = get_app_dir()?;
     let temp_dir = base_dir.join("temp");
     fs::create_dir_all(&temp_dir).ok();
 
-    let dest_path = temp_dir.join("temp_download.mrpack");
+    let dest_path = temp_dir.join("temp_download.pack");
     let client = reqwest::Client::new();
     let res = client
         .get(&url)
         .header("User-Agent", "focal-craft-launcher")
         .send()
         .await
-        .map_err(|e| format!("下載 mrpack 失敗: {}", e))?;
+        .map_err(|e| format!("下載整合包失敗: {}", e))?;
 
     if !res.status().is_success() {
         return Err(format!("下載伺服器回應錯誤: {}", res.status()));
@@ -2895,8 +3196,8 @@ pub async fn download_mrpack(url: String) -> Result<String, String> {
     let bytes = res
         .bytes()
         .await
-        .map_err(|e| format!("讀取 mrpack 內容失敗: {}", e))?;
-    fs::write(&dest_path, &bytes).map_err(|e| format!("寫入 mrpack 失敗: {}", e))?;
+        .map_err(|e| format!("讀取整合包內容失敗: {}", e))?;
+    fs::write(&dest_path, &bytes).map_err(|e| format!("寫入整合包失敗: {}", e))?;
 
     Ok(dest_path.to_string_lossy().to_string())
 }
@@ -2922,6 +3223,7 @@ pub async fn load_global_config() -> Result<GlobalConfig, String> {
             custom_java_path: None,
             instances_path: None,
             language: None,
+            main_color: None,
         })
     }
 }
@@ -5020,21 +5322,28 @@ pub async fn search_curseforge(
     query: String,
     class_id: u32,
     game_version: String,
+    category_id: Option<u32>,
     search_index: u32,
     page_size: u32,
 ) -> Result<serde_json::Value, String> {
     let client = reqwest::Client::new();
+    let mut query_params = vec![
+        ("gameId".to_string(), "432".to_string()),
+        ("classId".to_string(), class_id.to_string()),
+        ("searchFilter".to_string(), query),
+        ("gameVersion".to_string(), game_version),
+        ("index".to_string(), search_index.to_string()),
+        ("pageSize".to_string(), page_size.to_string()),
+    ];
+
+    if let Some(cat_id) = category_id {
+        query_params.push(("categoryId".to_string(), cat_id.to_string()));
+    }
+
     let res = client
         .get("https://api.curseforge.com/v1/mods/search")
         .header("x-api-key", CURSEFORGE_API_KEY)
-        .query(&[
-            ("gameId", "432"),
-            ("classId", &class_id.to_string()),
-            ("searchFilter", &query),
-            ("gameVersion", &game_version),
-            ("index", &search_index.to_string()),
-            ("pageSize", &page_size.to_string()),
-        ])
+        .query(&query_params)
         .send()
         .await
         .map_err(|e| format!("搜尋 CurseForge 失敗: {}", e))?;
@@ -5099,6 +5408,31 @@ pub async fn get_curseforge_project_files(mod_id: u32) -> Result<serde_json::Val
         .json::<serde_json::Value>()
         .await
         .map_err(|e| format!("解析 CurseForge 檔案列表失敗: {}", e))?;
+    Ok(val)
+}
+
+#[tauri::command]
+pub async fn get_curseforge_projects(mod_ids: Vec<u32>) -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({
+        "modIds": mod_ids
+    });
+    let res = client
+        .post("https://api.curseforge.com/v1/mods")
+        .header("x-api-key", CURSEFORGE_API_KEY)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("批次獲取 CurseForge 專案失敗: {}", e))?;
+
+    if !res.status().is_success() {
+        return Err(format!("CurseForge API 回應錯誤: {}", res.status()));
+    }
+
+    let val = res
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|e| format!("解析 CurseForge 專案結果失敗: {}", e))?;
     Ok(val)
 }
 
@@ -5182,4 +5516,571 @@ pub async fn scan_downloads_for_hashes(
     }
 
     Ok(matched_files)
+}
+
+fn compare_versions(v1: &str, v2: &str) -> std::cmp::Ordering {
+    if v1 == v2 {
+        return std::cmp::Ordering::Equal;
+    }
+    
+    let parse_part = |s: &str| -> (i32, String) {
+        let num_str: String = s.chars().take_while(|c| c.is_ascii_digit()).collect();
+        let suffix: String = s.chars().skip(num_str.len()).collect();
+        let num = num_str.parse::<i32>().unwrap_or(0);
+        (num, suffix)
+    };
+
+    let parts1: Vec<&str> = v1.split('.').collect();
+    let parts2: Vec<&str> = v2.split('.').collect();
+    
+    for i in 0..std::cmp::max(parts1.len(), parts2.len()) {
+        let s1 = parts1.get(i).unwrap_or(&"");
+        let s2 = parts2.get(i).unwrap_or(&"");
+        
+        let (n1, suff1) = parse_part(s1);
+        let (n2, suff2) = parse_part(s2);
+        
+        match n1.cmp(&n2) {
+            std::cmp::Ordering::Equal => {
+                match suff1.cmp(&suff2) {
+                    std::cmp::Ordering::Equal => continue,
+                    other => return other,
+                }
+            }
+            other => return other,
+        }
+    }
+    
+    std::cmp::Ordering::Equal
+}
+
+fn extract_version_from_path(path: &Path) -> String {
+    path.parent()
+        .and_then(|p| p.file_name())
+        .and_then(|f| f.to_str())
+        .unwrap_or("")
+        .to_string()
+}
+
+fn resolve_classpath_duplicates(items: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut resolved: Vec<PathBuf> = vec![];
+    let mut grandparent_indices: std::collections::HashMap<PathBuf, usize> = std::collections::HashMap::new();
+
+    for item in items {
+        let is_lib = item.components().any(|c| c.as_os_str() == "libraries");
+        if is_lib {
+            if let Some(grandparent) = item.parent().and_then(|p| p.parent()) {
+                let mut gp = grandparent.to_path_buf();
+                
+                // If it is a native library, append a suffix to its group key
+                // so we don't discard it as a duplicate of the main library jar
+                if let Some(file_name) = item.file_name().and_then(|f| f.to_str()) {
+                    let file_name_lower = file_name.to_lowercase();
+                    if file_name_lower.contains("-natives-") {
+                        gp.push("natives");
+                    }
+                }
+
+                let gp_key = gp;
+                if let Some(&idx) = grandparent_indices.get(&gp_key) {
+                    let existing_item = &resolved[idx];
+                    let existing_ver = extract_version_from_path(existing_item);
+                    let current_ver = extract_version_from_path(&item);
+                    if compare_versions(&current_ver, &existing_ver) == std::cmp::Ordering::Greater {
+                        resolved[idx] = item;
+                    }
+                    continue;
+                } else {
+                    grandparent_indices.insert(gp_key, resolved.len());
+                    resolved.push(item);
+                    continue;
+                }
+            }
+        }
+        resolved.push(item);
+    }
+    resolved
+}
+
+// ==========================================
+// 實例匯出功能 (Export Instance)
+// ==========================================
+
+fn murmur2_hash(data: &[u8]) -> u32 {
+    let m: u32 = 0x5bd1e995;
+    let r: i32 = 24;
+    let seed: u32 = 1;
+    let mut h: u32 = seed ^ (data.len() as u32);
+
+    let mut chunks = data.chunks_exact(4);
+    while let Some(chunk) = chunks.next() {
+        let mut k = u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+        k = k.wrapping_mul(m);
+        k ^= k >> r;
+        k = k.wrapping_mul(m);
+        h = h.wrapping_mul(m);
+        h ^= k;
+    }
+
+    let remainder = chunks.remainder();
+    if remainder.len() >= 3 {
+        h ^= (remainder[2] as u32) << 16;
+    }
+    if remainder.len() >= 2 {
+        h ^= (remainder[1] as u32) << 8;
+    }
+    if remainder.len() >= 1 {
+        h ^= remainder[0] as u32;
+        h = h.wrapping_mul(m);
+    }
+
+    h ^= h >> 13;
+    h = h.wrapping_mul(m);
+    h ^= h >> 15;
+    h
+}
+
+fn get_curseforge_fingerprint(bytes: &[u8]) -> u32 {
+    let filtered: Vec<u8> = bytes.iter().copied().filter(|&b| b != 9 && b != 10 && b != 13 && b != 32).collect();
+    murmur2_hash(&filtered)
+}
+
+fn write_dir_to_zip<W: std::io::Write + std::io::Seek>(
+    dir_path: &Path,
+    zip_prefix: &str,
+    zip: &mut zip::ZipWriter<W>,
+    options: zip::write::FileOptions,
+) -> Result<(), String> {
+    let walk_dir = |dir: &Path| -> Result<Vec<PathBuf>, String> {
+        let mut files = vec![];
+        let mut queue = vec![dir.to_path_buf()];
+        while let Some(current) = queue.pop() {
+            if let Ok(entries) = fs::read_dir(current) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        queue.push(path);
+                    } else {
+                        files.push(path);
+                    }
+                }
+            }
+        }
+        Ok(files)
+    };
+
+    let files = walk_dir(dir_path)?;
+    for file_path in files {
+        if let Ok(relative_path) = file_path.strip_prefix(dir_path) {
+            let zip_path = Path::new(zip_prefix).join(relative_path).to_string_lossy().replace('\\', "/");
+            zip.start_file(zip_path, options)
+                .map_err(|e| format!("無法寫入壓縮檔: {}", e))?;
+            if let Ok(bytes) = fs::read(&file_path) {
+                use std::io::Write;
+                zip.write_all(&bytes).map_err(|e| format!("無法寫入壓縮檔內容: {}", e))?;
+            }
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct CurseForgeFingerprintResponse {
+    data: CurseForgeFingerprintsData,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct CurseForgeFingerprintsData {
+    #[serde(rename = "exactMatches")]
+    exact_matches: Vec<CurseForgeFingerprintMatch>,
+    #[serde(rename = "exactFingerprints")]
+    exact_fingerprints: Vec<u32>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct CurseForgeFingerprintMatch {
+    id: u32,
+    file: CurseForgeFingerprintFile,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+struct CurseForgeFingerprintFile {
+    id: u32,
+    #[serde(rename = "fileName")]
+    file_name: String,
+}
+
+#[tauri::command]
+pub async fn export_instance(
+    instance_id: String,
+    export_type: String,
+    selected_mods: Vec<String>,
+    dest_zip_path: String,
+) -> Result<(), String> {
+    let instance_dir = get_instances_dir()?.join(&instance_id);
+    let mc_dir = instance_dir.join("minecraft");
+
+    let cfg_file = instance_dir.join("instance.cfg");
+    let cfg_content = fs::read_to_string(&cfg_file)
+        .map_err(|e| format!("無法讀取 instance.cfg: {}", e))?;
+    let cfg: InstanceConfig = serde_json::from_str(&cfg_content)
+        .map_err(|e| format!("無法解析 instance.cfg: {}", e))?;
+
+    let file = fs::File::create(&dest_zip_path)
+        .map_err(|e| format!("無法建立匯出檔案: {}", e))?;
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::FileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .unix_permissions(0o755);
+
+    if export_type == "multimc" {
+        let inst_cfg = format!(
+            "InstanceType=OneSix\nname={}\niconKey=default\n",
+            cfg.name
+        );
+        zip.start_file("instance.cfg", options)
+            .map_err(|e| format!("寫入 instance.cfg 失敗: {}", e))?;
+        use std::io::Write;
+        zip.write_all(inst_cfg.as_bytes()).map_err(|e| e.to_string())?;
+
+        let mut components = vec![
+            serde_json::json!({
+                "important": true,
+                "uid": "net.minecraft",
+                "version": cfg.version
+            })
+        ];
+        if cfg.modloader != "Vanilla" {
+            let uid = match cfg.modloader.as_str() {
+                "Fabric" => "net.fabricmc.fabric-loader",
+                "Forge" => "net.minecraftforge",
+                "NeoForge" => "org.neoforged",
+                _ => "",
+            };
+            if !uid.is_empty() {
+                components.push(serde_json::json!({
+                    "uid": uid,
+                    "version": cfg.loader_version.clone().unwrap_or_default()
+                }));
+            }
+        }
+        let mmc_pack = serde_json::json!({
+            "components": components,
+            "formatVersion": 1
+        });
+        zip.start_file("mmc-pack.json", options)
+            .map_err(|e| format!("寫入 mmc-pack.json 失敗: {}", e))?;
+        serde_json::to_writer(&mut zip, &mmc_pack).map_err(|e| e.to_string())?;
+
+        let options_path = mc_dir.join("options.txt");
+        if options_path.exists() {
+            zip.start_file("minecraft/options.txt", options)
+                .map_err(|e| format!("寫入 options.txt 失敗: {}", e))?;
+            let content = fs::read(&options_path).map_err(|e| e.to_string())?;
+            zip.write_all(&content).map_err(|e| e.to_string())?;
+        }
+
+        let config_dir = mc_dir.join("config");
+        if config_dir.exists() {
+            write_dir_to_zip(&config_dir, "minecraft/config", &mut zip, options)?;
+        }
+
+        let mods_dir = mc_dir.join("mods");
+        for mod_name in &selected_mods {
+            let mod_path = mods_dir.join(mod_name);
+            if mod_path.exists() {
+                zip.start_file(format!("minecraft/mods/{}", mod_name), options)
+                    .map_err(|e| format!("寫入模組 {} 失敗: {}", e, mod_name))?;
+                let content = fs::read(&mod_path).map_err(|e| e.to_string())?;
+                zip.write_all(&content).map_err(|e| e.to_string())?;
+            }
+        }
+
+    } else if export_type == "modrinth" {
+        let mut index_files = vec![];
+        let mut unmatched_mods = vec![];
+        let client = reqwest::Client::new();
+
+        let mods_dir = mc_dir.join("mods");
+        let mut mod_hashes = vec![];
+        let mut hash_to_filename = std::collections::HashMap::new();
+
+        for mod_name in &selected_mods {
+            let mod_path = mods_dir.join(mod_name);
+            if mod_path.exists() {
+                if let Ok(bytes) = fs::read(&mod_path) {
+                    use sha1::Digest;
+                    let mut hasher = sha1::Sha1::new();
+                    hasher.update(&bytes);
+                    let sha1_hex = format!("{:x}", hasher.finalize());
+                    mod_hashes.push(sha1_hex.clone());
+                    hash_to_filename.insert(sha1_hex, mod_name.clone());
+                }
+            }
+        }
+
+        let mut matched_hashes = std::collections::HashSet::new();
+        if !mod_hashes.is_empty() {
+            let body = serde_json::json!({
+                "hashes": mod_hashes,
+                "algorithm": "sha1"
+            });
+            if let Ok(res) = client
+                .post("https://api.modrinth.com/v2/version_files")
+                .header("User-Agent", "focal-craft-launcher")
+                .json(&body)
+                .send()
+                .await
+            {
+                if res.status().is_success() {
+                    #[derive(Deserialize, Debug, Clone)]
+                    struct ModrinthFileItem {
+                        url: String,
+                        hashes: std::collections::HashMap<String, String>,
+                        size: u64,
+                    }
+                    #[derive(Deserialize, Debug, Clone)]
+                    struct ModrinthVersionObj {
+                        files: Vec<ModrinthFileItem>,
+                    }
+                    if let Ok(lookup_data) = res.json::<std::collections::HashMap<String, ModrinthVersionObj>>().await {
+                        for (sha1_hex, version_obj) in lookup_data {
+                            if let Some(filename) = hash_to_filename.get(&sha1_hex) {
+                                if let Some(file_item) = version_obj.files.iter().find(|f| f.hashes.get("sha1") == Some(&sha1_hex)) {
+                                    matched_hashes.insert(sha1_hex.clone());
+                                    let mut hashes_map = std::collections::HashMap::new();
+                                    hashes_map.insert("sha1".to_string(), sha1_hex.clone());
+                                    if let Some(sha512_val) = file_item.hashes.get("sha512") {
+                                        hashes_map.insert("sha512".to_string(), sha512_val.clone());
+                                    } else {
+                                        let mod_path = mods_dir.join(filename);
+                                        if let Ok(bytes) = fs::read(&mod_path) {
+                                            use sha2::Digest;
+                                            let mut hasher = sha2::Sha512::new();
+                                            hasher.update(&bytes);
+                                            hashes_map.insert("sha512".to_string(), format!("{:x}", hasher.finalize()));
+                                        }
+                                    }
+                                    index_files.push(serde_json::json!({
+                                        "path": format!("mods/{}", filename),
+                                        "hashes": hashes_map,
+                                        "downloads": [file_item.url.clone()],
+                                        "fileSize": file_item.size
+                                    }));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for sha1_hex in &mod_hashes {
+            if !matched_hashes.contains(sha1_hex) {
+                if let Some(filename) = hash_to_filename.get(sha1_hex) {
+                    unmatched_mods.push(filename.clone());
+                }
+            }
+        }
+
+        let mut dependencies = std::collections::HashMap::new();
+        dependencies.insert("minecraft".to_string(), cfg.version.clone());
+        if cfg.modloader != "Vanilla" {
+            let loader_key = match cfg.modloader.as_str() {
+                "Fabric" => "fabric-loader",
+                "Forge" => "forge",
+                "NeoForge" => "neoforge",
+                _ => "",
+            };
+            if !loader_key.is_empty() {
+                dependencies.insert(loader_key.to_string(), cfg.loader_version.clone().unwrap_or_default());
+            }
+        }
+
+        let index_json = serde_json::json!({
+            "formatVersion": 1,
+            "game": "minecraft",
+            "name": cfg.name,
+            "versionId": cfg.version,
+            "dependencies": dependencies,
+            "files": index_files
+        });
+
+        zip.start_file("modrinth.index.json", options)
+            .map_err(|e| format!("寫入 modrinth.index.json 失敗: {}", e))?;
+        serde_json::to_writer(&mut zip, &index_json).map_err(|e| e.to_string())?;
+
+        let options_path = mc_dir.join("options.txt");
+        if options_path.exists() {
+            zip.start_file("overrides/options.txt", options)
+                .map_err(|e| format!("寫入 options.txt 失敗: {}", e))?;
+            let content = fs::read(&options_path).map_err(|e| e.to_string())?;
+            zip.write_all(&content).map_err(|e| e.to_string())?;
+        }
+
+        let config_dir = mc_dir.join("config");
+        if config_dir.exists() {
+            write_dir_to_zip(&config_dir, "overrides/config", &mut zip, options)?;
+        }
+
+        for filename in unmatched_mods {
+            let mod_path = mods_dir.join(&filename);
+            if mod_path.exists() {
+                zip.start_file(format!("overrides/mods/{}", filename), options)
+                    .map_err(|e| format!("寫入模組 {} 失敗: {}", e, filename))?;
+                let content = fs::read(&mod_path).map_err(|e| e.to_string())?;
+                zip.write_all(&content).map_err(|e| e.to_string())?;
+            }
+        }
+
+    } else if export_type == "curseforge" {
+        let mut manifest_files = vec![];
+        let mut unmatched_mods = vec![];
+        let client = reqwest::Client::new();
+
+        let mods_dir = mc_dir.join("mods");
+        let mut fingerprints = vec![];
+        let mut hash_to_filename = std::collections::HashMap::new();
+
+        for mod_name in &selected_mods {
+            let mod_path = mods_dir.join(mod_name);
+            if mod_path.exists() {
+                if let Ok(bytes) = fs::read(&mod_path) {
+                    let fp = get_curseforge_fingerprint(&bytes);
+                    fingerprints.push(fp);
+                    hash_to_filename.insert(fp, mod_name.clone());
+                }
+            }
+        }
+
+        let mut matched_fps = std::collections::HashSet::new();
+        if !fingerprints.is_empty() {
+            let body = serde_json::json!({
+                "fingerprints": fingerprints
+            });
+            if let Ok(res) = client
+                .post("https://api.curseforge.com/v1/fingerprints")
+                .header("x-api-key", "$2a$10$bL4bIL5pUWqfcO7KQtnMReakwtfHbNKh6v1uTpKlzhwoueEJQnPnm")
+                .json(&body)
+                .send()
+                .await
+            {
+                if res.status().is_success() {
+                    if let Ok(resp_val) = res.json::<CurseForgeFingerprintResponse>().await {
+                        for item in resp_val.data.exact_matches {
+                            manifest_files.push(serde_json::json!({
+                                "projectID": item.id,
+                                "fileID": item.file.id,
+                                "required": true
+                            }));
+                        }
+                        for fp in resp_val.data.exact_fingerprints {
+                            matched_fps.insert(fp);
+                        }
+                    }
+                }
+            }
+        }
+
+        for fp in &fingerprints {
+            if !matched_fps.contains(fp) {
+                if let Some(filename) = hash_to_filename.get(fp) {
+                    unmatched_mods.push(filename.clone());
+                }
+            }
+        }
+
+        let mut mod_loaders = vec![];
+        if cfg.modloader != "Vanilla" {
+            let loader_name = cfg.modloader.to_lowercase();
+            let loader_ver = cfg.loader_version.clone().unwrap_or_default();
+            mod_loaders.push(serde_json::json!({
+                "id": format!("{}-{}", loader_name, loader_ver),
+                "primary": true
+            }));
+        }
+
+        let manifest_json = serde_json::json!({
+            "minecraft": {
+                "version": cfg.version,
+                "modLoaders": mod_loaders
+            },
+            "manifestType": "minecraftModpack",
+            "manifestVersion": 1,
+            "name": cfg.name,
+            "version": cfg.loader_version.clone().unwrap_or_else(|| "1.0.0".to_string()),
+            "author": "FocalCraft",
+            "files": manifest_files,
+            "overrides": "overrides"
+        });
+
+        zip.start_file("manifest.json", options)
+            .map_err(|e| format!("寫入 manifest.json 失敗: {}", e))?;
+        serde_json::to_writer(&mut zip, &manifest_json).map_err(|e| e.to_string())?;
+
+        let options_path = mc_dir.join("options.txt");
+        if options_path.exists() {
+            zip.start_file("overrides/options.txt", options)
+                .map_err(|e| format!("寫入 options.txt 失敗: {}", e))?;
+            let content = fs::read(&options_path).map_err(|e| e.to_string())?;
+            zip.write_all(&content).map_err(|e| e.to_string())?;
+        }
+
+        let config_dir = mc_dir.join("config");
+        if config_dir.exists() {
+            write_dir_to_zip(&config_dir, "overrides/config", &mut zip, options)?;
+        }
+
+        for filename in unmatched_mods {
+            let mod_path = mods_dir.join(&filename);
+            if mod_path.exists() {
+                zip.start_file(format!("overrides/mods/{}", filename), options)
+                    .map_err(|e| format!("寫入模組 {} 失敗: {}", e, filename))?;
+                let content = fs::read(&mod_path).map_err(|e| e.to_string())?;
+                zip.write_all(&content).map_err(|e| e.to_string())?;
+            }
+        }
+    }
+
+    zip.finish().map_err(|e| format!("壓縮完成失敗: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn select_export_zip_path(default_name: String) -> Result<String, String> {
+    let script = format!(
+        r#"
+        Add-Type -AssemblyName System.Windows.Forms
+        $f = New-Object System.Windows.Forms.SaveFileDialog
+        $f.Filter = "ZIP 壓縮檔 (*.zip)|*.zip|Modrinth 整合包 (*.mrpack)|*.mrpack"
+        $f.FileName = "{}"
+        $f.Title = "選擇匯出儲存路徑"
+        $res = $f.ShowDialog()
+        if ($res -eq [System.Windows.Forms.DialogResult]::OK) {{
+            Write-Output $f.FileName
+        }}
+        "#,
+        default_name
+    );
+
+    let output = tokio::task::spawn_blocking(move || {
+        create_command("powershell")
+            .arg("-Command")
+            .arg(&script)
+            .output()
+    })
+    .await
+    .map_err(|e| format!("執行緒執行失敗: {}", e))?
+    .map_err(|e| format!("無法執行 PowerShell: {}", e))?;
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr).to_string();
+        return Err(format!("PowerShell 執行失敗: {}", err));
+    }
+
+    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if path.is_empty() {
+        return Err("CANCELLED".to_string());
+    }
+    Ok(path)
 }

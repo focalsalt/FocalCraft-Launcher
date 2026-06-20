@@ -42,10 +42,10 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
   const addNotification = useAppStore((state) => state.addNotification);
   const { t } = useI18n();
 
-  const instId       = instance.id;
-  const instVersion  = instance.version;
-  const instLoader   = instance.modloader;
-  const instLoaderV  = instance.loaderVersion ?? '';
+  const instId = instance.id;
+  const instVersion = instance.version;
+  const instLoader = instance.modloader;
+  const instLoaderV = instance.loaderVersion ?? '';
 
   const [mcVersion, setMcVersion] = useState(instance.version);
   const [loaderType, setLoaderType] = useState(instance.modloader);
@@ -269,10 +269,10 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
 
     allGroups.forEach((g) => {
       const isStd = isStandardGroup(g);
-      
+
       if (majorFilterForEdit === 'release') {
         if (!isStd) return;
-        
+
         const filteredItems = allGroupMap[g].filter((v) => {
           if (minorFilterForEdit === 'release') {
             return v.type === 'release';
@@ -280,7 +280,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
             return v.type !== 'release';
           }
         });
-        
+
         if (filteredItems.length > 0) {
           groups.push(g);
           groupMap[g] = filteredItems;
@@ -300,7 +300,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
       if (!selectedMajorVersionForEdit || !majorVersionsDataForEdit.groups.includes(selectedMajorVersionForEdit)) {
         const defaultGroup = majorVersionsDataForEdit.groups[0];
         setSelectedMajorVersionForEdit(defaultGroup);
-        
+
         const defaultMinor = majorVersionsDataForEdit.groupMap[defaultGroup]?.[0]?.id;
         if (defaultMinor) {
           handleMcVersionChangeForEdit(defaultMinor);
@@ -340,7 +340,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
       return;
     }
 
-    if (loaderType === 'Custom') {
+    if (loaderType === 'Custom' || loaderType === 'Vanilla') {
       await executeDirectSave();
       return;
     }
@@ -564,7 +564,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
     return (
       <div className={styles.versionEditOverlay}>
         <div className={styles.versionEditModal} style={{ width: '400px', padding: '40px 20px', alignItems: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Loader className="animate-spin" size={48} style={{ color: 'var(--accent-green)' }} />
+          <Loader className="animate-spin" size={48} style={{ color: 'var(--main-color)' }} />
           <h3 style={{ margin: 0, fontSize: '16px', color: 'white' }}>{t('version_edit.checking')}</h3>
         </div>
       </div>
@@ -575,7 +575,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
     return (
       <div className={styles.versionEditOverlay}>
         <div className={styles.versionEditModal} style={{ width: '400px', padding: '40px 20px', alignItems: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Loader className="animate-spin" size={48} style={{ color: 'var(--accent-green)' }} />
+          <Loader className="animate-spin" size={48} style={{ color: 'var(--main-color)' }} />
           <h3 style={{ margin: 0, fontSize: '16px', color: 'white' }}>{t('version_edit.updating')}</h3>
         </div>
       </div>
@@ -701,7 +701,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
                   : t('version_edit.minor_version')
               })}
             </label>
-            
+
             <div className={styles.filtersRow}>
               <div className={styles.filterGroup}>
                 <span className={styles.filterLabel}>{t('version_edit.major_filter')}</span>
@@ -722,7 +722,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
                   </button>
                 </div>
               </div>
-              
+
               <div className={styles.filterGroup}>
                 <span className={styles.filterLabel}>
                   {minorFilterForEdit === 'snapshot'
@@ -774,7 +774,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
               </div>
             </div>
           </div>
-          
+
           <div className={styles.formGroup}>
             <label>{t('version_edit.loader_label')}</label>
             <CustomSelect
@@ -789,7 +789,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
               ]}
             />
           </div>
-          
+
           {loaderType !== 'Vanilla' && loaderType !== 'Custom' && (
             <div className={styles.formGroup}>
               <label>{t('version_edit.loader_version_label', { loader: loaderType })}</label>
@@ -806,7 +806,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
           {loaderType === 'Custom' && (
             <div className={styles.formGroup}>
               <label>{t('version_edit.custom_loader_label')}</label>
-              <div 
+              <div
                 className={`${styles.dropzone} ${isDragOverCustom ? styles.dropzoneActive : ''}`}
                 onClick={handleSelectCustomLoaderJar}
               >

@@ -12,20 +12,20 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  currentView: 'instances_overview', // 預設檢視畫面
+  currentView: 'instances_overview', // 預設視圖
   notifications: [],
   activeDetailTab: 'edit',
   
-  // 切換目前檢視畫面
+  // 切換目前視圖
   setCurrentView: (view) => set({
     currentView: view,
     activeDetailTab: view === 'account_info' ? 'skins' : 'edit'
   }),
 
-  // 設定詳細資訊頁的當前標籤頁
+  // 設定詳細頁標籤
   setActiveDetailTab: (tab) => set({ activeDetailTab: tab }),
   
-  // 新增全域通知 (預設 5 秒後自動移除)
+  // 新增通知 (預設 5 秒後移除)
   addNotification: (notification) => {
     const id = Math.random().toString(36).substring(2, 9);
     set((state) => ({
@@ -39,7 +39,7 @@ export const useAppStore = create<AppState>((set) => ({
     }, notification.duration || 5000);
   },
   
-  // 移除指定 ID 的通知
+  // 移除通知
   removeNotification: (id) => set((state) => ({
     notifications: state.notifications.filter(n => n.id !== id)
   }))

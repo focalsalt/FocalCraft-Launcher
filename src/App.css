@@ -1,12 +1,13 @@
 :root {
   --font-family: 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
 
-  /* 色彩變數 */
+  /* 色彩與排版變數 */
   --bg-sidebar: #222222;
   --bg-sidebar-hover: #333333;
   --bg-sidebar-active: #444444;
   --bg-main: #111111;
   --bg-topnav: rgba(17, 17, 17, 0.85);
+  --topnav-height: 3.75rem;
 
   --text-primary: #FFFFFF;
   --text-secondary: #AAAAAA;
@@ -18,6 +19,17 @@
   --accent-green-hover-rgb: 76, 159, 51;
   --accent-green-active: #2F691F;
   --accent-green-active-rgb: 47, 105, 31;
+  --accent-green-light: #a5d6a7;
+  --accent-green-dark: #162812;
+
+  --main-color: var(--accent-green);
+  --main-color-rgb: var(--accent-green-rgb);
+  --main-color-hover: var(--accent-green-hover);
+  --main-color-hover-rgb: var(--accent-green-hover-rgb);
+  --main-color-active: var(--accent-green-active);
+  --main-color-active-rgb: var(--accent-green-active-rgb);
+  --main-color-light: var(--accent-green-light);
+  --main-color-dark: var(--accent-green-dark);
 
   --danger-red: #d83030;
   --danger-red-rgb: 216, 48, 48;
@@ -25,6 +37,7 @@
   --danger-red-hover-rgb: 232, 64, 64;
   --danger-red-active: #c72a2a;
   --danger-red-active-rgb: 199, 42, 42;
+  --danger-red-light: #ef9a9a;
 
   --warning-orange: #d8a32e;
   --warning-orange-rgb: 216, 163, 46;
@@ -39,6 +52,7 @@
   --info-blue-hover-rgb: 78, 196, 233;
   --info-blue-active: #2688b8;
   --info-blue-active-rgb: 38, 136, 184;
+  --info-blue-light: #90caf9;
 
   --border-color: #333333;
 
@@ -48,6 +62,10 @@
 
   --transition-fast: 0.15s ease-in-out;
   --transition-normal: 0.25s ease-in-out;
+
+  /* 背景樣式 */
+  --bg-gradient: linear-gradient(135deg, #111111 0%, var(--main-color-dark) 100%);
+  --bg-radial: radial-gradient(circle at center, #2e2e2e 0%, #151515 100%);
 }
 
 * {
@@ -110,7 +128,7 @@ a {
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background: var(--accent-green);
+  background: var(--main-color);
 }
 
 @keyframes spin {

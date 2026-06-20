@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Loader, FolderOpen, RefreshCw, Save } from 'lucide-react';
 import { getVersion } from '@tauri-apps/api/app';
 import { CustomSelect } from '../../components/common/CustomSelect';
+import { CustomColorPicker } from '../../components/common/CustomColorPicker';
 import styles from './GlobalSettings.module.css';
 
 export function GlobalSettings() {
@@ -17,10 +18,11 @@ export function GlobalSettings() {
   const [defaultJvmArgs, setDefaultJvmArgs] = useState('');
   const [instancesPath, setInstancesPath] = useState('');
   const [language, setLanguage] = useState<string | null>(null);
+  const [mainColor, setMainColor] = useState<string | null>(null);
   const [baseDir, setBaseDir] = useState('');
   const [appVersion, setAppVersion] = useState('1.0.0');
 
-  // 載入應用程式目錄與設定
+  // 載入路徑與設定
   useEffect(() => {
     const init = async () => {
       try {
@@ -40,12 +42,13 @@ export function GlobalSettings() {
     init();
   }, []);
 
-  // 同步設定狀態
+  // 同步設定
   useEffect(() => {
     setDefaultMaxMemory(config.defaultMaxMemory || 4096);
     setDefaultJvmArgs(config.defaultJvmArgs || '');
     setInstancesPath(config.instancesPath || '');
     setLanguage(config.language || null);
+    setMainColor(config.mainColor || null);
   }, [config]);
 
   const handleBrowseInstancesPath = async () => {
@@ -78,6 +81,7 @@ export function GlobalSettings() {
         defaultJvmArgs: defaultJvmArgs.trim() || null,
         instancesPath: instancesPath.trim() || null,
         language,
+        mainColor: mainColor || null,
       };
 
       await saveConfig(newConfig);
@@ -214,7 +218,19 @@ export function GlobalSettings() {
               />
             </div>
           </div>
-
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>{t('settings.card.theme')}</h2>
+            <div className={styles.formGroup}>
+              <label>{t('settings.label.main_color')}</label>
+              <CustomColorPicker
+                value={mainColor}
+                onChange={setMainColor}
+              />
+              <span className={styles.helpText}>
+                {t('settings.help.main_color')}
+              </span>
+            </div>
+          </div>
           <div className={styles.card}>
             <h2 className={styles.cardTitle}>{t('settings.card.about')}</h2>
             <div className={styles.aboutRow}>

@@ -473,7 +473,7 @@ async fn login_minecraft_with_ms_token(
         .await
         .map_err(|e| format!("解析 Minecraft Profile 失敗: {}", e))?;
 
-    let avatar_url = format!("https://mc-heads.net/avatar/{}", profile_data.id);
+    let avatar_url = format!("https://minotar.net/avatar/{}", profile_data.id);
 
     Ok(Account {
         id: profile_data.id,
@@ -924,11 +924,13 @@ pub fn run() {
             minecraft::save_instance_order,
             minecraft::load_instance_order,
             minecraft::search_modrinth_modpacks,
-            minecraft::parse_mrpack_info,
-            minecraft::import_mrpack,
+            minecraft::parse_pack_info,
+            minecraft::import_pack,
             minecraft::launch_instance,
             minecraft::select_mrpack_file,
-            minecraft::download_mrpack,
+            minecraft::download_pack,
+            minecraft::export_instance,
+            minecraft::select_export_zip_path,
             minecraft::load_global_config,
             minecraft::save_global_config,
             minecraft::select_directory,
@@ -964,6 +966,7 @@ pub fn run() {
             minecraft::search_curseforge,
             minecraft::get_curseforge_project_description,
             minecraft::get_curseforge_project_files,
+            minecraft::get_curseforge_projects,
             minecraft::download_curseforge_file,
             minecraft::scan_downloads_for_hashes
         ])

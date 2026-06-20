@@ -92,7 +92,7 @@
 
 .activeTab {
   background-color: rgba(255, 255, 255, 0.08);
-  color: var(--accent-green, #4caf50);
+  color: var(--main-color);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -146,9 +146,9 @@
 }
 
 .selectedEmoji {
-  background-color: rgba(76, 175, 80, 0.15) !important;
-  border-color: var(--accent-green, #4caf50) !important;
-  box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+  background-color: rgba(var(--main-color-rgb), 0.15) !important;
+  border-color: var(--main-color) !important;
+  box-shadow: 0 0 10px rgba(var(--main-color-rgb), 0.2);
 }
 
 /* 2. Local File Upload */
@@ -171,7 +171,7 @@
 }
 
 .uploadArea:hover {
-  border-color: var(--accent-green, #4caf50);
+  border-color: var(--main-color, #4caf50);
   background-color: rgba(76, 175, 80, 0.02);
 }
 
@@ -182,7 +182,7 @@
 }
 
 .uploadArea:hover .uploadIcon {
-  color: var(--accent-green, #4caf50);
+  color: var(--main-color);
   transform: translateY(-4px);
 }
 
@@ -234,7 +234,7 @@
 }
 
 .input:focus {
-  border-color: var(--accent-green, #4caf50);
+  border-color: var(--main-color);
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
 }
 
@@ -251,7 +251,7 @@
 }
 
 .saveBtn {
-  background-color: var(--accent-green, #4caf50);
+  background-color: var(--accent-green);
   color: white;
   border: none;
   border-radius: var(--border-radius-md, 8px);
@@ -310,7 +310,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast, 0.15s);
-  margin-left: auto; /* Push to right if clear button is not showing */
+  margin-left: auto;
+  /* Push to right if clear button is not showing */
 }
 
 .cancelBtn:hover {
@@ -320,8 +321,13 @@
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleUp {
@@ -329,6 +335,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);

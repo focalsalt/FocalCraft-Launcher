@@ -29,8 +29,15 @@
 }
 
 @keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .header {
@@ -71,7 +78,9 @@
   gap: 18px;
 }
 
-.loadingContainer, .errorContainer, .emptyContainer {
+.loadingContainer,
+.errorContainer,
+.emptyContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -183,8 +192,8 @@
 }
 
 .activeItem {
-  background-color: rgba(var(--accent-green-rgb), 0.04);
-  border-color: rgba(var(--accent-green-rgb), 0.25);
+  background-color: rgba(var(--main-color-rgb), 0.04);
+  border-color: rgba(var(--main-color-rgb), 0.25);
 }
 
 .itemInfo {
@@ -236,7 +245,7 @@
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: var(--accent-green);
+  color: var(--main-color);
   font-weight: 500;
 }
 
@@ -258,7 +267,7 @@
   font-size: 12px;
   font-weight: 600;
   color: white;
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   border: none;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
@@ -267,7 +276,7 @@
 }
 
 .changeBtn:hover:not(:disabled) {
-  background-color: var(--accent-green-hover);
+  background-color: var(--main-color-hover);
 }
 
 .changeBtn:disabled {

@@ -43,7 +43,7 @@ export function InstancesOverview() {
     setIsModalOpen(true);
   };
 
-  // 拖曳游標與選取處理
+  // 拖曳游標處理
   useEffect(() => {
     if (isMouseDragging) {
       document.body.style.cursor = 'grabbing';
@@ -58,7 +58,7 @@ export function InstancesOverview() {
     };
   }, [isMouseDragging]);
 
-  // 卡片拖放排序的全域滑鼠事件
+  // 拖放排序滑鼠事件
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!activeDragId) return;
@@ -115,9 +115,9 @@ export function InstancesOverview() {
   }, [activeDragId, isMouseDragging, mouseStartPos, dragStartIndex, hoveredIndex, instances, saveInstanceOrder, setCurrentView]);
 
   const handleCardMouseDown = (e: React.MouseEvent, id: string, index: number) => {
-    if (e.button !== 0) return; // Left click only
+    if (e.button !== 0) return; // 僅限左鍵
     const target = e.target as HTMLElement;
-    // 點擊按鈕、輸入框或重新命名時不觸發拖曳
+    // 過濾拖曳觸發
     if (
       target.closest('button') || 
       target.closest('input') || 

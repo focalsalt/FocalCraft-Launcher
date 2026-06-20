@@ -9,7 +9,7 @@ export function LaunchHUD() {
   const cancelLaunch = useInstanceStore((state) => state.cancelLaunch);
   const { t, language } = useI18n();
 
-  // 尋找進行中實例（下載或啟動中）
+  // 尋找進行中的實例
   const activeId = Object.entries(instanceStates).find(([, s]) => 
     s.isDownloading || s.isLaunching
   )?.[0];

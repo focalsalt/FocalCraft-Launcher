@@ -1,6 +1,6 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
 
-// 依 Minecraft 版本號取得對應的分組名稱 (例如: 1.20.4 -> 1.20.X)
+// 取得版本號的主分組名稱
 export const getMajorVersionGroup = (verId: string): string => {
   if (verId.startsWith('b1.')) return 'Beta 測試版 (Beta)';
   if (verId.startsWith('a1.')) return 'Alpha 測試版 (Alpha)';
@@ -21,7 +21,7 @@ interface InstanceLike {
   icon?: string | null;
 }
 
-// 取得實例自訂圖示的本機或網路載入網址
+// 取得實例自訂圖示路徑
 export const getInstanceIconSrc = (
   instance: InstanceLike,
   baseDir: string,
@@ -29,10 +29,10 @@ export const getInstanceIconSrc = (
 ): string | null => {
   if (!instance.icon) return null;
 
-  // 僅接受 HTTPS
+  // 網路 URL
   if (instance.icon.startsWith('https://')) return instance.icon;
 
-  // 若長度太短且不含副檔名，視為 Emoji
+  // 過濾 Emoji
   if (instance.icon.length <= 4 && !instance.icon.includes('.')) return null;
 
   const instsDir = instancesPath || `${baseDir}/instances`;

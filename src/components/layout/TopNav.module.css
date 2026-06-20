@@ -16,6 +16,17 @@
   display: flex;
   gap: 1.5rem;
   height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+  /* Chrome/Safari/Opera */
 }
 
 .tab {
@@ -36,7 +47,7 @@
 }
 
 .tab.active {
-  color: var(--accent-green);
+  color: var(--main-color);
   transform: translateY(0rem);
 }
 
@@ -45,7 +56,7 @@
   bottom: 0;
   left: 0;
   height: 0.1875rem;
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   border-radius: 0.1875rem 0.1875rem 0 0;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s;
   pointer-events: none;

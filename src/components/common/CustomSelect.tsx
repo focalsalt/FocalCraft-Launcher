@@ -24,7 +24,7 @@ export function CustomSelect({ value, onChange, options, disabled, placeholder, 
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // 計算下拉選單的絕對定位（相對於 viewport）
+  // 計算選單定位
   const updateDropdownPos = useCallback(() => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -51,7 +51,7 @@ export function CustomSelect({ value, onChange, options, disabled, placeholder, 
     setIsOpen((prev) => !prev);
   };
 
-  // 點擊外部關閉（同時排除 portal 下拉選單本身）
+  // 點擊外部關閉
   useEffect(() => {
     if (!isOpen) return;
     function handleClickOutside(event: MouseEvent) {
@@ -68,7 +68,7 @@ export function CustomSelect({ value, onChange, options, disabled, placeholder, 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // 捲動或縮放時重新計算位置
+  // 視窗變動時更新定位
   useEffect(() => {
     if (!isOpen) return;
     function handleUpdate() {
@@ -105,7 +105,21 @@ export function CustomSelect({ value, onChange, options, disabled, placeholder, 
         onClick={handleOpen}
         disabled={disabled}
       >
-        <span>{selectedOption ? selectedOption.label : (placeholder || t('common.select_placeholder'))}</span>
+        <div className={styles.triggerContent}>
+          {(() => {
+            if (!selectedOption) return <span className={styles.placeholderText}>{placeholder || t('common.select_placeholder')}</span>;
+            const match = selectedOption.label.match(/^(.*?)\s*\(([^)]+)\)$/);
+            if (match) {
+              return (
+                <div className={styles.labelWrapper}>
+                  <div className={styles.mainLabel}>{match[1]}</div>
+                  <div className={styles.subLabel}>{match[2]}</div>
+                </div>
+              );
+            }
+            return <span>{selectedOption.label}</span>;
+          })()}
+        </div>
         <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
       </button>
 
@@ -115,19 +129,31 @@ export function CustomSelect({ value, onChange, options, disabled, placeholder, 
           className={`${styles.customSelectDropdown} global-scrollbar`}
           style={dropdownStyle}
         >
-          {options.map((opt) => (
-            <div
-              key={opt.value}
-              className={`${styles.customSelectOption} ${opt.value === value ? styles.selected : ''}`}
-              onClick={() => {
-                onChange(opt.value);
-                setIsOpen(false);
-              }}
-            >
-              <span>{opt.label}</span>
-              {opt.value === value && <Check size={14} />}
-            </div>
-          ))}
+          {options.map((opt) => {
+            const match = opt.label.match(/^(.*?)\s*\(([^)]+)\)$/);
+            return (
+              <div
+                key={opt.value}
+                className={`${styles.customSelectOption} ${opt.value === value ? styles.selected : ''}`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                <div className={styles.optionContent}>
+                  {match ? (
+                    <>
+                      <div className={styles.mainLabel}>{match[1]}</div>
+                      <div className={styles.subLabel}>{match[2]}</div>
+                    </>
+                  ) : (
+                    <span>{opt.label}</span>
+                  )}
+                </div>
+                {opt.value === value && <Check size={14} />}
+              </div>
+            );
+          })}
         </div>,
         document.body
       )}

@@ -12,7 +12,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #111111 0%, #162812 100%);
+  background: var(--bg-gradient);
   z-index: -1;
   transition: background 0.5s ease;
 }
@@ -66,7 +66,7 @@
   font-weight: 700;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   margin: 0;
-  background: linear-gradient(135deg, #ffffff 0%, #a5d6a7 100%);
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--main-color) 100%);
   background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
@@ -82,7 +82,7 @@
 .nameInput {
   background: rgba(0, 0, 0, 0.2);
   border: none;
-  border-bottom: 2px solid var(--accent-green);
+  border-bottom: 2px solid var(--main-color);
   font-size: 32px;
   font-weight: 700;
   color: white;
@@ -131,6 +131,11 @@
   scrollbar-gutter: stable;
 }
 
+.mainPanelNoScroll {
+  overflow-y: hidden !important;
+  padding-right: 0;
+}
+
 .animating {
   overflow: hidden !important;
 }
@@ -167,9 +172,9 @@
 }
 
 .iconManagerSmall:hover {
-  border-color: var(--accent-green);
-  background-color: rgba(var(--accent-green-rgb), 0.08);
-  box-shadow: 0 0 12px rgba(var(--accent-green-rgb), 0.2);
+  border-color: var(--main-color);
+  background-color: rgba(var(--main-color-rgb), 0.08);
+  box-shadow: 0 0 12px rgba(var(--main-color-rgb), 0.2);
 }
 
 .smallIcon {
@@ -220,7 +225,7 @@
 .sectionTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #a5d6a7;
+  color: var(--main-color-light);
   margin: 0 0 4px 0;
 }
 
@@ -230,7 +235,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: var(--accent-green);
+  color: var(--main-color);
   padding: 50px 0;
   font-size: 14px;
 }
@@ -301,7 +306,7 @@
   max-width: 31.25rem;
   opacity: 1;
   z-index: 10;
-  border-color: var(--accent-green);
+  border-color: var(--main-color);
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.6), 0 0 0.9375rem rgba(165, 214, 167, 0.15);
   pointer-events: auto;
 }
@@ -356,7 +361,7 @@
 
 .carouselArrow:hover {
   background: rgba(255, 255, 255, 0.15);
-  border-color: var(--accent-green);
+  border-color: var(--main-color);
   color: var(--text-primary);
   transform: scale(1.1);
 }
@@ -394,7 +399,7 @@
 .carouselItem.active.zoomed {
   transform: translate(-50%, -50%) scale(1.08) !important;
   box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.8), 0 0 1.875rem rgba(165, 214, 167, 0.4) !important;
-  border-color: var(--accent-green) !important;
+  border-color: var(--main-color) !important;
 }
 
 .screenshotActions {
@@ -445,16 +450,16 @@
 }
 
 .screenshotActions button.deleteBtn {
-  color: #ff8a80;
-  border-color: rgba(255, 138, 128, 0.2);
-  background: rgba(255, 138, 128, 0.05);
+  color: var(--danger-red-light);
+  border-color: rgba(var(--danger-red-rgb), 0.2);
+  background: rgba(var(--danger-red-rgb), 0.05);
 }
 
 .screenshotActions button.deleteBtn:hover {
-  color: #ff5252;
-  border-color: rgba(255, 82, 82, 0.5);
-  background: rgba(255, 82, 82, 0.15);
-  box-shadow: 0 6px 16px rgba(255, 82, 82, 0.15);
+  color: var(--danger-red-hover);
+  border-color: rgba(var(--danger-red-rgb), 0.5);
+  background: rgba(var(--danger-red-rgb), 0.15);
+  box-shadow: 0 6px 16px rgba(var(--danger-red-rgb), 0.15);
 }
 
 /* 2. LOG CONSOLE TAB */
@@ -462,9 +467,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background-color: rgba(239, 83, 80, 0.12);
-  border: 1px solid rgba(239, 83, 80, 0.35);
-  color: #ef5350;
+  background-color: rgba(var(--danger-red-rgb), 0.12);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.35);
+  color: var(--danger-red);
   padding: 12px 16px;
   border-radius: var(--border-radius-md);
   font-size: 13.5px;
@@ -491,7 +496,7 @@
 .logHeader h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #a5d6a7;
+  color: var(--main-color-light);
   margin: 0;
 }
 
@@ -577,7 +582,7 @@
 }
 
 .primaryBtn {
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -589,13 +594,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.2);
+  box-shadow: 0 4px 12px rgba(var(--main-color-rgb), 0.2);
   transform: translateY(1px);
 }
 
 .primaryBtn:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(var(--accent-green-rgb), 0.35);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 4px 16px rgba(var(--main-color-rgb), 0.35);
   transform: translateY(0px);
 }
 
@@ -646,7 +651,7 @@
   justify-content: center;
   align-items: center;
   padding: 80px 0;
-  color: var(--accent-green);
+  color: var(--main-color);
 }
 
 .table {
@@ -709,21 +714,21 @@
 }
 
 .clientBadge {
-  background-color: rgba(66, 165, 245, 0.15);
-  color: #90caf9;
-  border: 1px solid rgba(66, 165, 245, 0.3);
+  background-color: rgba(var(--info-blue-rgb), 0.15);
+  color: var(--info-blue-light);
+  border: 1px solid rgba(var(--info-blue-rgb), 0.3);
 }
 
 .serverBadge {
-  background-color: rgba(239, 83, 80, 0.15);
-  color: #ef9a9a;
-  border: 1px solid rgba(239, 83, 80, 0.3);
+  background-color: rgba(var(--danger-red-rgb), 0.15);
+  color: var(--danger-red-light);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.3);
 }
 
 .bothBadge {
-  background-color: rgba(102, 187, 106, 0.15);
-  color: #a5d6a7;
-  border: 1px solid rgba(102, 187, 106, 0.3);
+  background-color: rgba(var(--accent-green-rgb), 0.15);
+  color: var(--accent-green-light);
+  border: 1px solid rgba(var(--accent-green-rgb), 0.3);
 }
 
 .tableActions {
@@ -734,9 +739,9 @@
 }
 
 .updateBtn {
-  background-color: rgba(165, 214, 167, 0.12);
-  border: 1px solid rgba(165, 214, 167, 0.3);
-  color: #a5d6a7;
+  background-color: rgba(var(--main-color-rgb-light), 0.12);
+  border: 1px solid rgba(var(--main-color-rgb-light), 0.3);
+  color: var(--main-color-light);
   padding: 4px 12px;
   border-radius: var(--border-radius-sm);
   font-size: 11.5px;
@@ -746,9 +751,9 @@
 }
 
 .updateBtn:hover {
-  background-color: rgba(165, 214, 167, 0.25);
-  border-color: rgba(165, 214, 167, 0.5);
-  box-shadow: 0 0 8px rgba(165, 214, 167, 0.2);
+  background-color: rgba(var(--main-color-rgb-light), 0.25);
+  border-color: rgba(var(--main-color-rgb-light), 0.5);
+  box-shadow: 0 0 8px rgba(var(--main-color-rgb-light), 0.2);
 }
 
 .deleteIconBtn {
@@ -821,7 +826,7 @@
 }
 
 .serverCard:hover {
-  border-color: var(--accent-green);
+  border-color: var(--main-color);
   background-color: rgba(255, 255, 255, 0.06);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -881,7 +886,7 @@
 .textBtn {
   background: transparent;
   border: none;
-  color: var(--accent-green);
+  color: var(--main-color);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -891,8 +896,8 @@
 }
 
 .textBtn:hover {
-  color: var(--accent-green-hover);
-  background-color: rgba(var(--accent-green-rgb), 0.08);
+  color: var(--main-color-hover);
+  background-color: rgba(var(--main-color-rgb), 0.08);
 }
 
 /* 7. DETAILED SETTINGS TAB */
@@ -932,14 +937,14 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   border: none;
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   color: white;
   white-space: nowrap;
 }
 
 .btnIcon:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 0 8px rgba(var(--accent-green-rgb), 0.3);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 0 8px rgba(var(--main-color-rgb), 0.3);
 }
 
 /* 設定分頁：圖示按鈕（次要色）*/
@@ -999,7 +1004,7 @@
 .settingsSectionTitle {
   font-size: 15px;
   font-weight: 600;
-  color: #a5d6a7;
+  color: var(--main-color-light);
   margin: 0 0 4px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 10px;
@@ -1040,8 +1045,8 @@
 .textarea:focus,
 .select:focus {
   outline: none;
-  border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.15);
 }
 
 .textarea {
@@ -1097,7 +1102,7 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  color: var(--accent-green);
+  color: var(--main-color);
   padding: 80px 0;
   font-size: 15px;
   font-weight: 500;
@@ -1134,9 +1139,9 @@
 }
 
 .projectPill {
-  background-color: rgba(var(--accent-green-rgb), 0.15);
-  border: 1px solid rgba(var(--accent-green-rgb), 0.3);
-  color: var(--accent-green);
+  background-color: rgba(var(--main-color-rgb), 0.15);
+  border: 1px solid rgba(var(--main-color-rgb), 0.3);
+  color: var(--main-color);
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 11px;
@@ -1195,7 +1200,7 @@
 }
 
 .primaryBtnLarge {
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -1204,20 +1209,20 @@
   font-size: 14.5px;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 14px rgba(var(--accent-green-rgb), 0.25);
+  box-shadow: 0 4px 14px rgba(var(--main-color-rgb), 0.25);
   text-align: center;
 }
 
 .primaryBtnLarge:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 6px 20px rgba(var(--accent-green-rgb), 0.4);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 6px 20px rgba(var(--main-color-rgb), 0.4);
   transform: translateY(-1px);
 }
 
 .successBox {
-  background-color: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.25);
-  color: #a5d6a7;
+  background-color: rgba(var(--main-color-rgb-light), 0.1);
+  border: 1px solid rgba(var(--main-color-rgb-light), 0.25);
+  color: var(--main-color-light);
   padding: 14px;
   border-radius: var(--border-radius-md);
   font-size: 13.5px;
@@ -1240,6 +1245,7 @@
 .bottomLeftActions {
   display: flex;
   align-items: center;
+  gap: 1rem;
 }
 
 .bottomRightActions {
@@ -1279,9 +1285,9 @@
 
 .launchProgressFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-green), #7de88a);
+  background: linear-gradient(90deg, var(--main-color), #7de88a);
   border-radius: 2px;
-  box-shadow: 0 0 8px rgba(var(--accent-green-rgb), 0.5);
+  box-shadow: 0 0 8px rgba(var(--main-color-rgb), 0.5);
   transition: width 0.3s ease;
 }
 
@@ -1397,7 +1403,7 @@
 .versionEditHeader h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #a5d6a7;
+  color: var(--main-color-light);
   margin: 0;
 }
 
@@ -1499,12 +1505,12 @@
 }
 
 .switch input:checked+.slider {
-  background-color: var(--accent-green);
-  border-color: var(--accent-green-hover);
+  background-color: var(--main-color);
+  border-color: var(--main-color-hover);
 }
 
 .switch input:focus+.slider {
-  box-shadow: 0 0 1px var(--accent-green);
+  box-shadow: 0 0 1px var(--main-color);
 }
 
 .switch input:checked+.slider:before {
@@ -1589,10 +1595,10 @@
 }
 
 .filterSegmentButton.active {
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   color: white;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(var(--accent-green-rgb), 0.3);
+  box-shadow: 0 2px 8px rgba(var(--main-color-rgb), 0.3);
 }
 
 .filterSegmentButton:disabled {
@@ -1692,7 +1698,7 @@
 }
 
 .hudSpinner {
-  color: var(--accent-green);
+  color: var(--main-color);
 }
 
 .hudTitle {
@@ -1726,7 +1732,7 @@
 
 .hudProgressFill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-green) 0%, #a5d6a7 100%);
+  background: linear-gradient(90deg, var(--main-color) 0%, var(--main-color-light) 100%);
   border-radius: 4px;
   transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1797,14 +1803,14 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--accent-green);
+  background: var(--main-color);
   cursor: pointer;
   transition: transform 0.1s, background-color var(--transition-fast);
-  box-shadow: 0 0 6px rgba(var(--accent-green-rgb), 0.5);
+  box-shadow: 0 0 6px rgba(var(--main-color), 0.5);
 }
 
 .memorySlider::-webkit-slider-thumb:hover {
-  background: var(--accent-green-hover);
+  background: var(--main-color-hover);
   transform: scale(1.2);
 }
 
@@ -1823,8 +1829,8 @@
 
 .numInput:focus {
   outline: none;
-  border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.15);
 }
 
 /* 精緻空狀態完全置中排版樣式 */
@@ -1844,10 +1850,10 @@
 }
 
 .emptyStateIcon {
-  color: var(--accent-green);
+  color: var(--main-color);
   margin-bottom: 20px;
   opacity: 0.85;
-  filter: drop-shadow(0 4px 10px rgba(var(--accent-green-rgb), 0.25));
+  filter: drop-shadow(0 4px 10px rgba(var(---main-color-rgb), 0.25));
 }
 
 .emptyStateTitle {
@@ -1882,14 +1888,14 @@
 }
 
 .dropzone:hover {
-  border-color: var(--accent-green);
-  background-color: rgba(var(--accent-green-rgb), 0.03);
+  border-color: var(--main-color);
+  background-color: rgba(var(--main-color-rgb), 0.03);
 }
 
 .dropzoneActive {
-  border-color: var(--accent-green);
-  background-color: rgba(var(--accent-green-rgb), 0.08);
-  box-shadow: 0 0 12px rgba(var(--accent-green-rgb), 0.2);
+  border-color: var(--main-color);
+  background-color: rgba(var(--main-color-rgb), 0.08);
+  box-shadow: 0 0 12px rgba(var(--main-color-rgb), 0.2);
 }
 
 .dropzoneIcon {
@@ -1899,7 +1905,7 @@
 
 .dropzone:hover .dropzoneIcon,
 .dropzoneActive .dropzoneIcon {
-  color: var(--accent-green);
+  color: var(--main-color);
 }
 
 .dropzoneText {

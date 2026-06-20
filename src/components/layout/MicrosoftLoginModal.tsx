@@ -45,7 +45,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
       setTimeLeft(res.expires_in);
       setStep('waiting_user');
 
-      // 開啟倒數計時
+      // 倒數計時
       if (countdownRef.current) window.clearInterval(countdownRef.current);
       countdownRef.current = window.setInterval(() => {
         setTimeLeft((prev) => {
@@ -57,7 +57,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
         });
       }, 1000);
 
-      // 開始輪詢 Token
+      // 輪詢 Token
       startPolling(res.device_code, res.interval);
     } catch (err) {
       console.error(err);
@@ -76,7 +76,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
           expires_in: number;
         }>('poll_device_token', { deviceCode: code });
 
-        // 驗證 Minecraft 帳號
+        // 驗證 MC 帳號
         cleanup();
         setStep('verifying_mc');
         
@@ -85,7 +85,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
           msRefreshToken: tokenRes.refresh_token
         });
 
-        // 寫入帳號 Store
+        // 儲存帳號
         await addAccount(account);
         setStep('success');
         addNotification({
@@ -95,7 +95,7 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
           duration: 4000
         });
 
-        // 自動關閉對話框
+        // 自動關閉
         setTimeout(() => {
           onClose();
         }, 1500);
@@ -103,10 +103,10 @@ export function MicrosoftLoginModal({ onClose }: MicrosoftLoginModalProps) {
       } catch (err: any) {
         const errMsg = String(err);
         if (errMsg === 'authorization_pending') {
-          // 等待使用者操作
+          // 等待使用者
           return;
         } else if (errMsg === 'slow_down') {
-          // 微軟要求放慢速度
+          // 限制頻率
           return;
         } else if (errMsg === 'expired_token') {
           handleError(t('account.login.timeout'));

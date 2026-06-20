@@ -73,7 +73,7 @@ interface InstanceState {
     modrinthProjectId?: string,
     modrinthVersionId?: string
   ) => Promise<void>;
-  importMrpack: (instanceId: string, filePath: string, selectedMods?: string[]) => Promise<any[]>;
+  importPack: (instanceId: string, filePath: string, selectedMods?: string[]) => Promise<any[]>;
   launchInstance: (id: string, accountJson: string) => Promise<void>;
   saveInstanceOrder: (order: string[]) => Promise<void>;
   watchInstanceFolders: (instanceId: string) => Promise<void>;
@@ -106,12 +106,12 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     instanceLogs: { ...state.instanceLogs, [instanceId]: [] }
   })),
 
-  // 初始化監聽事件
+  // 初始化監聽
   init: async () => {
     if (get().initialized) return;
     set({ initialized: true });
 
-    // 監聽遊戲日誌
+    // 遊戲日誌監聽
     await listen<any>('game-log', (event) => {
       const { instanceId, text } = event.payload;
       if (instanceId) {
@@ -127,7 +127,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       }
     });
 
-    // 監聽下載進度事件
+    // 下載進度監聽
     await listen<ProgressPayload>('download-progress', (event) => {
       const targetId = event.payload.instanceId;
       if (targetId) {
@@ -163,14 +163,14 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         }
       }
 
-      // 相容舊版全域欄位
+      // 相容舊版欄位
       set({
         downloadProgress: event.payload.progress,
         downloadStatusText: event.payload.detail
       });
     });
 
-    // 監聽遊戲運行狀態
+    // 遊戲狀態監聽
     await listen<GameStatusPayload>('game-status', (event) => {
       const { instanceId, status, exitCode, crashed } = event.payload;
       const isCrash = !!(crashed && exitCode !== 0);
@@ -214,7 +214,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         });
         console.log(`Game exited with code: ${exitCode}`);
 
-        // 處理遊戲崩潰：發送通知並自動切換至日誌標籤
+        // 遊戲崩潰處理
         if (isCrash) {
           useAppStore.getState().addNotification({
             type: 'error',
@@ -227,7 +227,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     });
   },
 
-  // 載入所有實例
+  // 載入實例列表
   loadInstances: async () => {
     try {
       const list = await invoke<Instance[]>('get_instances');
@@ -237,7 +237,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 建立新實例
+  // 建立實例
   createInstance: async (id, name, version, modloader, loaderVersion, icon, modrinthProjectId, modrinthVersionId) => {
     try {
       const created = await invoke<Instance>('create_instance', {
@@ -276,7 +276,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 更新實例 JVM 啟動參數與記憶體設定
+  // 更新啟動設定
   updateInstanceSettings: async (id, jvmArgs, maxMemory, javaPath) => {
     try {
       await invoke('update_instance_settings', { id, jvmArgs, maxMemory, javaPath: javaPath || null });
@@ -287,7 +287,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 更新實例基礎設定
+  // 更新基礎設定
   updateInstanceConfig: async (id, name, version, modloader, loaderVersion, modrinthProjectId, modrinthVersionId) => {
     try {
       await invoke('update_instance_config', {
@@ -306,8 +306,8 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 匯入 mrpack 整合包檔案
-  importMrpack: async (instanceId, filePath, selectedMods?: string[]) => {
+  // 匯入整合包
+  importPack: async (instanceId, filePath, selectedMods?: string[]) => {
     set((state) => {
       const s = state.instanceStates[instanceId] || getInitialInstanceState();
       return {
@@ -326,11 +326,11 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       };
     });
     try {
-      const blocked = await invoke<any[]>('import_mrpack', { instanceId, filePath, selectedMods: selectedMods || null });
+      const blocked = await invoke<any[]>('import_pack', { instanceId, filePath, selectedMods: selectedMods || null });
       await get().loadInstances();
       return blocked || [];
     } catch (error) {
-      console.error('Failed to import mrpack:', error);
+      console.error('Failed to import pack:', error);
       throw error;
     } finally {
       set((state) => {
@@ -349,13 +349,13 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 啟動實例遊戲程序
+  // 啟動遊戲
   launchInstance: async (id, accountJson) => {
     // 防止重複啟動
     const current = get().instanceStates[id] || getInitialInstanceState();
     if (current.isLaunching || current.isRunning) return;
 
-    // 標記為啟動中
+    // 設定啟動狀態
     set((state) => {
       const s = state.instanceStates[id] || getInitialInstanceState();
       return {
@@ -391,14 +391,14 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     };
 
     try {
-      // 初始化後端啟動會話
+      // 初始化後端啟動 Session
       await invoke('init_launch_session', { instanceId: id });
       const instance = get().instances.find(i => i.id === id);
       if (!instance) throw new Error(getTranslation('detail.not_found'));
 
       logInfo(getTranslation('instance.launch.log.preparing', { name: instance.name }));
       
-      // 驗證微軟憑證並視需要自動重新整理
+      // 驗證並刷新 Token
       logInfo(getTranslation('instance.launch.log.verifying_ms'));
       const originalAccount = JSON.parse(accountJson);
       const accountStore = useAccountStore.getState();
@@ -433,7 +433,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       const reqVersion = await invoke<number>('get_required_java_version', { instanceId: id });
       let javaPath = '';
 
-      // 準備 Java 執行環境
+      // 準備 Java 環境
       logInfo(getTranslation('instance.launch.log.preparing_java'));
 
       const customJavaPath = instance.javaPath;
@@ -518,7 +518,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         }
       }
 
-      // 下載與準備遊戲核心/依賴檔案
+      // 下載與準備遊戲檔案
       logInfo(getTranslation('instance.launch.log.preparing_files'));
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
@@ -553,7 +553,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         };
       });
 
-      // 組裝啟動參數並執行遊戲
+      // 啟動遊戲進程
       logInfo(getTranslation('instance.launch.log.assembling_args'));
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
@@ -630,7 +630,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 儲存實例排列順序
+  // 儲存實例排序
   saveInstanceOrder: async (order: string[]) => {
     try {
       const currentInstances = get().instances;
@@ -648,7 +648,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 監聽實例目錄變動
+  // 監聽目錄變動
   watchInstanceFolders: async (instanceId) => {
     try {
       await invoke('watch_instance_folders', { instanceId });
@@ -657,7 +657,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 停止監聽實例目錄
+  // 取消監聽目錄變動
   unwatchInstanceFolders: async () => {
     try {
       await invoke('unwatch_instance_folders');
@@ -666,7 +666,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     }
   },
 
-  // 取消遊戲啟動會話
+  // 取消啟動
   cancelLaunch: async (instanceId) => {
     try {
       await invoke('cancel_launch_session', { instanceId });
@@ -697,7 +697,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     console.log(`Launch cancelled for instance: ${instanceId}`);
   },
 
-  // 強制終止遊戲進程
+  // 強制結束遊戲
   killGame: async (instanceId) => {
     try {
       await invoke('kill_launch_session', { instanceId });

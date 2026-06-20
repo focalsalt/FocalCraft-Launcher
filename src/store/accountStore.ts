@@ -21,12 +21,15 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   isLoading: false,
   refreshStatuses: {},
 
-  // 載入所有帳號
+  // 載入帳號
   loadAccounts: async () => {
     set({ isLoading: true });
     try {
       const accountsJson = await invoke<string>('load_accounts');
-      const loadedAccounts = JSON.parse(accountsJson) as Account[];
+      const loadedAccounts = (JSON.parse(accountsJson) as Account[]).map(a => ({
+        ...a,
+        avatarUrl: a.avatarUrl ? a.avatarUrl.replace('mc-heads.net', 'minotar.net') : `https://minotar.net/avatar/${a.id}`
+      }));
       
       if (loadedAccounts.length > 0) {
         const initialStatuses: Record<string, 'idle' | 'updating' | 'failed'> = {};
@@ -35,11 +38,11 @@ export const useAccountStore = create<AccountState>((set, get) => ({
         });
         set({ 
           accounts: loadedAccounts,
-          selectedAccountId: loadedAccounts[0].id, // 預設選取首位
+          selectedAccountId: loadedAccounts[0].id, // 預設選取第一個
           refreshStatuses: initialStatuses
         });
 
-        // 自動更新即將過期權杖
+        // 自動更新即將過期 Token
         await get().checkAndRefreshTokens();
       } else {
         set({ accounts: [], selectedAccountId: null, refreshStatuses: {} });
@@ -54,23 +57,27 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   // 新增帳號
   addAccount: async (account) => {
     const { accounts } = get();
-    const exists = accounts.some(a => a.id === account.id);
+    const mappedAccount = {
+      ...account,
+      avatarUrl: account.avatarUrl ? account.avatarUrl.replace('mc-heads.net', 'minotar.net') : `https://minotar.net/avatar/${account.id}`
+    };
+    const exists = accounts.some(a => a.id === mappedAccount.id);
     let newAccounts: Account[];
     if (exists) {
-      newAccounts = accounts.map(a => a.id === account.id ? account : a);
+      newAccounts = accounts.map(a => a.id === mappedAccount.id ? mappedAccount : a);
     } else {
-      newAccounts = [...accounts, account];
+      newAccounts = [...accounts, mappedAccount];
     }
 
-    // 置頂新登入帳號
-    const targetAccount = newAccounts.find(a => a.id === account.id)!;
-    const remaining = newAccounts.filter(a => a.id !== account.id);
+    // 置頂新帳號
+    const targetAccount = newAccounts.find(a => a.id === mappedAccount.id)!;
+    const remaining = newAccounts.filter(a => a.id !== mappedAccount.id);
     const reorderedAccounts = [targetAccount, ...remaining];
 
     set(state => ({
       accounts: reorderedAccounts,
-      selectedAccountId: account.id,
-      refreshStatuses: { ...state.refreshStatuses, [account.id]: 'idle' }
+      selectedAccountId: mappedAccount.id,
+      refreshStatuses: { ...state.refreshStatuses, [mappedAccount.id]: 'idle' }
     }));
 
     try {
@@ -106,13 +113,13 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
-  // 切換目前選取帳號
+  // 切換選取帳號
   selectAccount: async (id) => {
     const { accounts } = get();
     const targetAccount = accounts.find(a => a.id === id);
     if (!targetAccount) return;
 
-    // 置頂已選取帳號
+    // 置頂選取帳號
     const remaining = accounts.filter(a => a.id !== id);
     const reorderedAccounts = [targetAccount, ...remaining];
 
@@ -128,7 +135,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
-  // 重新整理單一帳號的權杖 (支援失敗自動重試)
+  // 刷新單一帳號 Token (自動重試)
   refreshAccountToken: async (id) => {
     const { accounts } = get();
     const targetAccount = accounts.find(a => a.id === id);
@@ -149,26 +156,30 @@ export const useAccountStore = create<AccountState>((set, get) => ({
           refreshToken: targetAccount.msRefreshToken 
         });
         refreshedAccount = refreshed;
-        break; // 成功取得新權杖
+        break; // 成功
       } catch (error) {
         attempt++;
         lastError = error;
         console.warn(`Attempt ${attempt} to refresh token for ${id} failed:`, error);
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // 延遲後重試
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 延遲重試
         }
       }
     }
 
     if (refreshedAccount) {
-      const updatedAccounts = get().accounts.map(a => a.id === id ? refreshedAccount! : a);
+      const mappedRefreshed = {
+        ...refreshedAccount,
+        avatarUrl: refreshedAccount.avatarUrl ? refreshedAccount.avatarUrl.replace('mc-heads.net', 'minotar.net') : `https://minotar.net/avatar/${refreshedAccount.id}`
+      };
+      const updatedAccounts = get().accounts.map(a => a.id === id ? mappedRefreshed : a);
 
       set(state => ({
         accounts: updatedAccounts,
         refreshStatuses: { ...state.refreshStatuses, [id]: 'idle' }
       }));
       await invoke('save_accounts', { accountsJson: JSON.stringify(updatedAccounts) });
-      return refreshedAccount;
+      return mappedRefreshed;
     } else {
       console.error(`Failed to refresh token for account ${id} after ${maxRetries} attempts:`, lastError);
       set(state => ({
@@ -178,7 +189,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }
   },
 
-  // 檢查並刷新所有即將過期的權杖 (小於 30 分鐘者)
+  // 刷新 30 分鐘內即將過期的 Token
   checkAndRefreshTokens: async () => {
     const { accounts } = get();
     const now = Date.now();

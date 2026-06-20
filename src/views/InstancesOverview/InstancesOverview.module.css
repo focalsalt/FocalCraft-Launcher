@@ -17,7 +17,7 @@
 }
 
 .addButton {
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   color: white;
   padding: 10px 20px;
   border-radius: var(--border-radius-md);
@@ -29,7 +29,7 @@
 }
 
 .addButton:hover {
-  background-color: var(--accent-green-hover);
+  background-color: var(--main-color-hover);
 }
 
 .grid {
@@ -56,13 +56,13 @@
 
 .card:hover {
   transform: translateY(-4px);
-  border-color: var(--accent-green);
+  border-color: var(--main-color);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .cardRunning {
-  border-color: var(--accent-green);
-  background-color: rgba(var(--accent-green-rgb), 0.03);
+  border-color: var(--main-color);
+  background-color: rgba(var(--main-color-rgb), 0.03);
 }
 
 .cardCrashed {
@@ -86,8 +86,8 @@
 }
 
 .runningBadge {
-  background-color: rgba(var(--accent-green-rgb), 0.15);
-  color: var(--accent-green);
+  background-color: rgba(var(--main-color-rgb), 0.15);
+  color: var(--main-color);
 }
 
 .crashedBadge {
@@ -226,7 +226,7 @@
 /* 拖曳、刪除與重新命名樣式 */
 .cardDragging {
   opacity: 0.15;
-  border: 2px dashed rgba(var(--accent-green-rgb), 0.4) !important;
+  border: 2px dashed rgba(var(--main-color-rgb), 0.4) !important;
   background-color: rgba(0, 0, 0, 0.1) !important;
   box-shadow: none !important;
 }
@@ -263,7 +263,7 @@
 
 .cardNameInput {
   background-color: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--accent-green);
+  border: 1px solid var(--main-color);
   border-radius: 4px;
   color: white;
   padding: 2px 6px;
@@ -271,14 +271,14 @@
   font-family: inherit;
   width: 90%;
   outline: none;
-  box-shadow: 0 0 8px rgba(var(--accent-green-rgb), 0.3);
+  box-shadow: 0 0 8px rgba(var(--main-color-rgb), 0.3);
   text-align: center;
 }
 
 .cardHoveredDrop {
-  border-color: var(--accent-green);
+  border-color: var(--main-color);
   transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 8px 24px rgba(var(--accent-green-rgb), 0.3);
+  box-shadow: 0 8px 24px rgba(var(--main-color-rgb), 0.3);
 }
 
 .dragPreview {
@@ -286,14 +286,14 @@
   background-color: rgba(30, 30, 30, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--accent-green);
+  border: 1px solid var(--main-color);
   border-radius: var(--border-radius-lg);
   padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 15px rgba(var(--accent-green-rgb), 0.2);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 15px rgba(var(--main-color-rgb), 0.2);
   transform: scale(0.9);
   opacity: 0.9;
   pointer-events: none;

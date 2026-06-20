@@ -2,7 +2,7 @@
   display: flex;
   gap: 1.5rem;
   padding: 1.5rem;
-  height: calc(100vh - var(--topnav-height, 3.5rem));
+  height: calc(100vh - var(--topnav-height, 3.75rem));
   box-sizing: border-box;
   background-color: var(--bg-main);
   animation: tabFadeIn 0.3s ease-out;
@@ -34,13 +34,13 @@
 }
 
 .spin {
-  color: var(--accent-green);
+  color: var(--main-color);
 }
 
 .errorTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #ff4d4d;
+  color: var(--danger-red);
 }
 
 .errorMessage {
@@ -83,7 +83,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  background: radial-gradient(circle at center, #2e2e2e 0%, #151515 100%);
+  background: var(--bg-radial);
 }
 
 .canvas {
@@ -160,7 +160,7 @@
 }
 
 .controlBtnActive {
-  background: var(--accent-green) !important;
+  background: var(--main-color) !important;
   color: #fff !important;
 }
 
@@ -316,7 +316,7 @@
 }
 
 .uploadArea:hover {
-  border-color: var(--accent-green-hover);
+  border-color: var(--main-color-hover);
   background: rgba(60, 133, 39, 0.03);
 }
 
@@ -325,7 +325,7 @@
 }
 
 .uploadArea:hover .uploadIcon {
-  color: var(--accent-green-hover);
+  color: var(--main-color-hover);
 }
 
 .uploadText {
@@ -384,7 +384,7 @@
 }
 
 .clearFileBtn:hover {
-  color: #ff4d4d;
+  color: var(--danger-red);
 }
 
 .variantSelector {
@@ -422,7 +422,7 @@
 }
 
 .variantOptionActive {
-  border-color: var(--accent-green) !important;
+  border-color: var(--main-color) !important;
   background: rgba(60, 133, 39, 0.05) !important;
 }
 
@@ -490,7 +490,7 @@
 }
 
 .capeCardPreviewActive {
-  border-color: var(--accent-green) !important;
+  border-color: var(--main-color) !important;
   background: rgba(60, 133, 39, 0.03) !important;
 }
 
@@ -507,7 +507,7 @@
 .capeTextureContainer {
   width: 90px;
   height: 120px;
-  background: radial-gradient(circle at center, #2e2e2e 0%, #151515 100%);
+  background: var(--bg-radial);
   border-radius: var(--border-radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
@@ -544,14 +544,14 @@
   position: absolute;
   top: 0.5rem;
   left: 0.5rem;
-  background: rgba(60, 133, 39, 0.2);
-  border: 1px solid rgba(60, 133, 39, 0.4);
-  color: #5ed643;
+  background: rgba(var(--accent-green-rgb), 0.2);
+  border: 1px solid rgba(var(--accent-green-rgb), 0.4);
+  color: var(--accent-green-light);
   font-size: 0.625rem;
   font-weight: 700;
   padding: 0.125rem 0.375rem;
   border-radius: var(--border-radius-sm);
-  text-shadow: 0 0 8px rgba(60, 133, 39, 0.5);
+  text-shadow: 0 0 8px rgba(var(--accent-green-rgb), 0.5);
   z-index: 2;
 }
 
@@ -559,9 +559,9 @@
   position: absolute;
   top: 0.5rem;
   left: 0.5rem;
-  background: rgba(0, 150, 255, 0.2);
-  border: 1px solid rgba(0, 150, 255, 0.4);
-  color: #60c5ff;
+  background: rgba(var(--info-blue-rgb), 0.2);
+  border: 1px solid rgba(var(--info-blue-rgb), 0.4);
+  color: var(--info-blue-light);
   font-size: 0.625rem;
   font-weight: 700;
   padding: 0.125rem 0.375rem;
@@ -601,20 +601,20 @@
 }
 
 .equipBtn:hover {
-  background: var(--accent-green);
-  border-color: var(--accent-green);
+  background: var(--main-color);
+  border-color: var(--main-color);
   color: #fff;
 }
 
 .unequipBtn {
-  background: rgba(255, 77, 77, 0.1);
-  border: 1px solid rgba(255, 77, 77, 0.2);
-  color: #ff4d4d;
+  background: rgba(var(--danger-red-rgb), 0.1);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.2);
+  color: var(--danger-red);
 }
 
 .unequipBtn:hover {
-  background: #ff4d4d;
-  border-color: #ff4d4d;
+  background: var(--danger-red);
+  border-color: var(--danger-red);
   color: #fff;
 }
 
@@ -667,8 +667,8 @@
 }
 
 .switchTrackActive {
-  background-color: var(--accent-green) !important;
-  border-color: var(--accent-green-hover) !important;
+  background-color: var(--main-color) !important;
+  border-color: var(--main-color-hover) !important;
   box-shadow: 0 0 8px rgba(60, 133, 39, 0.4);
 }
 
@@ -690,10 +690,10 @@
 
 /* 拖放上傳高亮樣式 */
 .uploadAreaDragActive {
-  border-color: var(--accent-green) !important;
+  border-color: var(--main-color) !important;
   background-color: rgba(60, 133, 39, 0.05) !important;
   box-shadow: 0 0 16px rgba(60, 133, 39, 0.15) !important;
-  color: var(--accent-green) !important;
+  color: var(--main-color) !important;
 }
 
 /* 皮膚櫃排版與按鈕 */
@@ -720,7 +720,7 @@
 .confirmDeleteText {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #ff4d4d;
+  color: var(--danger-red);
 }
 
 .confirmDeleteBtns {
@@ -742,14 +742,14 @@
 }
 
 .confirmDeleteBtnYes {
-  background: #ff4d4d;
-  border: 1px solid #ff4d4d;
+  background: var(--danger-red);
+  border: 1px solid var(--danger-red);
   color: #fff;
 }
 
 .confirmDeleteBtnYes:hover {
-  background: #e60000;
-  border-color: #e60000;
+  background: var(--danger-red-hover);
+  border-color: var(--danger-red-hover);
 }
 
 .confirmDeleteBtnNo {
@@ -768,6 +768,7 @@
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -798,7 +799,7 @@
 
 .copyWrapper:hover .copyIcon {
   opacity: 1;
-  color: var(--accent-green);
+  color: var(--main-color);
 }
 
 .fallbackIconContainer {

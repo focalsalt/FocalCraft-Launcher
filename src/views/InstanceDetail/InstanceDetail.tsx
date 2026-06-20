@@ -7,14 +7,15 @@ import { useI18n, translateBackendStatus } from '../../utils/i18n';
 import { invoke, convertFileSrc } from '@tauri-apps/api/core';
 import { getInstanceIconSrc } from '../../utils/versionUtils';
 import { listen } from '@tauri-apps/api/event';
-import { Play, Loader, FolderOpen, Square } from 'lucide-react';
+import { Play, Loader, FolderOpen, Square, Download } from 'lucide-react';
 import { CustomConfirmModal } from '../../components/common/CustomConfirmModal';
 import { ServerEditModal } from './ServerEditModal';
-import { ModrinthDownloadModal } from './ModrinthDownloadModal';
+import { DownloaderModal } from './DownloaderModal';
 import { IconEditModal } from './IconEditModal';
 import { VersionEditModal } from './VersionEditModal';
 import { JavaSelectorModal } from './JavaSelectorModal';
 import { ModVersionModal } from './ModVersionModal';
+import { ExportInstanceModal } from './ExportInstanceModal';
 
 import { EditTab } from './tabs/EditTab';
 import { LogTab } from './tabs/LogTab';
@@ -27,7 +28,7 @@ import { SettingsTab } from './tabs/SettingsTab';
 import { ModpackUpdateTab } from './tabs/ModpackUpdateTab';
 import styles from './InstanceDetail.module.css';
 
-// 避免 Zustand 與 React 重複渲染的空陣列常數
+// 避免重複渲染的空陣列
 const EMPTY_LOGS: string[] = [];
 
 interface Props {
@@ -101,6 +102,7 @@ export function InstanceDetail({ instanceId }: Props) {
   const [jvmArgs, setJvmArgs] = useState('');
   const [maxMemory, setMaxMemory] = useState(4096);
   const [customJava, setCustomJava] = useState('');
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const logs = useInstanceStore(state => state.instanceLogs[instanceId] ?? EMPTY_LOGS);
   const [mods, setMods] = useState<ModItem[]>([]);
@@ -158,12 +160,12 @@ export function InstanceDetail({ instanceId }: Props) {
   const logConsoleRef = useRef<HTMLDivElement>(null);
   const lastLoadIdRef = useRef(0);
 
-  // 取得應用程式基礎路徑
+  // 取得基礎路徑
   useEffect(() => {
     invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
   }, []);
 
-  // 當實例變更時同步設定
+  // 同步設定狀態
   const instanceId_dep   = instance?.id;
   const instanceName_dep = instance?.name;
   const instanceJvm_dep  = instance?.jvmArgs;
@@ -181,7 +183,7 @@ export function InstanceDetail({ instanceId }: Props) {
 
 
 
-  // 監聽本機檔案變動以自動重新載入
+  // 監聽檔案變動以自動重新載入
   useEffect(() => {
     let active = true;
     let unlistenFn: (() => void) | undefined;
@@ -191,7 +193,7 @@ export function InstanceDetail({ instanceId }: Props) {
       await watchInstanceFolders(instanceId);
       if (!active) return;
 
-      // 監聽事件變更
+      // 變動事件處理
       const unlisten = await listen<{ folder: string; instanceId: string }>('folder-change', async (event) => {
         if (event.payload.instanceId !== instanceId) return;
         
@@ -244,13 +246,13 @@ export function InstanceDetail({ instanceId }: Props) {
     };
   }, [instanceId, activeWorldForDatapacks]);
 
-  // 載入當前分頁資料
+  // 載入分頁資料
   useEffect(() => {
     if (!instance) return;
     loadTabData();
   }, [activeTab, instanceId]);
 
-  // 分頁變更時觸發動畫
+  // 分頁切換動畫
   useEffect(() => {
     if (prevTabRef.current !== activeTab) {
       prevTabRef.current = activeTab;
@@ -478,7 +480,7 @@ export function InstanceDetail({ instanceId }: Props) {
     // 執行啟動程序
     const launchPromise = launchInstance(instance.id, accountJson);
 
-    // 切換至日誌分頁並清除舊日誌
+    // 切換分頁並清除舊日誌
     setActiveTab('log');
     clearLogs(instance.id);
 
@@ -981,16 +983,16 @@ export function InstanceDetail({ instanceId }: Props) {
       const file = latestModpackVersion.files.find((f: any) => f.filename.endsWith('.mrpack'));
       if (!file) throw new Error(t('detail.notification.modpack_update.missing_mrpack'));
 
-      // 下載整合包檔案
-      const localPath = await invoke<string>('download_mrpack', { url: file.url });
+      // 下載整合包
+      const localPath = await invoke<string>('download_pack', { url: file.url });
 
       // 清理舊模組
       await invoke('delete_instance_file', { instanceId: instance.id, folderName: '', fileName: 'minecraft/mods' });
 
-      // 重新匯入 mrpack
-      await invoke('import_mrpack', { instanceId: instance.id, filePath: localPath });
+      // 重新匯入
+      await invoke('import_pack', { instanceId: instance.id, filePath: localPath });
 
-      // 更新整合包設定
+      // 更新設定
       await updateInstanceConfig(
         instance.id,
         instance.name,
@@ -1066,13 +1068,15 @@ export function InstanceDetail({ instanceId }: Props) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const isScrollableTab = activeTab === 'edit' || activeTab === 'settings' || activeTab === 'modpack_update';
+
   return (
     <div className={styles.container}>
       <div className={styles.background}></div>
 
       <div className={styles.content}>
         {/* 主面板區塊 */}
-        <div className={`${styles.mainPanel} ${isAnimating ? styles.animating : ''}`}>
+        <div className={`${styles.mainPanel} ${isAnimating ? styles.animating : ''} ${isScrollableTab ? '' : styles.mainPanelNoScroll}`}>
           {/* 啟動進度遮罩 */}
           {(isLaunching || isDownloading) && (
             <div className={styles.hudOverlay}>
@@ -1239,10 +1243,16 @@ export function InstanceDetail({ instanceId }: Props) {
         <div className={styles.bottomBar}>
           <div className={styles.bottomLeftActions}>
             {activeTab === 'edit' && (
-              <button className={styles.actionBtn} onClick={() => handleOpenFolder()}>
-                <FolderOpen size={16} />
-                <span>{t('detail.btn.open_folder')}</span>
-              </button>
+              <>
+                <button className={styles.actionBtn} onClick={() => handleOpenFolder()}>
+                  <FolderOpen size={16} />
+                  <span>{t('detail.btn.open_folder')}</span>
+                </button>
+                <button className={styles.actionBtn} onClick={() => setIsExportModalOpen(true)}>
+                  <Download size={16} />
+                  <span>{t('export.title')}</span>
+                </button>
+              </>
             )}
           </div>
           <div className={styles.bottomRightActions}>
@@ -1287,7 +1297,7 @@ export function InstanceDetail({ instanceId }: Props) {
         onCancel={() => setIsServerModalOpen(false)}
       />
 
-      <ModrinthDownloadModal
+      <DownloaderModal
         isOpen={isModrinthModalOpen}
         instanceId={instance.id}
         projectType={modrinthModalType}
@@ -1427,6 +1437,13 @@ export function InstanceDetail({ instanceId }: Props) {
         loader={instance.modloader}
         instanceId={instance.id}
         onUpdateComplete={loadTabData}
+      />
+
+      <ExportInstanceModal
+        isOpen={isExportModalOpen}
+        instanceId={instance.id}
+        instanceName={instance.name}
+        onClose={() => setIsExportModalOpen(false)}
       />
 
     </div>

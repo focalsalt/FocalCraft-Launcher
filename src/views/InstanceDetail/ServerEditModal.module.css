@@ -29,8 +29,15 @@
 }
 
 @keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .header {
@@ -83,7 +90,8 @@
   font-weight: 600;
 }
 
-.input, .select {
+.input,
+.select {
   background-color: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
@@ -95,10 +103,11 @@
   width: 100%;
 }
 
-.input:focus, .select:focus {
+.input:focus,
+.select:focus {
   outline: none;
-  border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.15);
 }
 
 .select option {

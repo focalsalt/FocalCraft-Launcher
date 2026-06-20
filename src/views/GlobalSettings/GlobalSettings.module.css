@@ -12,7 +12,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #111111 0%, #162812 100%);
+  background: linear-gradient(135deg, #111111 0%, var(--main-color-dark) 100%);
   z-index: -1;
   transition: background 0.5s ease;
 }
@@ -77,7 +77,7 @@
   font-size: 16px;
   font-weight: 600;
   margin: 0;
-  color: #a5d6a7;
+  color: var(--main-color-light);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 10px;
 }
@@ -133,8 +133,8 @@
 .textarea:focus,
 .numInput:focus {
   outline: none;
-  border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.15);
 }
 
 .btnIcon,
@@ -152,13 +152,13 @@
 }
 
 .btnIcon {
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   color: white;
 }
 
 .btnIcon:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 0 8px rgba(var(--accent-green-rgb), 0.3);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 0 8px rgba(var(--main-color-rgb), 0.3);
 }
 
 .btnIconSec {
@@ -201,14 +201,14 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--accent-green);
+  background: var(--main-color);
   cursor: pointer;
   transition: transform 0.1s, background-color var(--transition-fast);
-  box-shadow: 0 0 6px rgba(var(--accent-green-rgb), 0.5);
+  box-shadow: 0 0 6px rgba(var(--main-color-rgb), 0.5);
 }
 
 .slider::-webkit-slider-thumb:hover {
-  background: var(--accent-green-hover);
+  background: var(--main-color-hover);
   transform: scale(1.2);
 }
 
@@ -256,7 +256,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--accent-green);
+  color: var(--main-color);
   gap: 16px;
   font-size: 15px;
   font-weight: 500;

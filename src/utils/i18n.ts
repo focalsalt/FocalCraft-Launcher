@@ -10,9 +10,7 @@ export const translations = {
 export type Language = 'zh-TW' | 'en-US';
 export type TranslationKeys = keyof typeof zhTW;
 
-/**
- * 取得當前合適的語系 (支援自動判定)
- */
+// 取得語系 (支援自動判定)
 export function getActiveLanguage(configLanguage: string | null): Language {
   if (configLanguage && (configLanguage === 'zh-TW' || configLanguage === 'en-US')) {
     return configLanguage as Language;
@@ -26,9 +24,7 @@ export function getActiveLanguage(configLanguage: string | null): Language {
   return 'en-US';
 }
 
-/**
- * 前端多國語言 Hook
- */
+// 語系 Hook
 export function useI18n() {
   const configLang = useSettingsStore((state) => state.config.language);
   const activeLang = getActiveLanguage(configLang);
@@ -47,9 +43,7 @@ export function useI18n() {
   return { t, language: activeLang, rawLanguageSetting: configLang };
 }
 
-/**
- * 取得非 React 元件環境下的多國語言翻譯 (例如在 Zustand store 中)
- */
+// 非 React 元件翻譯
 export function getTranslation(key: TranslationKeys, params?: Record<string, string | number>): string {
   const configLang = useSettingsStore.getState().config.language;
   const activeLang = getActiveLanguage(configLang);
@@ -64,9 +58,7 @@ export function getTranslation(key: TranslationKeys, params?: Record<string, str
   return value;
 }
 
-/**
- * 依內部群組名稱取得多國語言標籤
- */
+// 翻譯版本群組
 export function translateVersionGroup(g: string, t: (key: TranslationKeys) => string): string {
   if (g === 'Beta 測試版 (Beta)') return t('version.group.beta');
   if (g === 'Alpha 測試版 (Alpha)') return t('version.group.alpha');
@@ -74,11 +66,7 @@ export function translateVersionGroup(g: string, t: (key: TranslationKeys) => st
   return g;
 }
 
-
-
-/**
- * 動態將後端發送的中文進度詳細資訊 (detail) 翻譯為英文 (若當前語系為英文)
- */
+// 翻譯後端狀態
 export function translateBackendStatus(detail: string, lang: Language): string {
   if (lang === 'zh-TW') {
     return detail;

@@ -28,8 +28,8 @@
 
 .customSelectTrigger:focus {
   outline: none;
-  border-color: var(--accent-green);
-  box-shadow: 0 0 0 3px rgba(var(--accent-green-rgb), 0.15);
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.15);
 }
 
 .customSelectTrigger.disabled {
@@ -47,8 +47,36 @@
   max-height: 200px;
 }
 
+.triggerContent {
+  flex: 1;
+  text-align: left;
+  display: flex;
+  align-items: center;
+}
+
+.labelWrapper,
+.optionContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  line-height: 1.3;
+}
+
+.mainLabel {
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.subLabel {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 2px;
+  font-weight: normal;
+}
+
 .customSelectOption {
-  padding: 10px 14px;
+  padding: 8px 14px;
   font-size: 14px;
   color: var(--text-secondary);
   cursor: pointer;
@@ -56,17 +84,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 40px;
+  min-height: 44px;
   box-sizing: border-box;
 }
 
 .customSelectOption:hover {
-  background-color: rgba(var(--accent-green-rgb), 0.1);
+  background-color: rgba(var(--main-color-rgb), 0.1);
   color: var(--text-primary);
 }
 
 .customSelectOption.selected {
-  background-color: rgba(var(--accent-green-rgb), 0.15);
-  color: var(--accent-green);
+  background-color: rgba(var(--main-color-rgb), 0.15);
+  color: var(--main-color);
   font-weight: 600;
 }

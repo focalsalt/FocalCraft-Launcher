@@ -11,7 +11,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   </React.StrictMode>,
 );
 
-// 關閉啟動載入畫面
+// 隱藏啟動畫面
 requestAnimationFrame(() => {
   requestAnimationFrame(() => {
     (window as any).__hideSplash?.();

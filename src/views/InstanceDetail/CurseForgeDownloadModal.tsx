@@ -4,11 +4,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { marked } from 'marked';
 import { useAppStore } from '../../store/appStore';
 import { CustomSelect } from '../../components/common/CustomSelect';
-import { CustomMultiSelect } from '../../components/common/CustomMultiSelect';
 import { SafeImage } from '../../components/common/SafeImage';
 import { useI18n } from '../../utils/i18n';
 import { HeaderState } from './DownloaderModal';
-import styles from './ModrinthDownloadModal.module.css';
+import styles from './ModrinthDownloadModal.module.css'; // 共用相同的樣式定義以保持風格一致
 
 interface Props {
   isOpen: boolean;
@@ -22,68 +21,50 @@ interface Props {
   onHeaderStateChange: (state: HeaderState) => void;
 }
 
-// 根據不同類型動態顯示對應的分類選項
-const MODRINTH_CATEGORIES: Record<string, { value: string; label: string }[]> = {
+const CURSEFORGE_CATEGORIES: Record<string, { value: string; label: string }[]> = {
   mod: [
     { value: '', label: 'All (全部)' },
-    { value: 'optimization', label: 'Optimization (優化)' },
-    { value: 'technology', label: 'Technology (科技)' },
-    { value: 'magic', label: 'Magic (魔法)' },
-    { value: 'adventure', label: 'Adventure (冒險)' },
-    { value: 'decoration', label: 'Decoration (裝飾)' },
-    { value: 'utility', label: 'Utility (實用工具)' },
-    { value: 'gameplay', label: 'Gameplay (遊戲機制)' },
-    { value: 'library', label: 'Library (函式庫)' },
-    { value: 'cursed', label: 'Cursed (詛咒)' },
-    { value: 'economy', label: 'Economy (經濟)' },
-    { value: 'equipment', label: 'Equipment (裝備)' },
-    { value: 'food', label: 'Food (食物)' },
-    { value: 'management', label: 'Management (管理)' },
-    { value: 'minigame', label: 'Minigame (小遊戲)' },
-    { value: 'mobs', label: 'Mobs (生物)' },
-    { value: 'social', label: 'Social (社群)' },
-    { value: 'storage', label: 'Storage (儲存)' },
-    { value: 'transportation', label: 'Transportation (運輸)' },
-    { value: 'worldgen', label: 'World Generation (世界生成)' }
+    { value: '4842', label: 'Optimization (優化)' },
+    { value: '412', label: 'Technology (科技)' },
+    { value: '411', label: 'Magic (魔法)' },
+    { value: '17', label: 'Adventure (冒險)' },
+    { value: '423', label: 'Cosmetic (裝飾)' },
+    { value: '406', label: 'Utility (實用工具)' },
+    { value: '4843', label: 'Storage (儲存)' },
+    { value: '436', label: 'Food (食物)' },
+    { value: '409', label: 'Biomes (生態域)' },
+    { value: '413', label: 'Automation (自動化)' }
   ],
   resourcepack: [
     { value: '', label: 'All (全部)' },
-    { value: '16x', label: '16x' },
-    { value: '32x', label: '32x' },
-    { value: 'pvp', label: 'PvP' },
-    { value: 'realistic', label: 'Realistic (寫實)' },
-    { value: 'medieval', label: 'Medieval (中世紀)' },
-    { value: 'modern', label: 'Modern (現代風)' },
-    { value: 'font', label: 'Font (字體)' },
-    { value: '3d', label: '3D' },
-    { value: 'animated', label: 'Animated (動畫)' },
-    { value: 'sci-fi', label: 'Sci-Fi (科幻)' },
-    { value: '8x', label: '8x' },
-    { value: '64x', label: '64x' },
-    { value: '128x', label: '128x' },
-    { value: '256x+', label: '256x+' }
+    { value: '4310', label: '16x' },
+    { value: '4311', label: '32x' },
+    { value: '4312', label: '64x' },
+    { value: '4315', label: 'Modern (現代)' },
+    { value: '4314', label: 'Medieval (中世紀)' },
+    { value: '4316', label: 'Futuristic (未來風)' }
   ],
   shader: [
     { value: '', label: 'All (全部)' },
-    { value: 'realistic', label: 'Realistic (真實)' },
-    { value: 'performance', label: 'Performance (效能輕量)' },
-    { value: 'fantasy', label: 'Fantasy (奇幻)' },
-    { value: 'toon', label: 'Toon (卡通)' },
-    { value: 'vanilla', label: 'Vanilla (原版風)' }
+    { value: '6553', label: 'Shaders (光影)' }
   ],
   datapack: [
     { value: '', label: 'All (全部)' },
-    { value: 'worldgen', label: 'World Generation (世界生成)' },
-    { value: 'utility', label: 'Utility (實用工具)' },
-    { value: 'gameplay', label: 'Gameplay (遊戲機制)' },
-    { value: 'magic', label: 'Magic (魔法)' },
-    { value: 'technology', label: 'Technology (科技)' },
-    { value: 'adventure', label: 'Adventure (冒險)' },
-    { value: 'challenge', label: 'Challenge (挑戰)' }
+    { value: '71004', label: 'World Gen (世界生成)' },
+    { value: '71003', label: 'Utility (實用工具)' },
+    { value: '71001', label: 'Gameplay (遊戲機制)' },
+    { value: '71002', label: 'Items (物品擴充)' }
   ]
 };
 
-export function ModrinthDownloadModal({
+const CURSEFORGE_CLASS_IDS: Record<string, number> = {
+  mod: 6,
+  resourcepack: 12,
+  shader: 6552,
+  datapack: 70886,
+};
+
+export function CurseForgeDownloadModal({
   isOpen,
   instanceId,
   projectType,
@@ -104,7 +85,6 @@ export function ModrinthDownloadModal({
 
   const [showFilters, setShowFilters] = useState(false);
   const [selectedVersions, setSelectedVersions] = useState<string[]>([gameVersion]);
-  const [selectedLoader, setSelectedLoader] = useState<string>(loader);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   const [allMinecraftVersions, setAllMinecraftVersions] = useState<string[]>([]);
@@ -126,13 +106,20 @@ export function ModrinthDownloadModal({
   const [confirmedSelection, setConfirmedSelection] = useState<Set<string>>(new Set());
   const [installProgress, setInstallProgress] = useState<{ current: number; total: number; name: string } | null>(null);
 
-  const categoryOptions = (MODRINTH_CATEGORIES[projectType] || []).map(opt => {
+  // 手動下載模式狀態
+  const [isManualMode, setIsManualMode] = useState(false);
+  const [blockedItems, setBlockedItems] = useState<any[]>([]);
+  const [detectedFiles, setDetectedFiles] = useState<Record<string, string>>({});
+  const [importedItems, setImportedItems] = useState<Set<string>>(new Set());
+
+  const categoryOptions = (CURSEFORGE_CATEGORIES[projectType] || []).map(opt => {
     if (language === 'en-US') {
       const cleanedLabel = opt.label.replace(/\s*\([\u4e00-\u9fa5]+\)/g, '');
       return { ...opt, label: cleanedLabel };
     }
     return opt;
   });
+  const classId = CURSEFORGE_CLASS_IDS[projectType] || 6;
 
   // 獲取 Mojang 版本列表
   useEffect(() => {
@@ -143,7 +130,6 @@ export function ModrinthDownloadModal({
           .filter((v: any) => v.type === 'release')
           .map((v: any) => v.id);
         
-        // 確保包含當前的 gameVersion，並過濾 1.0 至 26.2 之間的所有版本
         const filtered = Array.from(new Set([gameVersion, ...releases]))
           .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 
@@ -162,11 +148,33 @@ export function ModrinthDownloadModal({
   useEffect(() => {
     onHeaderStateChange({
       isSelectingConfirm,
-      isManualMode: false,
-      confirmModsCount: confirmMods.length,
-      confirmedSelectionSize: confirmedSelection.size,
+      isManualMode,
+      confirmModsCount: isManualMode ? blockedItems.length : confirmMods.length,
+      confirmedSelectionSize: isManualMode ? importedItems.size : confirmedSelection.size,
     });
-  }, [isSelectingConfirm, confirmMods, confirmedSelection, onHeaderStateChange]);
+  }, [isSelectingConfirm, isManualMode, confirmMods, confirmedSelection, blockedItems, importedItems, onHeaderStateChange]);
+
+  // 背景下載掃描器
+  useEffect(() => {
+    if (!isManualMode || blockedItems.length === 0) return;
+
+    const hashes = blockedItems
+      .map(item => item.version.files[0]?.hashes?.sha1)
+      .filter((h): h is string => typeof h === 'string' && h.trim().length > 0);
+
+    if (hashes.length === 0) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const matches = await invoke<Record<string, string>>('scan_downloads_for_hashes', { hashes });
+        setDetectedFiles(matches);
+      } catch (err) {
+        console.error('掃描下載資料夾失敗:', err);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isManualMode, blockedItems]);
 
   // 載入已安裝項目與檢查更新
   useEffect(() => {
@@ -179,7 +187,6 @@ export function ModrinthDownloadModal({
       setConfirmedSelection(new Set());
       setInstallProgress(null);
       setSelectedVersions([gameVersion]);
-      setSelectedLoader(loader);
       setSelectedCategory('');
       setShowFilters(false);
       setQuery('');
@@ -189,6 +196,10 @@ export function ModrinthDownloadModal({
       setProjectVersions([]);
       setSelectedVersionId('');
       setSelectedVersionChangelog('');
+      setIsManualMode(false);
+      setBlockedItems([]);
+      setDetectedFiles({});
+      setImportedItems(new Set());
       return;
     }
 
@@ -212,6 +223,7 @@ export function ModrinthDownloadModal({
           return;
         }
 
+        // 向 Modrinth 查詢本機雜湊以獲取識別碼 (因 CurseForge 不支援雜湊批次反查)
         const resFiles = await fetch('https://api.modrinth.com/v2/version_files', {
           method: 'POST',
           headers: {
@@ -231,39 +243,8 @@ export function ModrinthDownloadModal({
           });
         }
         setInstalledProjectIds(installedSet);
-
-        // 從 Modrinth 檢查更新
-        const loaders = projectType === 'mod' ? [loader.toLowerCase()] : [];
-        const resUpdates = await fetch('https://api.modrinth.com/v2/version_files/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'focal-craft-launcher',
-          },
-          body: JSON.stringify({
-            hashes,
-            algorithm: 'sha1',
-            loaders,
-            game_versions: [gameVersion],
-          }),
-        });
-
-        const updateSet = new Set<string>();
-        if (resUpdates.ok) {
-          const updatesData = await resUpdates.json();
-          const localHashesSet = new Set(hashes);
-          Object.values(updatesData).forEach((ver: any) => {
-            if (ver && ver.project_id && ver.files) {
-              const hasSameHash = ver.files.some((f: any) => f.hashes?.sha1 && localHashesSet.has(f.hashes.sha1));
-              if (!hasSameHash) {
-                updateSet.add(ver.project_id);
-              }
-            }
-          });
-        }
-        setUpdateProjectIds(updateSet);
       } catch (err) {
-        console.error('檢查已安裝與更新項目失敗:', err);
+        console.error('載入本機 CurseForge 項目失敗:', err);
       }
     };
 
@@ -289,7 +270,7 @@ export function ModrinthDownloadModal({
     }, 450);
 
     return () => clearTimeout(delayDebounce);
-  }, [query, isOpen, selectedVersions, selectedLoader, selectedCategory]);
+  }, [query, isOpen, selectedVersions, selectedCategory]);
 
   // 預設選取第一個項目
   useEffect(() => {
@@ -308,22 +289,29 @@ export function ModrinthDownloadModal({
     setIsSearching(true);
     setHasMore(true);
     try {
-      const res = await invoke<any>('search_modrinth', {
+      const catIdNum = selectedCategory ? parseInt(selectedCategory, 10) : null;
+      const res = await invoke<any>('search_curseforge', {
         query,
-        projectType,
-        gameVersions: selectedVersions,
-        loader: projectType === 'mod' ? (selectedLoader === 'all' ? null : selectedLoader) : null,
-        category: selectedCategory || null,
-        offset: 0,
-        limit: 20,
+        classId,
+        gameVersion: selectedVersions[0] || gameVersion,
+        categoryId: catIdNum,
+        searchIndex: 0,
+        pageSize: 20,
       });
-      const hits = res.hits || [];
+
+      const hits = (res.data || []).map((item: any) => ({
+        project_id: item.id.toString(),
+        title: item.name,
+        description: item.summary || '',
+        icon_url: item.logo?.url || '',
+        raw: item,
+      }));
       setResults(hits);
       if (hits.length < 20) {
         setHasMore(false);
       }
     } catch (err) {
-      console.error('搜尋 Modrinth 失敗:', err);
+      console.error('搜尋 CurseForge 失敗:', err);
     } finally {
       setIsSearching(false);
     }
@@ -334,16 +322,24 @@ export function ModrinthDownloadModal({
     setIsSearching(true);
     try {
       const currentOffset = results.length;
-      const res = await invoke<any>('search_modrinth', {
+      const catIdNum = selectedCategory ? parseInt(selectedCategory, 10) : null;
+      const res = await invoke<any>('search_curseforge', {
         query,
-        projectType,
-        gameVersions: selectedVersions,
-        loader: projectType === 'mod' ? (selectedLoader === 'all' ? null : selectedLoader) : null,
-        category: selectedCategory || null,
-        offset: currentOffset,
-        limit: 20,
+        classId,
+        gameVersion: selectedVersions[0] || gameVersion,
+        categoryId: catIdNum,
+        searchIndex: currentOffset,
+        pageSize: 20,
       });
-      const newHits = res.hits || [];
+
+      const newHits = (res.data || []).map((item: any) => ({
+        project_id: item.id.toString(),
+        title: item.name,
+        description: item.summary || '',
+        icon_url: item.logo?.url || '',
+        raw: item,
+      }));
+
       if (newHits.length === 0) {
         setHasMore(false);
       } else {
@@ -353,7 +349,7 @@ export function ModrinthDownloadModal({
         }
       }
     } catch (err) {
-      console.error('載入更多 Modrinth 失敗:', err);
+      console.error('載入更多 CurseForge 失敗:', err);
     } finally {
       setIsSearching(false);
     }
@@ -376,39 +372,51 @@ export function ModrinthDownloadModal({
     setLoadingDetails(true);
 
     try {
-      const res = await fetch(`https://api.modrinth.com/v2/project/${hit.project_id}`);
-      if (res.ok) {
-        const detail = await res.json();
-        setProjectBody(detail.body || detail.description || '');
-      }
+      const desc = await invoke<string>('get_curseforge_project_description', { modId: parseInt(hit.project_id, 10) });
+      setProjectBody(desc || hit.description || '');
 
-      const verRes = await fetch(`https://api.modrinth.com/v2/project/${hit.project_id}/version`);
-      if (verRes.ok) {
-        const versions = await verRes.json();
-        const compatible = versions.filter((v: any) => {
-          const matchesVersion = v.game_versions.some((gv: string) => selectedVersions.includes(gv));
-          const matchesLoader = projectType === 'resourcepack' || projectType === 'shader' || projectType === 'datapack' ||
-            selectedLoader.toLowerCase() === 'all' ||
-            v.loaders.some((l: string) => l.toLowerCase() === selectedLoader.toLowerCase());
-          return matchesVersion && matchesLoader && v.files.length > 0;
-        });
+      const filesData = await invoke<any>('get_curseforge_project_files', { modId: parseInt(hit.project_id, 10) });
+      const files = filesData.data || [];
 
-        setProjectVersions(compatible);
-        if (compatible.length > 0) {
-          const firstVer = compatible[0];
-          setSelectedVersionId(firstVer.id);
-          setSelectedVersionChangelog(firstVer.changelog || t('downloader.no_changelog'));
+      const compatible = files.filter((v: any) => {
+        const matchesVersion = v.gameVersions.includes(selectedVersions[0] || gameVersion);
+        const matchesLoader = projectType === 'resourcepack' || projectType === 'shader' || projectType === 'datapack' ||
+          loader.toLowerCase() === 'vanilla' ||
+          v.gameVersions.some((gv: string) => gv.toLowerCase() === loader.toLowerCase());
+        return matchesVersion && matchesLoader;
+      }).map((v: any) => {
+        const sha1Hash = v.hashes?.find((h: any) => h.algo === 1)?.value || '';
+        return {
+          id: v.id.toString(),
+          version_number: v.displayName || v.fileName,
+          game_versions: v.gameVersions.filter((gv: any) => !['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
+          loaders: v.gameVersions.filter((gv: any) => ['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
+          changelog: v.releaseNotes || t('downloader.no_changelog'),
+          files: [{
+            filename: v.fileName,
+            url: v.downloadUrl,
+            size: v.fileLength,
+            hashes: { sha1: sha1Hash },
+          }],
+          dependencies: v.dependencies || [],
+        };
+      });
 
-          setSelectedProjects((prev) => {
-            if (!prev.has(hit.project_id)) return prev;
-            const next = new Map(prev);
-            next.set(hit.project_id, {
-              ...next.get(hit.project_id)!,
-              version: firstVer,
-            });
-            return next;
+      setProjectVersions(compatible);
+      if (compatible.length > 0) {
+        const firstVer = compatible[0];
+        setSelectedVersionId(firstVer.id);
+        setSelectedVersionChangelog(firstVer.changelog || t('downloader.no_changelog'));
+
+        setSelectedProjects((prev) => {
+          if (!prev.has(hit.project_id)) return prev;
+          const next = new Map(prev);
+          next.set(hit.project_id, {
+            ...next.get(hit.project_id)!,
+            version: firstVer,
           });
-        }
+          return next;
+        });
       }
     } catch (error) {
       console.error('加載專案詳情失敗:', error);
@@ -452,8 +460,8 @@ export function ModrinthDownloadModal({
     });
   };
 
-  // 遞迴解析依賴
-  const resolveDependencies = async (
+  // CurseForge 遞迴解析依賴
+  const resolveCurseForgeDependencies = async (
     initialList: { project: any; version: any; isDependency: boolean }[]
   ) => {
     const resolvedMap = new Map<string, { project: any; version: any; isDependency: boolean }>();
@@ -471,54 +479,74 @@ export function ModrinthDownloadModal({
       if (checked.has(projectId)) continue;
       checked.add(projectId);
 
+      // CurseForge 檔案的依賴關係 (relationType === 3 表示 Required 依賴)
       const dependencies = current.version?.dependencies || [];
-      const requiredDeps = dependencies.filter((dep: any) => dep.dependency_type === 'required' && dep.project_id);
+      const requiredDeps = dependencies.filter((dep: any) => dep.relationType === 3);
 
-      for (const dep of requiredDeps) {
-        const depProjectId = dep.project_id;
-        
-        // 若已解析或已安裝，則跳過
-        if (resolvedMap.has(depProjectId) || installedProjectIds.has(depProjectId)) {
-          continue;
-        }
+      if (requiredDeps.length === 0) continue;
 
-        try {
-          // 查詢專案詳細資訊
-          const projRes = await fetch(`https://api.modrinth.com/v2/project/${depProjectId}`);
-          if (!projRes.ok) continue;
-          const projectData = await projRes.json();
+      const depModIds = requiredDeps.map((dep: any) => dep.modId);
+      
+      // 過濾掉已經解析或已安裝的 modId
+      const unresolvedModIds = depModIds.filter((mid: number) => {
+        const idStr = mid.toString();
+        return !resolvedMap.has(idStr) && !installedProjectIds.has(idStr);
+      });
 
-          // 查詢版本清單並過濾相容版本
-          const verRes = await fetch(`https://api.modrinth.com/v2/project/${depProjectId}/version`);
-          if (!verRes.ok) continue;
-          const versions = await verRes.json();
+      if (unresolvedModIds.length === 0) continue;
 
-          const compatible = versions.filter((v: any) => {
-            const matchesVersion = v.game_versions.some((gv: string) => selectedVersions.includes(gv));
+      try {
+        // 使用我們在 Rust 新增的批次查詢指令
+        const batchRes = await invoke<any>('get_curseforge_projects', { modIds: unresolvedModIds });
+        const depProjects = batchRes.data || [];
+
+        for (const item of depProjects) {
+          const depIdStr = item.id.toString();
+          const depFilesData = await invoke<any>('get_curseforge_project_files', { modId: item.id });
+          const depFiles = depFilesData.data || [];
+
+          // 過濾出符合遊戲版本和加載器的最合適檔案
+          const compatible = depFiles.filter((v: any) => {
+            const matchesVersion = v.gameVersions.includes(selectedVersions[0] || gameVersion);
             const matchesLoader = projectType === 'resourcepack' || projectType === 'shader' || projectType === 'datapack' ||
-              selectedLoader.toLowerCase() === 'all' ||
-              v.loaders.some((l: string) => l.toLowerCase() === selectedLoader.toLowerCase());
-            return matchesVersion && matchesLoader && v.files.length > 0;
+              loader.toLowerCase() === 'vanilla' ||
+              v.gameVersions.some((gv: string) => gv.toLowerCase() === loader.toLowerCase());
+            return matchesVersion && matchesLoader;
+          }).map((v: any) => {
+            const sha1Hash = v.hashes?.find((h: any) => h.algo === 1)?.value || '';
+            return {
+              id: v.id.toString(),
+              version_number: v.displayName || v.fileName,
+              game_versions: v.gameVersions.filter((gv: any) => !['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
+              loaders: v.gameVersions.filter((gv: any) => ['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
+              changelog: v.releaseNotes || t('downloader.no_changelog'),
+              files: [{
+                filename: v.fileName,
+                url: v.downloadUrl,
+                size: v.fileLength,
+                hashes: { sha1: sha1Hash },
+              }],
+              dependencies: v.dependencies || [],
+            };
           });
 
           if (compatible.length > 0) {
-            const depVer = compatible[0];
             const depItem = {
               project: {
-                project_id: depProjectId,
-                title: projectData.title,
-                icon_url: projectData.icon_url,
-                description: projectData.description || '',
+                project_id: depIdStr,
+                title: item.name,
+                icon_url: item.logo?.url || '',
+                description: item.summary || '',
               },
-              version: depVer,
-              isDependency: true, // 標記為自動解析的依賴
+              version: compatible[0],
+              isDependency: true, // 標記為依賴項
             };
-            resolvedMap.set(depProjectId, depItem);
+            resolvedMap.set(depIdStr, depItem);
             queue.push(depItem);
           }
-        } catch (err) {
-          console.error(`解析依賴項 ${depProjectId} 失敗:`, err);
         }
+      } catch (err) {
+        console.error('批次獲取 CurseForge 依賴失敗:', err);
       }
     }
 
@@ -528,35 +556,48 @@ export function ModrinthDownloadModal({
   const handleNextStep = async () => {
     setIsTransitioning(true);
     try {
-      // 確保使用者選取的所有專案都已經解析出對應的相容版本
       const initialResolved = await Promise.all(
         Array.from(selectedProjects.values()).map(async (item) => {
           if (item.version) {
             return { project: item.project, version: item.version, isDependency: false };
           }
-          const res = await fetch(`https://api.modrinth.com/v2/project/${item.project.project_id}/version`);
-          if (res.ok) {
-            const versions = await res.json();
-            const compatible = versions.filter((v: any) => {
-              const matchesVersion = v.game_versions.some((gv: string) => selectedVersions.includes(gv));
-              const matchesLoader = projectType === 'resourcepack' || projectType === 'shader' || projectType === 'datapack' ||
-                selectedLoader.toLowerCase() === 'all' ||
-                v.loaders.some((l: string) => l.toLowerCase() === selectedLoader.toLowerCase());
-              return matchesVersion && matchesLoader && v.files.length > 0;
-            });
-            if (compatible.length > 0) {
-              return { project: item.project, version: compatible[0], isDependency: false };
-            }
+          const filesData = await invoke<any>('get_curseforge_project_files', { modId: parseInt(item.project.project_id, 10) });
+          const files = filesData.data || [];
+          const compatible = files.filter((v: any) => {
+            const matchesVersion = v.gameVersions.includes(selectedVersions[0] || gameVersion);
+            const matchesLoader = projectType === 'resourcepack' || projectType === 'shader' || projectType === 'datapack' ||
+              loader.toLowerCase() === 'vanilla' ||
+              v.gameVersions.some((gv: string) => gv.toLowerCase() === loader.toLowerCase());
+            return matchesVersion && matchesLoader;
+          }).map((v: any) => {
+            const sha1Hash = v.hashes?.find((h: any) => h.algo === 1)?.value || '';
+            return {
+              id: v.id.toString(),
+              version_number: v.displayName || v.fileName,
+              game_versions: v.gameVersions.filter((gv: any) => !['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
+              loaders: v.gameVersions.filter((gv: any) => ['forge', 'fabric', 'quilt', 'neoforge'].includes(gv.toLowerCase())),
+              changelog: v.releaseNotes || t('downloader.no_changelog'),
+              files: [{
+                filename: v.fileName,
+                url: v.downloadUrl,
+                size: v.fileLength,
+                hashes: { sha1: sha1Hash },
+              }],
+              dependencies: v.dependencies || [],
+            };
+          });
+
+          if (compatible.length > 0) {
+            return { project: item.project, version: compatible[0], isDependency: false };
           }
           return { project: item.project, version: null, isDependency: false };
         })
       );
 
-      // 過濾掉找不到相容版本的專案
       const validInitial = initialResolved.filter(item => item.version);
 
       // 解析依賴
-      const fullyResolved = await resolveDependencies(validInitial);
+      const fullyResolved = await resolveCurseForgeDependencies(validInitial);
 
       setConfirmMods(fullyResolved);
 
@@ -569,7 +610,7 @@ export function ModrinthDownloadModal({
       setConfirmedSelection(initialChecked);
       setIsSelectingConfirm(true);
     } catch (err) {
-      console.error('加載模組版本與依賴失敗:', err);
+      console.error('加載 CurseForge 版本與依賴失敗:', err);
     } finally {
       setIsTransitioning(false);
     }
@@ -587,19 +628,24 @@ export function ModrinthDownloadModal({
       (item) => confirmedSelection.has(item.project.project_id) && item.version
     );
 
+    // 分流：可直接下載與被封鎖（需要手動下載）的檔案
+    const blocked = toInstall.filter(item => !item.version.files[0]?.url);
+    const allowed = toInstall.filter(item => item.version.files[0]?.url);
+
     let successCount = 0;
     let failedNames: string[] = [];
 
-    for (let i = 0; i < toInstall.length; i++) {
-      const item = toInstall[i];
+    // 下載允許下載的項目
+    for (let i = 0; i < allowed.length; i++) {
+      const item = allowed[i];
       setInstallProgress({
         current: i + 1,
-        total: toInstall.length,
+        total: allowed.length,
         name: item.project.title,
       });
 
       const ver = item.version;
-      const file = ver.files.find((f: any) => f.primary) || ver.files[0];
+      const file = ver.files[0];
       if (!file) continue;
 
       try {
@@ -623,7 +669,7 @@ export function ModrinthDownloadModal({
           return next;
         });
       } catch (err: any) {
-        console.error(`安裝 ${item.project.title} 失敗:`, err);
+        console.error(`下載 ${item.project.title} 失敗:`, err);
         failedNames.push(item.project.title);
       }
     }
@@ -635,14 +681,116 @@ export function ModrinthDownloadModal({
       onDownloadComplete();
     }
 
-    if (failedNames.length > 0) {
+    if (blocked.length > 0) {
+      // 切換至手動下載模式
+      setBlockedItems(blocked);
+      setIsSelectingConfirm(false);
+      setIsManualMode(true);
+    } else {
+      if (failedNames.length > 0) {
+        addNotification({
+          type: 'error',
+          title: t('downloader.partial_failed') || '安裝失敗',
+          message: t('downloader.download_failed', { name: failedNames.join(', ') }) || `安裝 ${failedNames.join(', ')} 失敗`,
+        });
+      } else {
+        onClose();
+      }
+    }
+  };
+
+  const openAllBlockedPages = async () => {
+    for (let i = 0; i < blockedItems.length; i++) {
+      const item = blockedItems[i];
+      const projectId = item.project.project_id;
+      const fileId = item.version.id;
+      const url = `https://www.curseforge.com/projects/${projectId}/download/${fileId}`;
+      await invoke('open_in_browser', { url });
+      if (i < blockedItems.length - 1) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+  };
+
+  const handleImportBlockedItem = async (item: any) => {
+    const sha1 = item.version.files[0]?.hashes?.sha1;
+    const filePath = sha1 ? detectedFiles[sha1] : null;
+    if (!filePath) return;
+
+    const folderName =
+      projectType === 'mod' ? 'mods' :
+        projectType === 'resourcepack' ? 'resourcepacks' :
+          projectType === 'shader' ? 'shaderpacks' :
+            `saves/${datapackWorldFolder}/datapacks`;
+
+    try {
+      await invoke('import_files', { instanceId, folderName, filePaths: [filePath] });
+      setImportedItems(prev => {
+        const next = new Set(prev);
+        next.add(item.project.project_id);
+        return next;
+      });
+      setInstalledProjectIds(prev => {
+        const next = new Set(prev);
+        next.add(item.project.project_id);
+        return next;
+      });
+      addNotification({
+        type: 'success',
+        title: t('downloader.import_success_title'),
+        message: t('downloader.import_success', { name: item.project.title })
+      });
+    } catch (err: any) {
       addNotification({
         type: 'error',
-        title: t('downloader.partial_failed') || '安裝失敗',
-        message: t('downloader.download_failed', { name: failedNames.join(', ') }) || `安裝 ${failedNames.join(', ')} 失敗`,
+        title: t('downloader.import_failed_title'),
+        message: err.message || String(err)
       });
-    } else {
-      onClose();
+    }
+  };
+
+  const handleImportAllDetected = async () => {
+    const toImport = blockedItems.filter(item => {
+      const sha1 = item.version.files[0]?.hashes?.sha1;
+      return sha1 && detectedFiles[sha1] && !importedItems.has(item.project.project_id);
+    });
+
+    const filePaths = toImport.map(item => {
+      const sha1 = item.version.files[0].hashes.sha1;
+      return detectedFiles[sha1];
+    });
+
+    if (filePaths.length === 0) return;
+
+    const folderName =
+      projectType === 'mod' ? 'mods' :
+        projectType === 'resourcepack' ? 'resourcepacks' :
+          projectType === 'shader' ? 'shaderpacks' :
+            `saves/${datapackWorldFolder}/datapacks`;
+
+    try {
+      await invoke('import_files', { instanceId, folderName, filePaths });
+      setImportedItems(prev => {
+        const next = new Set(prev);
+        toImport.forEach(item => next.add(item.project.project_id));
+        return next;
+      });
+      setInstalledProjectIds(prev => {
+        const next = new Set(prev);
+        toImport.forEach(item => next.add(item.project.project_id));
+        return next;
+      });
+      addNotification({
+        type: 'success',
+        title: t('downloader.import_success_title'),
+        message: t('downloader.import_success_plural', { count: filePaths.length })
+      });
+    } catch (err: any) {
+      addNotification({
+        type: 'error',
+        title: t('downloader.import_failed_title'),
+        message: err.message || String(err)
+      });
     }
   };
 
@@ -651,7 +799,7 @@ export function ModrinthDownloadModal({
     label: `${v.version_number} (${v.game_versions.join(', ')} • ${v.loaders.join(', ')})`,
   }));
 
-  const placeholderText = t('downloader.search.placeholder_prefix', { platform: 'Modrinth' }) + (
+  const placeholderText = t('downloader.search.placeholder_prefix', { platform: 'CurseForge' }) + (
     projectType === 'mod' ? ` ${t('downloader.type.mod')}...` :
       projectType === 'resourcepack' ? ` ${t('downloader.type.resourcepack')}...` :
         projectType === 'shader' ? ` ${t('downloader.type.shader')}...` :
@@ -660,7 +808,89 @@ export function ModrinthDownloadModal({
 
   return (
     <div className={styles.container}>
-      {isSelectingConfirm ? (
+      {isManualMode ? (
+        <div className={styles.confirmContainer}>
+          <div className={styles.confirmHeader}>
+            <button className={styles.cancelBtn} onClick={openAllBlockedPages} type="button">
+              {t('downloader.btn.open_all_pages')}
+            </button>
+          </div>
+          <p className={styles.confirmDesc} style={{ margin: '0 0 16px 0', fontSize: '13px' }}>
+            {t('downloader.manual_mode_desc')}
+          </p>
+          <div className={`${styles.confirmList} global-scrollbar`}>
+            {blockedItems.map(item => {
+              const sha1 = item.version.files[0]?.hashes?.sha1;
+              const isDetected = sha1 && !!detectedFiles[sha1];
+              const isImported = importedItems.has(item.project.project_id);
+
+              return (
+                <div key={item.project.project_id} className={`${styles.confirmItem} ${isDetected && !isImported ? styles.checked : ''}`} style={{ cursor: 'default' }}>
+                  <span style={{ fontSize: '18px' }}>📦</span>
+                  <div className={styles.confirmItemMain}>
+                    <span className={styles.confirmTitle}>{item.project.title}</span>
+                    <span className={styles.confirmDesc}>{item.version.files[0]?.filename}</span>
+                  </div>
+                  <div className={styles.detailHeaderRight} style={{ alignItems: 'center' }}>
+                    {isImported ? (
+                      <span className={`${styles.tag} ${styles.installedTag}`}>{t('downloader.status.imported')}</span>
+                    ) : isDetected ? (
+                      <>
+                        <span className={`${styles.tag} ${styles.updateTag}`}>{t('downloader.status.detected')}</span>
+                        <button
+                          className={styles.selectBtn}
+                          onClick={() => handleImportBlockedItem(item)}
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                        >
+                          {t('downloader.btn.import_now')}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className={`${styles.tag} ${styles.errorTag}`} style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', borderColor: 'rgba(255,255,255,0.1)' }}>
+                          {t('downloader.status.waiting')}
+                        </span>
+                        <button
+                          className={styles.cancelBtn}
+                          onClick={() => {
+                            const projectId = item.project.project_id;
+                            const fileId = item.version.id;
+                            invoke('open_in_browser', { url: `https://www.curseforge.com/projects/${projectId}/download/${fileId}` });
+                          }}
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                        >
+                          {t('downloader.btn.open_download_page')}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className={styles.footer}>
+            <div className={styles.selectionStatus}>
+              {t('downloader.confirm_title', { confirmed: importedItems.size, total: blockedItems.length })}
+            </div>
+            <div className={styles.footerButtons}>
+              <button className={styles.cancelBtn} onClick={onClose}>
+                {t('common.close')}
+              </button>
+              <button
+                className={styles.confirmInstallBtn}
+                onClick={handleImportAllDetected}
+                disabled={blockedItems.filter(item => {
+                  const sha1 = item.version.files[0]?.hashes?.sha1;
+                  return sha1 && detectedFiles[sha1] && !importedItems.has(item.project.project_id);
+                }).length === 0}
+              >
+                {t('downloader.btn.import_all_detected')}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : isSelectingConfirm ? (
         <div className={styles.confirmContainer}>
           <div className={styles.confirmHeader}>
             <span className={styles.modsCountTitle}>
@@ -801,33 +1031,13 @@ export function ModrinthDownloadModal({
                   <div className={styles.filterGroup}>
                     <span className={styles.filterLabel}>{t('downloader.filter.mc_version')}</span>
                     <div className={styles.versionSelectWrapper}>
-                      <CustomMultiSelect
-                        value={selectedVersions}
-                        onChange={setSelectedVersions}
+                      <CustomSelect
+                        value={selectedVersions[0] || gameVersion}
+                        onChange={(val) => setSelectedVersions([val])}
                         options={allMinecraftVersions.map(ver => ({ value: ver, label: ver }))}
                       />
                     </div>
                   </div>
-
-                  {/* 模組加載器篩選 */}
-                  {projectType === 'mod' && (
-                    <div className={styles.filterGroup}>
-                      <span className={styles.filterLabel}>{t('downloader.filter.loader')}</span>
-                      <div className={styles.loaderSelectWrapper}>
-                        <CustomSelect
-                          value={selectedLoader}
-                          onChange={setSelectedLoader}
-                          options={[
-                            { value: 'all', label: t('downloader.filter.loader_all') },
-                            { value: 'Fabric', label: 'Fabric' },
-                            { value: 'Forge', label: 'Forge' },
-                            { value: 'NeoForge', label: 'NeoForge' },
-                            { value: 'Quilt', label: 'Quilt' }
-                          ]}
-                        />
-                      </div>
-                    </div>
-                  )}
 
                   {/* 類型專屬分類篩選 */}
                   <div className={styles.filterGroup}>

@@ -1,11 +1,10 @@
 import { Loader } from 'lucide-react';
-import { marked } from 'marked';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { SafeImage } from '../../../components/common/SafeImage';
 import { useI18n } from '../../../utils/i18n';
 import styles from '../CreateInstanceModal.module.css';
 
-interface ModrinthTabProps {
+interface CurseForgeTabProps {
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   selectedModpack: any;
@@ -34,7 +33,7 @@ interface ModrinthTabProps {
   toggleModSelection: (id: string) => void;
 }
 
-export function ModrinthTab({
+export function CurseForgeTab({
   searchQuery,
   setSearchQuery,
   selectedModpack,
@@ -61,7 +60,7 @@ export function ModrinthTab({
   selectedMods,
   toggleAllMods,
   toggleModSelection,
-}: ModrinthTabProps) {
+}: CurseForgeTabProps) {
   const { t } = useI18n();
 
   return (
@@ -70,7 +69,7 @@ export function ModrinthTab({
         <div className={styles.searchArea}>
           <input
             type="text"
-            placeholder={t('create.search.placeholder_mr')}
+            placeholder={t('create.search.placeholder_cf')}
             className={styles.input}
             value={searchQuery}
             onChange={(e) => {
@@ -160,7 +159,7 @@ export function ModrinthTab({
 
                 <div
                   className={styles.detailBody}
-                  dangerouslySetInnerHTML={{ __html: marked.parse(modpackBody) as string }}
+                  dangerouslySetInnerHTML={{ __html: modpackBody }}
                 />
               </>
             ) : (

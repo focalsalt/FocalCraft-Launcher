@@ -30,7 +30,7 @@ export function TopNav() {
       }
     };
 
-    // 延遲更新以確保 DOM 佈局已套用 active 樣式
+    // 延遲以套用 active 樣式
     const timer = setTimeout(updateIndicator, 0);
     window.addEventListener('resize', updateIndicator);
 
@@ -145,7 +145,7 @@ export function TopNav() {
           {t('nav.detail_settings')}
         </button>
 
-        {/* 滑動指示器 */}
+        {/* 指示器 */}
         <div
           className={styles.indicator}
           style={{

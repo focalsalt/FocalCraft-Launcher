@@ -1,0 +1,162 @@
+.customSelectContainer {
+  position: relative;
+  width: 100%;
+  user-select: none;
+}
+
+.customSelectTrigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  min-height: 40px;
+  border-radius: var(--border-radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.customSelectTrigger:hover:not(.disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.customSelectTrigger.active {
+  border-color: var(--main-color);
+  box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.2), 0 0 10px rgba(var(--main-color-rgb), 0.1);
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.customSelectTrigger.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chipsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(var(--main-color-rgb), 0.15);
+  border: 1px solid rgba(var(--main-color-rgb), 0.35);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  height: 22px;
+  box-sizing: border-box;
+  animation: chipAppear 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes chipAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.chipLabel {
+  white-space: nowrap;
+}
+
+.chipRemove {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  transition: all var(--transition-fast);
+}
+
+.chipRemove:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.triggerIcons {
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  flex-shrink: 0;
+}
+
+.customSelectDropdown {
+  background-color: rgba(25, 25, 25, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-md);
+  overflow-y: auto;
+  max-height: 200px;
+  animation: dropdownFadeIn var(--transition-fast) ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.customSelectOption {
+  padding: 10px 14px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.customSelectOption:hover {
+  background-color: rgba(var(--main-color-rgb), 0.1);
+  color: var(--text-primary);
+}
+
+.customSelectOption.selected {
+  background-color: rgba(var(--main-color-rgb), 0.15);
+  color: var(--main-color);
+  font-weight: 600;
+}
+
+.checkIcon {
+  color: var(--main-color);
+}

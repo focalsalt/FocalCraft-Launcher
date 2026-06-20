@@ -7,7 +7,8 @@
   height: 100vh;
   border-right: 1px solid var(--border-color);
   color: var(--text-secondary);
-  position: relative; /* 滑動指示器 */
+  position: relative;
+  /* 滑動指示器 */
 }
 
 /* 頂部固定區 */
@@ -130,7 +131,7 @@
   left: 0;
   top: 0;
   width: 0.25rem;
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   border-radius: 0 0.25rem 0.25rem 0;
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -183,7 +184,7 @@
 
 .updateCheckBtn {
   font-size: 0.6875rem;
-  color: var(--accent-green);
+  color: var(--main-color);
   font-weight: 600;
   background: none;
   border: none;
@@ -194,7 +195,7 @@
 }
 
 .updateCheckBtn:hover:not(:disabled) {
-  color: var(--accent-green-hover);
+  color: var(--main-color-hover);
   background-color: rgba(60, 133, 39, 0.1);
 }
 
@@ -221,8 +222,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .updateModal {
@@ -245,6 +251,7 @@
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -310,7 +317,8 @@
   margin-bottom: 0;
 }
 
-.updateNotes ul, .updateNotes ol {
+.updateNotes ul,
+.updateNotes ol {
   margin: 0 0 10px 0;
   padding-left: 20px;
 }
@@ -379,4 +387,55 @@
   color: var(--accent-green);
   font-size: 13px;
   font-weight: 500;
+}
+
+/* Context Menu */
+.contextMenu {
+  position: fixed;
+  background-color: rgba(30, 30, 30, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 3000;
+  min-width: 140px;
+}
+
+.contextMenuItem {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast);
+  width: 100%;
+}
+
+.contextMenuItem:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.launchItem {
+  color: var(--accent-green);
+}
+
+.launchItem:hover {
+  background-color: rgba(var(--accent-green-rgb), 0.15);
+}
+
+.deleteItem {
+  color: var(--danger-red);
+}
+
+.deleteItem:hover {
+  background-color: rgba(var(--danger-red-rgb), 0.15);
 }

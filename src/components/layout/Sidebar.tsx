@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useAppStore } from '../../store/appStore';
-import { useInstanceStore } from '../../store/instanceStore';
+import { useInstanceStore, getInitialInstanceState } from '../../store/instanceStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useI18n } from '../../utils/i18n';
 import { getInstanceIconSrc } from '../../utils/versionUtils';
@@ -12,6 +12,7 @@ import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { getVersion } from '@tauri-apps/api/app';
 import { marked } from 'marked';
+import { CustomConfirmModal } from '../common/CustomConfirmModal';
 import styles from './Sidebar.module.css';
 
 function isVersionGreater(v1: string, v2: string): boolean {
@@ -66,7 +67,7 @@ function filterChangelog(body: string, currentVersion: string): string {
 }
 
 export function Sidebar() {
-  const { currentView, setCurrentView, addNotification } = useAppStore();
+  const { currentView, setCurrentView, addNotification, setActiveDetailTab } = useAppStore();
   const { t } = useI18n();
 
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
@@ -74,6 +75,142 @@ export function Sidebar() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
+
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    instanceId: string;
+  } | null>(null);
+  const [instanceToDelete, setInstanceToDelete] = useState<any>(null);
+
+  const deleteInstance = useInstanceStore((state) => state.deleteInstance);
+  const launchInstance = useInstanceStore((state) => state.launchInstance);
+  const instanceStates = useInstanceStore((state) => state.instanceStates);
+  const clearLogs = useInstanceStore((state) => state.clearLogs);
+  const selectedAccountId = useAccountStore((state) => state.selectedAccountId);
+
+  useEffect(() => {
+    const handleClose = () => setContextMenu(null);
+    window.addEventListener('click', handleClose);
+    window.addEventListener('contextmenu', handleClose);
+    return () => {
+      window.removeEventListener('click', handleClose);
+      window.removeEventListener('contextmenu', handleClose);
+    };
+  }, []);
+
+  const handleContextMenu = (e: React.MouseEvent, instanceId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      instanceId
+    });
+  };
+
+  const handleContextMenuLaunch = async (instanceId: string) => {
+    setContextMenu(null);
+    const instance = instances.find(i => i.id === instanceId);
+    if (!instance) return;
+
+    if (!selectedAccountId) {
+      addNotification({
+        type: 'warning',
+        title: t('detail.notification.cannot_launch.title'),
+        message: t('detail.notification.cannot_launch.login_first')
+      });
+      return;
+    }
+
+    const selectedAccount = accounts.find(a => a.id === selectedAccountId);
+    if (!selectedAccount) {
+      addNotification({
+        type: 'error',
+        title: t('detail.notification.cannot_launch.title'),
+        message: t('detail.notification.cannot_launch.account_missing')
+      });
+      return;
+    }
+
+    addNotification({
+      type: 'info',
+      title: t('detail.btn.launching'),
+      message: t('detail.notification.preparing_launch', { name: instance.name })
+    });
+
+    const accountJson = JSON.stringify({
+      id: selectedAccount.id,
+      mcId: selectedAccount.mcId,
+      mcAccessToken: selectedAccount.mcAccessToken
+    });
+
+    setCurrentView(instanceId);
+    setActiveDetailTab('log');
+    clearLogs(instanceId);
+
+    try {
+      await launchInstance(instanceId, accountJson);
+    } catch (error: any) {
+      // handled in store
+    }
+  };
+
+  const handleContextMenuOpenFolder = async (instanceId: string) => {
+    setContextMenu(null);
+    try {
+      const instsDir = settingsConfig.instancesPath || `${baseDir}/instances`;
+      const targetPath = `${instsDir}/${instanceId}`;
+      await invoke('open_in_browser', { url: targetPath });
+    } catch (error: any) {
+      addNotification({
+        type: 'error',
+        title: t('detail.notification.cannot_open_folder'),
+        message: String(error)
+      });
+    }
+  };
+
+  const handleContextMenuDelete = (instanceId: string) => {
+    setContextMenu(null);
+    const instance = instances.find(i => i.id === instanceId);
+    if (instance) {
+      const instState = instanceStates[instanceId] || getInitialInstanceState();
+      if (instState.isRunning || instState.isLaunching || instState.isDownloading) {
+        addNotification({
+          type: 'warning',
+          title: t('overview.notification.cannot_delete.title'),
+          message: t('overview.notification.cannot_delete.msg')
+        });
+        return;
+      }
+      setInstanceToDelete(instance);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!instanceToDelete) return;
+    const id = instanceToDelete.id;
+    const name = instanceToDelete.name;
+    setInstanceToDelete(null);
+    try {
+      await deleteInstance(id);
+      addNotification({
+        type: 'success',
+        title: t('detail.notification.instance_delete.success'),
+        message: t('detail.notification.instance_delete.success_msg', { name })
+      });
+      if (currentView === id) {
+        setCurrentView('instances_overview');
+      }
+    } catch (error: any) {
+      addNotification({
+        type: 'error',
+        title: t('detail.notification.instance_delete.failed'),
+        message: String(error)
+      });
+    }
+  };
 
   // 檢查更新
   const handleCheckUpdate = async (silent: boolean = false) => {
@@ -154,7 +291,7 @@ export function Sidebar() {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ top: 0, height: 0, opacity: 0 });
 
-  // 初始化目錄與版本
+  // 初始化路徑與版本
   useEffect(() => {
     invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
     getVersion().then(setAppVersion).catch(console.error);
@@ -212,7 +349,7 @@ export function Sidebar() {
     };
   }, []);
 
-  // 滑動指示器定位
+  // 指示器定位
   useEffect(() => {
     const updateIndicator = () => {
       if (!sidebarRef.current) return;
@@ -244,7 +381,7 @@ export function Sidebar() {
   return (
     <>
       <div className={styles.sidebar} ref={sidebarRef}>
-        {/* 頂部區域 */}
+        {/* 頂部導覽 */}
         <div className={styles.navTop}>
           <AccountDropdown />
           <div className={styles.navTopItems}>
@@ -267,7 +404,7 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* 中間滾動實例列表 */}
+        {/* 實例列表 */}
         <div className={styles.navInstances}>
           <div className={styles.sectionTitle}>{t('sidebar.my_instances')}</div>
           {instances.filter(i => i && i.id).map(instance => {
@@ -277,6 +414,7 @@ export function Sidebar() {
                 key={instance.id}
                 className={`${styles.navItem} ${currentView === instance.id ? styles.active : ''}`}
                 onClick={() => setCurrentView(instance.id)}
+                onContextMenu={(e) => handleContextMenu(e, instance.id)}
               >
                 {instance.icon && iconSrc ? (
                   <img
@@ -302,7 +440,7 @@ export function Sidebar() {
           })}
         </div>
 
-        {/* 底部全局設定 */}
+        {/* 底部設定 */}
         <div className={styles.navBottom}>
           <button
             className={`${styles.navItem} ${currentView === 'global_settings' ? styles.active : ''}`}
@@ -336,7 +474,7 @@ export function Sidebar() {
         />
       </div>
 
-      {/* 更新確認彈出視窗 */}
+      {/* 更新彈窗 */}
       {isUpdateModalOpen && updateInfo && (
         <div className={styles.modalOverlay}>
           <div className={styles.updateModal}>
@@ -392,6 +530,43 @@ export function Sidebar() {
             </div>
           </div>
         </div>
+      )}
+
+      {contextMenu && (
+        <div
+          className={styles.contextMenu}
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className={`${styles.contextMenuItem} ${styles.launchItem}`}
+            onClick={() => handleContextMenuLaunch(contextMenu.instanceId)}
+          >
+            {t('sidebar.context.launch')}
+          </button>
+          <button
+            className={styles.contextMenuItem}
+            onClick={() => handleContextMenuOpenFolder(contextMenu.instanceId)}
+          >
+            {t('sidebar.context.open_folder')}
+          </button>
+          <button
+            className={`${styles.contextMenuItem} ${styles.deleteItem}`}
+            onClick={() => handleContextMenuDelete(contextMenu.instanceId)}
+          >
+            {t('sidebar.context.delete')}
+          </button>
+        </div>
+      )}
+
+      {instanceToDelete && (
+        <CustomConfirmModal
+          isOpen={!!instanceToDelete}
+          title={t('detail.modal.delete_instance.title')}
+          message={t('detail.modal.delete_instance.msg', { name: instanceToDelete.name })}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setInstanceToDelete(null)}
+        />
       )}
     </>
   );
