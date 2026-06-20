@@ -1,15 +1,15 @@
 {
-  "version": "1.1.4",
-  "notes": "新版本發布！\n- 完整支援繁體中文與英文多國語言（i18n）切換\n- 修正變更介面語言後，成功通知仍顯示舊語系的延遲問題\n- 優化下載器按鈕與 UI 佈局，將『下一步 (選擇版本)』簡化為『選擇版本』",
-  "pub_date": "2026-06-18T10:53:00Z",
+  "version": "1.2.0",
+  "notes": "全新版本發布！\n- 🎨 自訂主題色彩：新增高質感色彩選擇器，支援 HSL/RGB 雙模式滑桿調節，並提供多款經典預設配色一鍵套用，全域漸層背景自動變色適配。\n- 📦 實例匯出功能：支援將您的實例匯出為 Modrinth (mrpack)、CurseForge 或 MultiMC 格式，並提供模組勾選過濾清單。\n- 📥 本機匯入擴展：本機匯入分頁升級，全面支援匯入 MultiMC 及 CurseForge 格式的 .zip 整合包，並智慧過濾 assets 與 libraries 以提升效能。\n- 🖱️ 側邊欄右鍵選單：新增實例右鍵快顯功能表，支援快速啟動遊戲、開啟實例資料夾與安全刪除實例。\n- 🔍 搜尋與滾動優化：將 CurseForge 與 Modrinth 獨立分頁展示，調整詳細內容與模組清單可同步滾動，改善整體操作體驗。\n- 🌐 語系優化：整理並移除過時鍵值，補全各項新功能之繁中/英文翻譯，且在英文系統下自動過濾下載分類的括號中文。",
+  "pub_date": "2026-06-21T02:55:00Z",
   "platforms": {
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcnZScU8xYkw4QnhWQ1E0MDNHRkF0RDBMNTVkRENKVk4waVhTOVB6ZDA4ak4wV01aY3dBckFacVlmSG4wK3Y0WG1LZ2wwUVFxWk1mQjVBcWszRnI3THc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzA3NTE1CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4xLjRfeDY0X2VuLVVTLm1zaQo0cXp6VE02c2QvMzdQRDNqOFU2RW85QjZGU1plaVYybnRvczJ4NnlvRk5ZVDV2bVRzMTFhLzJBVGxQbFg2WFhxN2JzYnZKS3ZUVk82TTRMSkRYd3NCZz09Cg==",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.4/Focal.Craft.Launcher_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcm5aT2lxK1hnWFZ0WG5yanNUODd2SjVNUGVYMXpFRHBXSEpZTVdtMmRGM1YxTTIzK0tnaG9XelVTa3NsQUxCRVg3YTZaUE43V3hHS2dFbXVwamQzY3djPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxOTgxNjIzCWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4yLjBfeDY0X2VuLVVTLm1zaQppU2IyUkpWSmw1WGVxSlR2L2VXYlRQYnhjQnBSOVpkclNRaWhFY1R2YytNNHZRUkZUdk0rWEN2eE5XYUl1aXBoWnJJNm1OZ0FQV2ZMcHUrWlA5dmVBQT09Cg==",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.2.0/Focal.Craft.Launcher_x64_en-US.msi"
     },
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcmhZRE1POU1iOVZiZDQwUmpKVEZORkEyczVwY0w1TG13ZWpQdnFaSldMTDNOSzgwSmNDQktmZHRGREttaDNjTzJCdnovc3p6eEtEdXA2N2xCejRnVHdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxNzA3NTE1CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4xLjRfeDY0LXNldHVwLmV4ZQphVm1iTDUwL1VXTFBCeHVFV09pSWVpUko4NllNNFRLWE9qUWh0L2ozcE8yYmhzSUsvVzRHM2J1cGtNS2NOTEs3Z1dSZk9DYSttTjYwZFFWMzJ6TkNDQT09Cg==",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.1.4/Focal.Craft.Launcher_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcmdNbE5iNVlMNVZjR3Y5OFR2RTIvTFdPSDM5a0Z6Uytjd3h1Y0NZdjNQWExkR1VNQjdtQTQ2OG5CWitTN3JOZGd5TmRodGxwd0I4a2NTRjRSeTBadWdBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxOTgxNjIzCWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4yLjBfeDY0LXNldHVwLmV4ZQoybXZmdVc5YUEwRXA0ZkpXaytKMVJSZlR1YVhxY21jbG9iSGx1TlVtdnpBTHZ6M1ZWWDAwQ3h3K3N6UDF2ZGMycXpKWXJtL1AwZ1lBaWFmMkd3YjBEdz09Cg==",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.2.0/Focal.Craft.Launcher_x64-setup.exe"
     }
   }
 }
