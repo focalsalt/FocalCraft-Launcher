@@ -16,6 +16,7 @@ interface ModsTabProps {
   handleUpdateMod: (mod: ModItem, update: any) => void;
   handleDeleteMod: (fileName: string) => void;
   onOpenModVersionModal: (mod: ModItem) => void;
+  onOpenBatchUpdateModal: () => void;
   modloader: string;
 }
 
@@ -32,6 +33,7 @@ export function ModsTab({
   handleUpdateMod,
   handleDeleteMod,
   onOpenModVersionModal,
+  onOpenBatchUpdateModal,
   modloader,
 }: ModsTabProps) {
   const { t } = useI18n();
@@ -57,7 +59,12 @@ export function ModsTab({
           </button>
 
           {mods.length > 0 && (
-            <div className={styles.updateStatusInfo}>
+            <div
+              className={`${styles.updateStatusInfo} ${updateCount > 0 && !isCheckingModsUpdates ? styles.updateStatusInfoClickable : ''}`}
+              onClick={updateCount > 0 && !isCheckingModsUpdates ? onOpenBatchUpdateModal : undefined}
+              role={updateCount > 0 && !isCheckingModsUpdates ? "button" : undefined}
+              tabIndex={updateCount > 0 && !isCheckingModsUpdates ? 0 : undefined}
+            >
               {isCheckingModsUpdates ? (
                 <>
                   <Loader className="animate-spin" size={15} style={{ color: 'var(--main-color)' }} />
@@ -72,7 +79,7 @@ export function ModsTab({
                 </>
               ) : (
                 <>
-                  <Check size={16} style={{ color: 'var(--main-color)' }} />
+                  <Check size={16} style={{ color: 'var(--accent-green)' }} />
                   <span style={{ color: 'var(--text-secondary)' }}>{t('tabs.mods.status.up_to_date')}</span>
                 </>
               )}

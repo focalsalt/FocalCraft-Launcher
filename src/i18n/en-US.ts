@@ -224,6 +224,10 @@ export const enUS: Record<keyof typeof zhTW, string> = {
   "detail.notification.mod_update.downloading": "Downloading new version of {name}...",
   "detail.notification.mod_update.success": "{name} updated to the latest version!",
   "detail.notification.mod_update.failed": "Failed to update mod",
+  "detail.notification.batch_update.starting": "Starting Batch Update",
+  "detail.notification.batch_update.starting_msg": "Preparing to download and update {count} mods, please wait...",
+  "detail.notification.batch_update.complete": "Batch Update Complete",
+  "detail.notification.batch_update.complete_msg": "Successfully updated {success} mods, failed {failed}.",
 
   "detail.notification.rp_check.title": "Resource Pack Update Check Complete",
   "detail.notification.rp_check.msg": "Detected {count} resource packs with available updates!",
@@ -277,6 +281,10 @@ export const enUS: Record<keyof typeof zhTW, string> = {
   "detail.modal.delete_screenshot.title": "Delete Screenshot",
   "detail.modal.update_modpack.title": "Update Modpack",
   "detail.modal.update_mod.title": "Update Mod",
+  "detail.modal.batch_update.title": "Available Mod Updates",
+  "detail.modal.batch_update.select_all": "Select All",
+  "detail.modal.batch_update.update_btn": "Update {count} Selected Mods",
+  "detail.modal.batch_update.no_selection": "Please select at least one mod",
 
   "detail.modal.delete_mod.msg": "Are you sure you want to delete mod \"{name}\"?",
   "detail.modal.delete_rp.msg": "Are you sure you want to delete resource pack \"{name}\"?",

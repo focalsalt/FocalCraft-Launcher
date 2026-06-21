@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from '../../utils/i18n';
+import { sortModVersions, cleanQueryName } from '../../utils/versionUtils';
 import { X, Loader, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import styles from './ModVersionModal.module.css';
@@ -62,7 +63,8 @@ export function ModVersionModal({
       if (mod.sha1) {
         try {
           const res = await fetch(`https://api.modrinth.com/v2/version_file/${mod.sha1}?algorithm=sha1`, {
-            headers: { 'User-Agent': 'focal-craft-launcher' }
+            headers: { 'User-Agent': 'focal-craft-launcher' },
+            cache: 'no-store'
           });
           if (res.ok) {
             const fileData = await res.json();
@@ -75,14 +77,17 @@ export function ModVersionModal({
 
       // 2. 如果雜湊搜尋失敗，嘗試以名稱搜尋
       if (!projectId) {
-        const queryName = mod.name || mod.fileName.replace(/\.jar$/i, '').replace(/[-_]\d.*/, '');
-        const searchRes = await fetch(`https://api.modrinth.com/v2/search?query=${encodeURIComponent(queryName)}&facets=[[%22project_type:mod%22]]`, {
-          headers: { 'User-Agent': 'focal-craft-launcher' }
-        });
-        if (searchRes.ok) {
-          const searchData = await searchRes.json();
-          if (searchData.hits && searchData.hits.length > 0) {
-            projectId = searchData.hits[0].project_id;
+        const queryName = cleanQueryName(mod.name) || cleanQueryName(mod.fileName);
+        if (queryName) {
+          const searchRes = await fetch(`https://api.modrinth.com/v2/search?query=${encodeURIComponent(queryName)}&facets=[[%22project_type:mod%22]]`, {
+            headers: { 'User-Agent': 'focal-craft-launcher' },
+            cache: 'no-store'
+          });
+          if (searchRes.ok) {
+            const searchData = await searchRes.json();
+            if (searchData.hits && searchData.hits.length > 0) {
+              projectId = searchData.hits[0].project_id;
+            }
           }
         }
       }
@@ -93,7 +98,8 @@ export function ModVersionModal({
 
       // 3. 獲取專案詳情
       const projRes = await fetch(`https://api.modrinth.com/v2/project/${projectId}`, {
-        headers: { 'User-Agent': 'focal-craft-launcher' }
+        headers: { 'User-Agent': 'focal-craft-launcher' },
+        cache: 'no-store'
       });
       if (!projRes.ok) throw new Error('Failed to fetch project info');
       const projData = await projRes.ok ? await projRes.json() : null;
@@ -101,7 +107,8 @@ export function ModVersionModal({
 
       // 4. 獲取所有版本列表
       const verRes = await fetch(`https://api.modrinth.com/v2/project/${projectId}/version`, {
-        headers: { 'User-Agent': 'focal-craft-launcher' }
+        headers: { 'User-Agent': 'focal-craft-launcher' },
+        cache: 'no-store'
       });
       if (!verRes.ok) throw new Error('Failed to fetch project versions');
       const verData = await verRes.json();
@@ -115,7 +122,7 @@ export function ModVersionModal({
         return matchesMc && matchesLoader;
       });
 
-      setVersions(compat);
+      setVersions(sortModVersions(compat));
     } catch (err: any) {
       console.error(err);
       setErrorText(err.message || t('mod_version.loading_failed'));

@@ -223,6 +223,10 @@ export const zhTW = {
   "detail.notification.mod_update.downloading": "正在下載新版 {name}...",
   "detail.notification.mod_update.success": "{name} 已更新到最新版本！",
   "detail.notification.mod_update.failed": "模組更新失敗",
+  "detail.notification.batch_update.starting": "開始批次更新",
+  "detail.notification.batch_update.starting_msg": "準備下載並更新 {count} 個模組，請稍候...",
+  "detail.notification.batch_update.complete": "批次更新完成",
+  "detail.notification.batch_update.complete_msg": "成功更新 {success} 個模組，失敗 {failed} 個。",
 
   "detail.notification.rp_check.title": "檢查資源包更新完成",
   "detail.notification.rp_check.msg": "共偵測到 {count} 個資源包有可用更新！",
@@ -276,6 +280,10 @@ export const zhTW = {
   "detail.modal.delete_screenshot.title": "刪除螢幕截圖",
   "detail.modal.update_modpack.title": "更新整合包",
   "detail.modal.update_mod.title": "更新模組",
+  "detail.modal.batch_update.title": "可更新模組清單",
+  "detail.modal.batch_update.select_all": "全選",
+  "detail.modal.batch_update.update_btn": "更新選取的 {count} 個模組",
+  "detail.modal.batch_update.no_selection": "請選擇至少一個模組",
 
   "detail.modal.delete_mod.msg": "您確定要刪除模組 \"{name}\" 嗎？",
   "detail.modal.delete_rp.msg": "您確定要刪除資源包 \"{name}\" 嗎？",

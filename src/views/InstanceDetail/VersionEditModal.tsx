@@ -5,7 +5,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useAppStore } from '../../store/appStore';
 import { CustomSelect } from '../../components/common/CustomSelect';
-import { getMajorVersionGroup } from '../../utils/versionUtils';
+import { getMajorVersionGroup, sortModVersions, cleanQueryName } from '../../utils/versionUtils';
 import { useI18n, translateVersionGroup } from '../../utils/i18n';
 import styles from './InstanceDetail.module.css';
 
@@ -376,16 +376,74 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
       const toUpdate: ModToUpdate[] = [];
       const toDisable: ModToDisable[] = [];
 
-      const matchedMods = enabledMods.filter(mod => mod.sha1 && fileLookupResponse[mod.sha1]);
-      const unmatchedMods = enabledMods.filter(mod => !mod.sha1 || !fileLookupResponse[mod.sha1]);
+      // Identify matched mods from hash lookup
+      const matchedModsFromHash = enabledMods.filter(mod => mod.sha1 && fileLookupResponse[mod.sha1.toLowerCase()]);
+      const unmatchedModsFromHash = enabledMods.filter(mod => !mod.sha1 || !fileLookupResponse[mod.sha1.toLowerCase()]);
 
-      const projectIds = Array.from(new Set(matchedMods.map(m => fileLookupResponse[m.sha1].project_id)));
+      console.log("[Debug] Compatibility Check Start");
+      console.log("[Debug] Target MC Version:", mcVersion);
+      console.log("[Debug] Target Loader:", loaderType);
+      console.log("[Debug] Enabled Mods count:", enabledMods.length);
+      console.log("[Debug] Matched from Hash count:", matchedModsFromHash.length);
+      console.log("[Debug] Unmatched count:", unmatchedModsFromHash.length);
+      console.log("[Debug] Hash Lookup Response:", fileLookupResponse);
+
+      // Fallback search by name for unmatched mods
+      const searchResults = await Promise.all(
+        unmatchedModsFromHash.map(async (mod) => {
+          try {
+            const queryName = cleanQueryName(mod.name) || cleanQueryName(mod.fileName);
+            console.log(`[Debug] Searching Modrinth for query: "${queryName}" (from name: "${mod.name}", file: "${mod.fileName}")`);
+            if (!queryName) return { mod, projectId: null };
+
+            const searchRes = await fetch(`https://api.modrinth.com/v2/search?query=${encodeURIComponent(queryName)}&facets=[[%22project_type:mod%22]]`, {
+              headers: { 'User-Agent': 'focal-craft-launcher' },
+              cache: 'no-store'
+            });
+            if (searchRes.ok) {
+              const searchData = await searchRes.json();
+              if (searchData.hits && searchData.hits.length > 0) {
+                const hit = searchData.hits[0];
+                console.log(`[Debug] Search hit for "${queryName}": ${hit.title} (ID: ${hit.project_id}, slug: ${hit.slug})`);
+                return { mod, projectId: hit.project_id };
+              } else {
+                console.log(`[Debug] Search returned no hits for "${queryName}"`);
+              }
+            } else {
+              console.log(`[Debug] Search request failed for "${queryName}", status: ${searchRes.status}`);
+            }
+          } catch (e) {
+            console.warn(`Search failed for unmatched mod ${mod.name}:`, e);
+          }
+          return { mod, projectId: null };
+        })
+      );
+
+      // Map mod files to their project IDs
+      const modProjectMap: Record<string, string> = {}; // fileName to project_id
+      
+      matchedModsFromHash.forEach(m => {
+        modProjectMap[m.fileName] = fileLookupResponse[m.sha1.toLowerCase()].project_id;
+      });
+      searchResults.forEach(r => {
+        if (r.projectId) {
+          modProjectMap[r.mod.fileName] = r.projectId;
+        }
+      });
+
+      // Collect all project IDs we need to fetch versions for
+      const projectIds = Array.from(new Set(Object.values(modProjectMap)));
+      console.log("[Debug] Final Mod-to-Project Map:", modProjectMap);
+      console.log("[Debug] Distinct Project IDs to fetch:", projectIds);
 
       const projectVersionsMap: Record<string, any[]> = {};
       await Promise.all(
         projectIds.map(async (projectId) => {
           try {
-            const verRes = await fetch(`https://api.modrinth.com/v2/project/${projectId}/version`);
+            const verRes = await fetch(`https://api.modrinth.com/v2/project/${projectId}/version`, {
+              headers: { 'User-Agent': 'focal-craft-launcher' },
+              cache: 'no-store'
+            });
             if (verRes.ok) {
               const versions = await verRes.json();
               projectVersionsMap[projectId] = versions;
@@ -396,30 +454,44 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
         })
       );
 
-      for (const mod of matchedMods) {
-        const fileInfo = fileLookupResponse[mod.sha1];
-        const projectId = fileInfo.project_id;
-        const allVersions = projectVersionsMap[projectId] || [];
+      for (const mod of enabledMods) {
+        const projectId = modProjectMap[mod.fileName];
+        console.log(`[Debug] Processing Mod compatibility: "${mod.name}" (${mod.fileName}) -> Project ID: "${projectId}"`);
+        if (projectId) {
+          const allVersions = projectVersionsMap[projectId] || [];
+          console.log(`  Fetched ${allVersions.length} versions from Modrinth`);
 
-        const compatibleVersions = allVersions.filter((v: any) => {
-          const matchesVersion = v.game_versions.includes(mcVersion);
-          const matchesLoader = loaderType === 'Vanilla' ? true : v.loaders.map((l: string) => l.toLowerCase()).includes(loaderType.toLowerCase());
-          return matchesVersion && matchesLoader && v.files.length > 0;
-        });
+          const compatibleVersions = sortModVersions(allVersions.filter((v: any) => {
+            const matchesVersion = v.game_versions.includes(mcVersion);
+            const matchesLoader = loaderType === 'Vanilla' ? true : v.loaders?.map((l: string) => l.toLowerCase()).includes(loaderType.toLowerCase());
+            const hasFiles = v.files && v.files.length > 0;
+            return matchesVersion && matchesLoader && hasFiles;
+          }));
 
-        if (compatibleVersions.length > 0) {
-          const defaultVersion = compatibleVersions[0];
-          const defaultFile = defaultVersion.files.find((f: any) => f.primary) || defaultVersion.files[0];
-          const isAlreadyLatestCompatible = defaultFile && defaultFile.hashes.sha1 === mod.sha1;
+          console.log(`  Matches for ${mcVersion} (${loaderType}): ${compatibleVersions.length} versions`);
 
-          toUpdate.push({
-            localMod: mod,
-            project_id: projectId,
-            compatibleVersions,
-            selectedVersionId: defaultVersion.id,
-            shouldUpdate: !isAlreadyLatestCompatible,
-          });
+          if (compatibleVersions.length > 0) {
+            const defaultVersion = compatibleVersions[0];
+            const defaultFile = defaultVersion.files.find((f: any) => f.primary) || defaultVersion.files[0];
+            const isAlreadyLatestCompatible = defaultFile && defaultFile.hashes.sha1 === mod.sha1;
+            console.log(`  Selected version: ${defaultVersion.version_number} (already latest: ${isAlreadyLatestCompatible})`);
+
+            toUpdate.push({
+              localMod: mod,
+              project_id: projectId,
+              compatibleVersions,
+              selectedVersionId: defaultVersion.id,
+              shouldUpdate: !isAlreadyLatestCompatible,
+            });
+          } else {
+            console.log(`  No compatible version. Placing in disabled list.`);
+            toDisable.push({
+              localMod: mod,
+              shouldDisable: true,
+            });
+          }
         } else {
+          console.log(`  No project ID resolved. Placing in disabled list.`);
           toDisable.push({
             localMod: mod,
             shouldDisable: true,
@@ -427,16 +499,12 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
         }
       }
 
-      for (const mod of unmatchedMods) {
-        toDisable.push({
-          localMod: mod,
-          shouldDisable: true,
-        });
-      }
-
       if (toUpdate.length === 0 && toDisable.length === 0) {
+        console.log("[Debug] No updates or disable items. Direct saving.");
         await executeDirectSave();
       } else {
+        console.log("[Debug] Resulting updates list:", toUpdate);
+        console.log("[Debug] Resulting disable list:", toDisable);
         setModsToUpdate(toUpdate);
         setModsToDisable(toDisable);
         setStep('compatibility');

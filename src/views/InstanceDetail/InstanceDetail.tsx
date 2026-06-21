@@ -16,6 +16,7 @@ import { VersionEditModal } from './VersionEditModal';
 import { JavaSelectorModal } from './JavaSelectorModal';
 import { ModVersionModal } from './ModVersionModal';
 import { ExportInstanceModal } from './ExportInstanceModal';
+import { BatchUpdateModal } from './BatchUpdateModal';
 
 import { EditTab } from './tabs/EditTab';
 import { LogTab } from './tabs/LogTab';
@@ -160,6 +161,7 @@ export function InstanceDetail({ instanceId }: Props) {
   const [isJavaSelectorOpen, setIsJavaSelectorOpen] = useState(false);
   const [activeModForVersionChange, setActiveModForVersionChange] = useState<ModItem | null>(null);
   const [isModVersionModalOpen, setIsModVersionModalOpen] = useState(false);
+  const [isBatchUpdateModalOpen, setIsBatchUpdateModalOpen] = useState(false);
 
   const logConsoleRef = useRef<HTMLDivElement>(null);
   const lastLoadIdRef = useRef(0);
@@ -427,7 +429,8 @@ export function InstanceDetail({ instanceId }: Props) {
         const res = await fetch(`https://api.modrinth.com/v2/project/${instance.modrinthProjectId}/version`, {
           headers: {
             'User-Agent': 'focal-craft-launcher'
-          }
+          },
+          cache: 'no-store'
         });
         if (res.ok) {
           const versions = await res.json();
@@ -703,6 +706,51 @@ export function InstanceDetail({ instanceId }: Props) {
 
   const handleUpdateMod = (mod: ModItem, updateObj: any) => {
     setConfirmUpdateTarget({ mod, updateObj });
+  };
+
+  const executeBatchUpdateMods = async (selectedUpdates: Array<{ mod: ModItem; updateObj: any }>) => {
+    if (selectedUpdates.length === 0 || !instance) return;
+
+    addNotification({
+      type: 'info',
+      title: t('detail.notification.batch_update.starting') || '開始批次更新',
+      message: t('detail.notification.batch_update.starting_msg', { count: selectedUpdates.length })
+    });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const { mod, updateObj } of selectedUpdates) {
+      try {
+        const file = updateObj.files.find((f: any) => f.primary) || updateObj.files[0];
+        if (!file) continue;
+
+        await invoke('download_and_replace_file', {
+          instanceId: instance.id,
+          folderName: 'mods',
+          downloadUrl: file.url,
+          newFilename: file.filename,
+          oldFilename: mod.fileName
+        });
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to update mod ${mod.name}:`, err);
+        failCount++;
+        addNotification({
+          type: 'error',
+          title: t('detail.notification.mod_update.failed'),
+          message: `${mod.name}: ${String(err)}`
+        });
+      }
+    }
+
+    loadTabData();
+
+    addNotification({
+      type: successCount > 0 ? 'success' : 'error',
+      title: t('detail.notification.batch_update.complete') || '批次更新完成',
+      message: t('detail.notification.batch_update.complete_msg', { success: successCount, failed: failCount })
+    });
   };
 
   const handleDeleteMod = (fileName: string) => {
@@ -1133,6 +1181,7 @@ export function InstanceDetail({ instanceId }: Props) {
               handleUpdateMod={handleUpdateMod}
               handleDeleteMod={handleDeleteMod}
               onOpenModVersionModal={handleOpenModVersionModal}
+              onOpenBatchUpdateModal={() => setIsBatchUpdateModalOpen(true)}
               modloader={instance?.modloader || 'Vanilla'}
             />
           )}
@@ -1313,6 +1362,14 @@ export function InstanceDetail({ instanceId }: Props) {
           onCancel={() => setConfirmUpdateTarget(null)}
         />
       )}
+
+      <BatchUpdateModal
+        isOpen={isBatchUpdateModalOpen}
+        onClose={() => setIsBatchUpdateModalOpen(false)}
+        mods={mods}
+        modsUpdates={modsUpdates}
+        onConfirmUpdates={executeBatchUpdateMods}
+      />
 
       {confirmDeleteTarget && (
         <CustomConfirmModal
