@@ -110,7 +110,6 @@ export function InstanceDetail({ instanceId }: Props) {
   const [isCheckingModsUpdates, setIsCheckingModsUpdates] = useState(false);
   const [resourcePacks, setResourcePacks] = useState<ResourcePackItem[]>([]);
   const [rpUpdates, setRpUpdates] = useState<Record<string, any>>({});
-  const [isCheckingRpUpdates, setIsCheckingRpUpdates] = useState(false);
   const [shaderPacks, setShaderPacks] = useState<ResourcePackItem[]>([]);
   const [activeWorldForDatapacks, setActiveWorldForDatapacks] = useState<WorldItem | null>(null);
   const [datapacks, setDatapacks] = useState<ResourcePackItem[]>([]);
@@ -146,6 +145,11 @@ export function InstanceDetail({ instanceId }: Props) {
     serverName?: string;
   } | null>(null);
 
+  const [confirmUpdateTarget, setConfirmUpdateTarget] = useState<{
+    mod: ModItem;
+    updateObj: any;
+  } | null>(null);
+
   const [isServerModalOpen, setIsServerModalOpen] = useState(false);
   const [editingServer, setEditingServer] = useState<ServerItem | null>(null);
   const [editingServerIndex, setEditingServerIndex] = useState<number | null>(null);
@@ -159,6 +163,7 @@ export function InstanceDetail({ instanceId }: Props) {
 
   const logConsoleRef = useRef<HTMLDivElement>(null);
   const lastLoadIdRef = useRef(0);
+  const checkModsUpdatesRef = useRef<((modList?: ModItem[], showNotification?: boolean) => Promise<void>) | null>(null);
 
   // 取得基礎路徑
   useEffect(() => {
@@ -177,6 +182,8 @@ export function InstanceDetail({ instanceId }: Props) {
       setJvmArgs(instance.jvmArgs || '');
       setMaxMemory(instance.maxMemory || 4096);
       setCustomJava(instance.javaPath || '');
+      setModsUpdates({});
+      setRpUpdates({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instanceId_dep, instanceName_dep, instanceJvm_dep, instanceMem_dep, instanceJava_dep]);
@@ -205,7 +212,9 @@ export function InstanceDetail({ instanceId }: Props) {
             const list = await invoke<ModItem[]>('get_installed_mods', { instanceId });
             if (loadId === lastLoadIdRef.current) {
               setMods(list);
-              setModsUpdates({});
+              if (checkModsUpdatesRef.current) {
+                checkModsUpdatesRef.current(list, false);
+              }
             }
           } catch (err) {
             console.error('Failed to reload mods:', err);
@@ -396,7 +405,7 @@ export function InstanceDetail({ instanceId }: Props) {
         const list = await invoke<ModItem[]>('get_installed_mods', { instanceId });
         if (loadId === lastLoadIdRef.current) {
           setMods(list);
-          setModsUpdates({});
+          handleCheckModsUpdates(list, false);
         }
       } else if (activeTab === 'resourcepacks') {
         const list = await invoke<ResourcePackItem[]>('get_installed_resourcepacks', { instanceId });
@@ -618,11 +627,14 @@ export function InstanceDetail({ instanceId }: Props) {
   };
 
   // 檢查模組更新
-  const handleCheckModsUpdates = async () => {
-    if (mods.length === 0) return;
+  const handleCheckModsUpdates = async (modList: ModItem[] = mods, showNotification = true) => {
+    if (modList.length === 0 || !instance) {
+      setModsUpdates({});
+      return;
+    }
     setIsCheckingModsUpdates(true);
     try {
-      const hashes = mods.map(m => m.sha1).filter(h => h !== '');
+      const hashes = modList.map(m => m.sha1).filter(h => h !== '');
       const res = await fetch('https://api.modrinth.com/v2/version_files/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'User-Agent': 'focal-craft-launcher' },
@@ -648,11 +660,13 @@ export function InstanceDetail({ instanceId }: Props) {
         });
 
         setModsUpdates(filteredData);
-        addNotification({
-          type: 'success',
-          title: t('detail.notification.mods_check.title'),
-          message: t('detail.notification.mods_check.msg', { count: Object.keys(filteredData).length })
-        });
+        if (showNotification) {
+          addNotification({
+            type: 'success',
+            title: t('detail.notification.mods_check.title'),
+            message: t('detail.notification.mods_check.msg', { count: Object.keys(filteredData).length })
+          });
+        }
       }
     } catch (err) {
       console.error(err);
@@ -661,7 +675,11 @@ export function InstanceDetail({ instanceId }: Props) {
     }
   };
 
-  const handleUpdateMod = async (mod: ModItem, updateObj: any) => {
+  useEffect(() => {
+    checkModsUpdatesRef.current = handleCheckModsUpdates;
+  }, [handleCheckModsUpdates]);
+
+  const executeUpdateMod = async (mod: ModItem, updateObj: any) => {
     try {
       const file = updateObj.files.find((f: any) => f.primary) || updateObj.files[0];
       if (!file) return;
@@ -681,6 +699,10 @@ export function InstanceDetail({ instanceId }: Props) {
     } catch (err) {
       addNotification({ type: 'error', title: t('detail.notification.mod_update.failed'), message: String(err) });
     }
+  };
+
+  const handleUpdateMod = (mod: ModItem, updateObj: any) => {
+    setConfirmUpdateTarget({ mod, updateObj });
   };
 
   const handleDeleteMod = (fileName: string) => {
@@ -707,49 +729,7 @@ export function InstanceDetail({ instanceId }: Props) {
     }
   };
 
-  // 檢查資源包更新
-  const handleCheckRpUpdates = async () => {
-    if (resourcePacks.length === 0) return;
-    setIsCheckingRpUpdates(true);
-    try {
-      const hashes = resourcePacks.map(rp => rp.sha1).filter(h => h !== '');
-      const res = await fetch('https://api.modrinth.com/v2/version_files/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'focal-craft-launcher' },
-        body: JSON.stringify({
-          hashes,
-          algorithm: 'sha1',
-          loaders: [],
-          game_versions: [instance.version],
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const filteredData: Record<string, any> = {};
-        const localHashesSet = new Set(hashes);
-        
-        Object.entries(data).forEach(([key, val]: [string, any]) => {
-          if (val && val.files) {
-            const hasSameHash = val.files.some((f: any) => f.hashes?.sha1 && localHashesSet.has(f.hashes.sha1));
-            if (!hasSameHash) {
-              filteredData[key] = val;
-            }
-          }
-        });
 
-        setRpUpdates(filteredData);
-        addNotification({
-          type: 'success',
-          title: t('detail.notification.rp_check.title'),
-          message: t('detail.notification.rp_check.msg', { count: Object.keys(filteredData).length })
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsCheckingRpUpdates(false);
-    }
-  };
 
   const handleUpdateRp = async (rp: ResourcePackItem, updateObj: any) => {
     try {
@@ -1148,12 +1128,12 @@ export function InstanceDetail({ instanceId }: Props) {
               handleImportMods={handleImportMods}
               setModrinthModalType={setModrinthModalType}
               setIsModrinthModalOpen={setIsModrinthModalOpen}
-              handleCheckModsUpdates={handleCheckModsUpdates}
               handleOpenFolder={handleOpenFolder}
               handleToggleMod={handleToggleMod}
               handleUpdateMod={handleUpdateMod}
               handleDeleteMod={handleDeleteMod}
               onOpenModVersionModal={handleOpenModVersionModal}
+              modloader={instance?.modloader || 'Vanilla'}
             />
           )}
 
@@ -1161,12 +1141,10 @@ export function InstanceDetail({ instanceId }: Props) {
             <ResourcePacksTab
               resourcePacks={resourcePacks}
               rpUpdates={rpUpdates}
-              isCheckingRpUpdates={isCheckingRpUpdates}
               loadingList={loadingList}
               handleImportRps={handleImportRps}
               setModrinthModalType={setModrinthModalType}
               setIsModrinthModalOpen={setIsModrinthModalOpen}
-              handleCheckRpUpdates={handleCheckRpUpdates}
               handleOpenFolder={handleOpenFolder}
               handleUpdateRp={handleUpdateRp}
               handleDeleteRp={handleDeleteRp}
@@ -1316,6 +1294,25 @@ export function InstanceDetail({ instanceId }: Props) {
         }}
         onClose={() => setIsModrinthModalOpen(false)}
       />
+
+      {confirmUpdateTarget && (
+        <CustomConfirmModal
+          isOpen={!!confirmUpdateTarget}
+          type="update"
+          title={t('detail.modal.update_mod.title')}
+          message={t('detail.modal.update_mod.msg', {
+            name: confirmUpdateTarget.mod.name,
+            oldVersion: confirmUpdateTarget.mod.version,
+            newVersion: confirmUpdateTarget.updateObj.version_number
+          })}
+          onConfirm={() => {
+            const { mod, updateObj } = confirmUpdateTarget;
+            setConfirmUpdateTarget(null);
+            executeUpdateMod(mod, updateObj);
+          }}
+          onCancel={() => setConfirmUpdateTarget(null)}
+        />
+      )}
 
       {confirmDeleteTarget && (
         <CustomConfirmModal

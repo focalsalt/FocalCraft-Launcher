@@ -6,14 +6,15 @@ interface Props {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  type?: 'danger' | 'update';
 }
 
-export function CustomConfirmModal({ isOpen, title, message, onConfirm, onCancel }: Props) {
+export function CustomConfirmModal({ isOpen, title, message, onConfirm, onCancel, type = 'danger' }: Props) {
   if (!isOpen) return null;
 
   return (
     <div className={styles.overlay}>
-      <div className={styles.modal}>
+      <div className={`${styles.modal} ${type === 'update' ? styles.typeUpdate : ''}`}>
         <div className={styles.header}>
           <h3>{title}</h3>
         </div>

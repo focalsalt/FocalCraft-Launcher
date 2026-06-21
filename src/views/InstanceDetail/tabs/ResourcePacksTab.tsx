@@ -1,4 +1,4 @@
-import { Upload, Download, RefreshCw, Loader, FolderOpen, Trash2, Paintbrush } from 'lucide-react';
+import { Upload, Download, Loader, FolderOpen, Trash2, Paintbrush } from 'lucide-react';
 import { ResourcePackItem } from '../../../types';
 import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
@@ -6,12 +6,10 @@ import styles from '../InstanceDetail.module.css';
 interface ResourcePacksTabProps {
   resourcePacks: ResourcePackItem[];
   rpUpdates: Record<string, any>;
-  isCheckingRpUpdates: boolean;
   loadingList: boolean;
   handleImportRps: () => void;
   setModrinthModalType: (type: 'mod' | 'resourcepack' | 'shader' | 'datapack') => void;
   setIsModrinthModalOpen: (val: boolean) => void;
-  handleCheckRpUpdates: () => void;
   handleOpenFolder: (folderName?: string) => void;
   handleUpdateRp: (rp: ResourcePackItem, update: any) => void;
   handleDeleteRp: (fileName: string) => void;
@@ -20,12 +18,10 @@ interface ResourcePacksTabProps {
 export function ResourcePacksTab({
   resourcePacks,
   rpUpdates,
-  isCheckingRpUpdates,
   loadingList,
   handleImportRps,
   setModrinthModalType,
   setIsModrinthModalOpen,
-  handleCheckRpUpdates,
   handleOpenFolder,
   handleUpdateRp,
   handleDeleteRp,
@@ -48,10 +44,6 @@ export function ResourcePacksTab({
           <button className={styles.secBtn} onClick={onDownloadClick}>
             <Download size={16} />
             <span>{t('tabs.rp.btn.download')}</span>
-          </button>
-          <button className={styles.secBtn} onClick={handleCheckRpUpdates} disabled={isCheckingRpUpdates || resourcePacks.length === 0}>
-            {isCheckingRpUpdates ? <Loader className="animate-spin" size={16} /> : <RefreshCw size={16} />}
-            <span>{t('tabs.rp.btn.check_updates')}</span>
           </button>
         </div>
         <button className={styles.actionBtn} onClick={() => handleOpenFolder('resourcepacks')}>

@@ -95,3 +95,17 @@
   background-color: #ff7373;
   box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4);
 }
+
+.typeUpdate .header h3 {
+  color: var(--main-color);
+}
+
+.typeUpdate .confirmBtn {
+  background-color: var(--accent-green);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+.typeUpdate .confirmBtn:hover {
+  background-color: var(--accent-green-hover);
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
+}

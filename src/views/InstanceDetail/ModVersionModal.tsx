@@ -57,7 +57,7 @@ export function ModVersionModal({
 
     try {
       let projectId = '';
-      
+
       // 1. 嘗試以 SHA-1 雜湊搜尋專案檔案
       if (mod.sha1) {
         try {
@@ -211,7 +211,7 @@ export function ModVersionModal({
 
               <div className={styles.listSection}>
                 <div className={styles.sectionLabel}>
-                  {t('create.label.select_version')} ({versions.length})
+                  {t('create.label.select_mod_version')} ({versions.length})
                 </div>
 
                 {versions.length === 0 ? (

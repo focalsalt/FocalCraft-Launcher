@@ -88,6 +88,7 @@ export const zhTW = {
   "create.label.no_results": "找不到符合的整合包",
   "create.label.project_id": "專案 ID: {id}",
   "create.label.select_version": "選擇整合包版本",
+  "create.label.select_mod_version": "選擇 Mod 版本",
   "create.status.searching": "搜尋中...",
   "create.status.creating": "正在建立實例...",
   "create.status.loading_more": "正在載入更多整合包...",
@@ -274,6 +275,7 @@ export const zhTW = {
   "detail.modal.delete_server.title": "刪除伺服器連線",
   "detail.modal.delete_screenshot.title": "刪除螢幕截圖",
   "detail.modal.update_modpack.title": "更新整合包",
+  "detail.modal.update_mod.title": "更新模組",
 
   "detail.modal.delete_mod.msg": "您確定要刪除模組 \"{name}\" 嗎？",
   "detail.modal.delete_rp.msg": "您確定要刪除資源包 \"{name}\" 嗎？",
@@ -282,6 +284,7 @@ export const zhTW = {
   "detail.modal.delete_server.msg": "您確定要刪除伺服器連線紀錄 \"{name}\" 嗎？",
   "detail.modal.delete_screenshot.msg": "您確定要刪除螢幕截圖 \"{name}\" 嗎？",
   "detail.modal.update_modpack.msg": "確認要將此整合包更新至版本 {version} 嗎？\n更新將會清空並更替目前的模組目錄。",
+  "detail.modal.update_mod.msg": "將更新 {name} {oldVersion} 至 {newVersion}",
 
   "detail.notification.delete_mod.failed": "刪除模組失敗",
   "detail.notification.delete_rp.failed": "刪除資源包失敗",
@@ -389,7 +392,9 @@ export const zhTW = {
   "tabs.mods.empty": "目前尚無安裝 any 模組",
   "tabs.mods.empty_search": "找不到相符的模組",
   "tabs.mods.btn.import": "匯入模組",
-  "tabs.mods.btn.check_updates": "一鍵檢查更新",
+  "tabs.mods.status.checking": "正在偵測模組更新...",
+  "tabs.mods.status.updates_available": "偵測到 {count} 個可更新模組",
+  "tabs.mods.status.up_to_date": "所有模組已是最新版本",
   "tabs.mods.label.name": "名稱",
   "tabs.mods.label.version": "版本",
   "tabs.mods.label.env": "環境",
@@ -406,7 +411,6 @@ export const zhTW = {
   // Tabs: Resource Packs
   "tabs.rp.btn.import": "匯入資源包",
   "tabs.rp.btn.download": "下載資源包",
-  "tabs.rp.btn.check_updates": "一鍵檢查更新",
   "tabs.rp.btn.folder": "開啟資源包資料夾",
   "tabs.rp.label.name_desc": "名稱與說明",
   "tabs.rp.label.game_version": "適用版本",

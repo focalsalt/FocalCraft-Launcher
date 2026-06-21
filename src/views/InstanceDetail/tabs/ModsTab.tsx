@@ -1,4 +1,4 @@
-import { Upload, Download, RefreshCw, Loader, FolderOpen, ArrowUpCircle, Trash2, Puzzle } from 'lucide-react';
+import { Upload, Download, Loader, FolderOpen, ArrowUpCircle, Trash2, Puzzle, Check, RefreshCw } from 'lucide-react';
 import { ModItem } from '../../../types';
 import { useI18n } from '../../../utils/i18n';
 import styles from '../InstanceDetail.module.css';
@@ -11,12 +11,12 @@ interface ModsTabProps {
   handleImportMods: () => void;
   setModrinthModalType: (type: 'mod' | 'resourcepack' | 'shader' | 'datapack') => void;
   setIsModrinthModalOpen: (val: boolean) => void;
-  handleCheckModsUpdates: () => void;
   handleOpenFolder: (folderName?: string) => void;
   handleToggleMod: (mod: ModItem, enabled: boolean) => void;
   handleUpdateMod: (mod: ModItem, update: any) => void;
   handleDeleteMod: (fileName: string) => void;
   onOpenModVersionModal: (mod: ModItem) => void;
+  modloader: string;
 }
 
 export function ModsTab({
@@ -27,12 +27,12 @@ export function ModsTab({
   handleImportMods,
   setModrinthModalType,
   setIsModrinthModalOpen,
-  handleCheckModsUpdates,
   handleOpenFolder,
   handleToggleMod,
   handleUpdateMod,
   handleDeleteMod,
   onOpenModVersionModal,
+  modloader,
 }: ModsTabProps) {
   const { t } = useI18n();
 
@@ -40,6 +40,8 @@ export function ModsTab({
     setModrinthModalType('mod');
     setIsModrinthModalOpen(true);
   };
+
+  const updateCount = Object.keys(modsUpdates).length;
 
   return (
     <div className={styles.tabContainer}>
@@ -49,14 +51,33 @@ export function ModsTab({
             <Upload size={16} />
             <span>{t('tabs.mods.btn.import')}</span>
           </button>
-          <button className={styles.secBtn} onClick={onDownloadClick}>
+          <button className={styles.secBtn} onClick={onDownloadClick} disabled={modloader === 'Vanilla'}>
             <Download size={16} />
             <span>{t('tabs.mods.btn.download')}</span>
           </button>
-          <button className={styles.secBtn} onClick={handleCheckModsUpdates} disabled={isCheckingModsUpdates || mods.length === 0}>
-            {isCheckingModsUpdates ? <Loader className="animate-spin" size={16} /> : <RefreshCw size={16} />}
-            <span>{t('tabs.mods.btn.check_updates')}</span>
-          </button>
+
+          {mods.length > 0 && (
+            <div className={styles.updateStatusInfo}>
+              {isCheckingModsUpdates ? (
+                <>
+                  <Loader className="animate-spin" size={15} style={{ color: 'var(--main-color)' }} />
+                  <span>{t('tabs.mods.status.checking')}</span>
+                </>
+              ) : updateCount > 0 ? (
+                <>
+                  <ArrowUpCircle size={16} style={{ color: 'var(--warning-orange)' }} />
+                  <span style={{ color: 'var(--warning-orange)', fontWeight: 600 }}>
+                    {t('tabs.mods.status.updates_available', { count: updateCount })}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Check size={16} style={{ color: 'var(--main-color)' }} />
+                  <span style={{ color: 'var(--text-secondary)' }}>{t('tabs.mods.status.up_to_date')}</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
         <button className={styles.actionBtn} onClick={() => handleOpenFolder('mods')}>
           <FolderOpen size={16} />
@@ -108,24 +129,28 @@ export function ModsTab({
                     </td>
                     <td>
                       <div className={styles.tableActions}>
-                        {update && (
-                          <button
-                            className={styles.updateIconBtn}
-                            onClick={() => handleUpdateMod(mod, update)}
-                            title={t('tabs.mods.update_available', { version: update.version_number })}
-                          >
-                            <ArrowUpCircle size={18} />
-                          </button>
-                        )}
+                        <button
+                          className={styles.updateIconBtn}
+                          onClick={() => update && handleUpdateMod(mod, update)}
+                          disabled={!mod.enabled || !update}
+                          style={{ visibility: update ? 'visible' : 'hidden' }}
+                          title={update ? t('tabs.mods.update_available', { version: update.version_number }) : ''}
+                        >
+                          <ArrowUpCircle size={18} />
+                        </button>
                         <button
                           className={styles.deleteIconBtn}
                           style={{ color: 'var(--text-secondary)' }}
                           onClick={() => onOpenModVersionModal(mod)}
+                          disabled={!mod.enabled}
                           title={t('mod_version.title')}
                         >
                           <RefreshCw size={15} />
                         </button>
-                        <button className={styles.deleteIconBtn} onClick={() => handleDeleteMod(mod.fileName)}>
+                        <button
+                          className={styles.deleteIconBtn}
+                          onClick={() => handleDeleteMod(mod.fileName)}
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -143,7 +168,7 @@ export function ModsTab({
               {t('tabs.mods.empty_desc')}
             </div>
             <div className={styles.btnRow}>
-              <button className={styles.primaryBtn} onClick={onDownloadClick}>
+              <button className={styles.primaryBtn} onClick={onDownloadClick} disabled={modloader === 'Vanilla'}>
                 <Download size={14} />
                 <span>{t('tabs.mods.btn.download_modrinth')}</span>
               </button>

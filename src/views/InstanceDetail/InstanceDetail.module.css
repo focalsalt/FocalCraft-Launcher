@@ -581,6 +581,19 @@
   flex-wrap: wrap;
 }
 
+.updateStatusInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 6px 12px;
+  border-radius: var(--border-radius-md);
+  margin-left: 8px;
+}
+
 .primaryBtn {
   background-color: var(--main-color);
   color: white;
@@ -1517,7 +1530,9 @@
   transform: translateX(14px);
 }
 
-.disabledMod {
+.disabledMod td:nth-child(2),
+.disabledMod td:nth-child(3),
+.disabledMod .fileSub {
   opacity: 0.4;
 }
 
@@ -2064,4 +2079,17 @@
   font-size: 12px;
   border-radius: var(--border-radius-sm);
   background-color: rgba(0, 0, 0, 0.45);
+}
+
+.updateIconBtn:disabled,
+.deleteIconBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.updateIconBtn:disabled:hover,
+.deleteIconBtn:disabled:hover {
+  background-color: transparent !important;
+  color: inherit !important;
+  transform: none !important;
 }

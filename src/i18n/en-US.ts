@@ -90,6 +90,7 @@ export const enUS: Record<keyof typeof zhTW, string> = {
   "create.label.no_results": "No modpacks found",
   "create.label.project_id": "Project ID: {id}",
   "create.label.select_version": "Select Modpack Version",
+  "create.label.select_mod_version": "Select Mod Version",
   "create.status.searching": "Searching...",
   "create.status.creating": "Creating instance...",
   "create.status.loading_more": "Loading more modpacks...",
@@ -275,6 +276,7 @@ export const enUS: Record<keyof typeof zhTW, string> = {
   "detail.modal.delete_server.title": "Delete Server Connection",
   "detail.modal.delete_screenshot.title": "Delete Screenshot",
   "detail.modal.update_modpack.title": "Update Modpack",
+  "detail.modal.update_mod.title": "Update Mod",
 
   "detail.modal.delete_mod.msg": "Are you sure you want to delete mod \"{name}\"?",
   "detail.modal.delete_rp.msg": "Are you sure you want to delete resource pack \"{name}\"?",
@@ -283,6 +285,7 @@ export const enUS: Record<keyof typeof zhTW, string> = {
   "detail.modal.delete_server.msg": "Are you sure you want to delete server connection record \"{name}\"?",
   "detail.modal.delete_screenshot.msg": "Are you sure you want to delete screenshot \"{name}\"?",
   "detail.modal.update_modpack.msg": "Are you sure you want to update this modpack to version {version}?\nThis will clear and replace the current mods directory.",
+  "detail.modal.update_mod.msg": "Will update {name} {oldVersion} to {newVersion}",
 
   "detail.notification.delete_mod.failed": "Failed to delete mod",
   "detail.notification.delete_rp.failed": "Failed to delete resource pack",
@@ -390,7 +393,9 @@ export const enUS: Record<keyof typeof zhTW, string> = {
   "tabs.mods.empty": "No mods installed yet",
   "tabs.mods.empty_search": "No matching mods found",
   "tabs.mods.btn.import": "Import Mods",
-  "tabs.mods.btn.check_updates": "Check Updates",
+  "tabs.mods.status.checking": "Checking for mod updates...",
+  "tabs.mods.status.updates_available": "Detected {count} updateable mods",
+  "tabs.mods.status.up_to_date": "All mods are up-to-date",
   "tabs.mods.label.name": "Name",
   "tabs.mods.label.version": "Version",
   "tabs.mods.label.env": "Environment",
@@ -407,7 +412,6 @@ export const enUS: Record<keyof typeof zhTW, string> = {
   // Tabs: Resource Packs
   "tabs.rp.btn.import": "Import Resource Pack",
   "tabs.rp.btn.download": "Download Resource Pack",
-  "tabs.rp.btn.check_updates": "Check Updates",
   "tabs.rp.btn.folder": "Open Resource Packs Folder",
   "tabs.rp.label.name_desc": "Name & Description",
   "tabs.rp.label.game_version": "Game Version",
