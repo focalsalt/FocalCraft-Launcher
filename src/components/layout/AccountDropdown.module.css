@@ -147,7 +147,7 @@
 }
 
 .statusWrapper.valid {
-  color: var(--accent-green, #4caf50);
+  color: var(--accent-green);
 }
 
 .statusWrapper.updating {
@@ -183,10 +183,10 @@
 }
 
 .dangerItem {
-  color: #ef5350 !important;
+  color: var(--danger-red) !important;
 }
 
 .dangerItem:hover {
-  background-color: rgba(239, 83, 80, 0.08) !important;
-  color: #ef5350 !important;
+  background-color: rgba(var(--danger-red-rgb), 0.08) !important;
+  color: var(--danger-red) !important;
 }

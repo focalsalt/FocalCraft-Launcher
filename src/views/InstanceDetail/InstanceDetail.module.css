@@ -450,16 +450,16 @@
 }
 
 .screenshotActions button.deleteBtn {
-  color: var(--danger-red-light);
-  border-color: rgba(var(--danger-red-rgb), 0.2);
-  background: rgba(var(--danger-red-rgb), 0.05);
+  background-color: rgba(var(--danger-red-rgb), 0.05);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.2);
+  color: var(--danger-red);
 }
 
 .screenshotActions button.deleteBtn:hover {
-  color: var(--danger-red-hover);
-  border-color: rgba(var(--danger-red-rgb), 0.5);
-  background: rgba(var(--danger-red-rgb), 0.15);
-  box-shadow: 0 6px 16px rgba(var(--danger-red-rgb), 0.15);
+  background-color: var(--danger-red-hover);
+  color: white;
+  border-color: var(--danger-red-hover);
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--danger-red-rgb), 0.2);
 }
 
 /* 2. LOG CONSOLE TAB */
@@ -612,19 +612,19 @@
 
 .primaryBtn {
   background-color: var(--main-color);
-  color: white;
+  color: var(--main-color-text, #ffffff);
   border: none;
-  padding: 8px 16px;
-  border-radius: var(--border-radius-md);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-md, 0.5rem);
   font-weight: 500;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 12px rgba(var(--main-color-rgb), 0.2);
-  transform: translateY(1px);
+  gap: 0.375rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--main-color-rgb), 0.2);
+  transform: translateY(0.0625rem);
 }
 
 .primaryBtn:hover {
@@ -799,8 +799,8 @@
 }
 
 .deleteIconBtn:hover {
-  color: #ff5252;
-  background-color: rgba(255, 82, 82, 0.12);
+  color: var(--danger-red);
+  background-color: rgba(var(--danger-red-rgb), 0.12);
 }
 
 .datapacksContainer {
@@ -958,16 +958,16 @@
 .btnIcon {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: var(--border-radius-md);
+  gap: 0.375rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--border-radius-md, 0.5rem);
   font-weight: 500;
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: all var(--transition-fast);
   border: none;
   background-color: var(--main-color);
-  color: white;
+  color: var(--main-color-text, #ffffff);
   white-space: nowrap;
 }
 
@@ -1085,43 +1085,43 @@
 }
 
 .saveBtn {
-  background-color: var(--accent-green);
-  color: white;
+  background-color: var(--main-color);
+  color: var(--main-color-text, #ffffff);
   border: none;
-  padding: 10px 24px;
+  padding: 0.625rem 1.5rem;
   border-radius: var(--border-radius-md);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.2);
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--main-color-rgb), 0.2);
 }
 
 .saveBtn:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(var(--accent-green-rgb), 0.35);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 4px 16px rgba(var(--main-color-rgb), 0.35);
   transform: translateY(-1px);
 }
 
 .deleteBtn {
-  background-color: rgba(255, 82, 82, 0.08);
-  border: 1px solid rgba(255, 82, 82, 0.3);
-  color: #ff5252;
-  padding: 10px 20px;
-  border-radius: var(--border-radius-md);
+  background-color: rgba(var(--danger-red-rgb), 0.05);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.2);
+  color: var(--danger-red);
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--border-radius-sm, 0.25rem);
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: all var(--transition-fast);
   margin-left: auto;
 }
 
 .deleteBtn:hover {
-  background-color: #ff5252;
+  background-color: var(--danger-red-hover);
   color: white;
-  border-color: #ff5252;
-  box-shadow: 0 4px 14px rgba(255, 82, 82, 0.3);
-  transform: translateY(-1px);
+  border-color: var(--danger-red-hover);
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--danger-red-rgb), 0.2);
+  transform: translateY(-0.0625rem);
 }
 
 /* 8. MODPACK MODRINTH UPDATE TAB */
@@ -1230,15 +1230,15 @@
 
 .primaryBtnLarge {
   background-color: var(--main-color);
-  color: white;
+  color: var(--main-color-text, #ffffff);
   border: none;
-  padding: 12px 24px;
-  border-radius: var(--border-radius-md);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-md, 0.5rem);
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 14px rgba(var(--main-color-rgb), 0.25);
+  box-shadow: 0 0.25rem 0.875rem rgba(var(--main-color-rgb), 0.25);
   text-align: center;
 }
 
@@ -1323,24 +1323,24 @@
 .playBtn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-radius: 40px;
+  gap: 0.75rem;
+  border-radius: 2.5rem;
   border: none;
   cursor: pointer;
   font-weight: 600;
   transition: all var(--transition-normal);
-  padding: 14px 44px;
-  font-size: 16px;
-  color: white;
-  background-color: var(--accent-green);
-  box-shadow: 0 6px 20px rgba(var(--accent-green-rgb), 0.35);
+  padding: 0.875rem 2.75rem;
+  font-size: 1rem;
+  color: var(--main-color-text, #ffffff);
+  background-color: var(--main-color);
+  box-shadow: 0 0.375rem 1.25rem rgba(var(--main-color-rgb), 0.35);
   backdrop-filter: blur(4px);
 }
 
 .playBtn:hover:not(:disabled) {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 8px 24px rgba(var(--accent-green-rgb), 0.55);
-  transform: scale(1.02) translateY(-2px);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 0.5rem 1.5rem rgba(var(--main-color-rgb), 0.55);
+  transform: scale(1.02) translateY(-0.125rem);
 }
 
 .playBtn:active:not(:disabled) {
@@ -1350,39 +1350,39 @@
 .playBtnActive {
   opacity: 0.85;
   cursor: not-allowed;
-  background-color: rgba(var(--accent-green-rgb), 0.65);
-  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.25);
+  background-color: rgba(var(--main-color-rgb), 0.65);
+  box-shadow: 0 4px 12px rgba(var(--main-color-rgb), 0.25);
 }
 
 .playBtn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-  background-color: rgba(var(--accent-green-rgb), 0.5);
+  background-color: rgba(var(--main-color-rgb), 0.5);
   box-shadow: none;
 }
 
 .terminateBtn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-radius: 40px;
-  border: 1px solid rgba(239, 83, 80, 0.4);
+  gap: 0.75rem;
+  border-radius: 2.5rem;
+  border: 1px solid rgba(var(--danger-red-rgb), 0.4);
   cursor: pointer;
   font-weight: 600;
   transition: all var(--transition-normal);
-  padding: 14px 44px;
-  font-size: 16px;
+  padding: 0.875rem 2.75rem;
+  font-size: 1rem;
   color: white;
-  background-color: rgba(239, 83, 80, 0.85);
-  box-shadow: 0 6px 20px rgba(239, 83, 80, 0.35);
+  background-color: rgba(var(--danger-red-rgb), 0.85);
+  box-shadow: 0 0.375rem 1.25rem rgba(var(--danger-red-rgb), 0.35);
   backdrop-filter: blur(4px);
 }
 
 .terminateBtn:hover {
-  background-color: rgba(239, 83, 80, 1);
-  border-color: rgba(239, 83, 80, 0.6);
-  box-shadow: 0 8px 24px rgba(239, 83, 80, 0.55);
-  transform: scale(1.02) translateY(-2px);
+  background-color: var(--danger-red-hover);
+  border-color: rgba(var(--danger-red-rgb), 0.6);
+  box-shadow: 0 0.5rem 1.5rem rgba(var(--danger-red-rgb), 0.55);
+  transform: scale(1.02) translateY(-0.125rem);
 }
 
 .terminateBtn:active {
@@ -1627,9 +1627,9 @@
 
 .filterSegmentButton.active {
   background-color: var(--main-color);
-  color: white;
+  color: var(--main-color-text, #ffffff);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(var(--main-color-rgb), 0.3);
+  box-shadow: 0 0.125rem 0.5rem rgba(var(--main-color-rgb), 0.3);
 }
 
 .filterSegmentButton:disabled {
@@ -2018,16 +2018,16 @@
 }
 
 .logActionDanger {
-  background: rgba(239, 83, 80, 0.08) !important;
-  border-color: rgba(239, 83, 80, 0.25) !important;
-  color: #ef5350 !important;
+  background: rgba(var(--danger-red-rgb), 0.05) !important;
+  border-color: rgba(var(--danger-red-rgb), 0.2) !important;
+  color: var(--danger-red) !important;
 }
 
 .logActionDanger:hover:not(:disabled) {
-  background: rgba(239, 83, 80, 0.18) !important;
-  border-color: rgba(239, 83, 80, 0.5) !important;
+  background: var(--danger-red-hover) !important;
+  border-color: var(--danger-red-hover) !important;
   color: white !important;
-  box-shadow: 0 4px 10px rgba(239, 83, 80, 0.2) !important;
+  box-shadow: 0 0.25rem 0.625rem rgba(var(--danger-red-rgb), 0.2) !important;
 }
 
 .logConsole {

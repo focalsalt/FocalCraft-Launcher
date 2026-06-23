@@ -1,5 +1,6 @@
-import { Upload, Loader } from 'lucide-react';
+import { Upload, Loader, Package, Wrench } from 'lucide-react';
 import { useI18n } from '../../../utils/i18n';
+import { Checkbox } from '../../../components/common/Checkbox';
 import styles from '../CreateInstanceModal.module.css';
 
 interface LocalImportTabProps {
@@ -53,7 +54,9 @@ export function LocalImportTab({
             <div className={styles.modpackDetailLayout}>
               <div className={styles.detailTopSection}>
                 <div className={styles.detailHeader}>
-                  <div className={styles.detailIconPlaceholder}>📦</div>
+                  <div className={styles.detailIconPlaceholder}>
+                    <Package size={24} />
+                  </div>
                   <div className={styles.detailHeaderInfo}>
                     <h3 className={styles.detailTitle}>{mrpackDetails.name}</h3>
                     <p className={styles.detailDesc}>{t('create.mrpack.local_pack')}</p>
@@ -66,7 +69,10 @@ export function LocalImportTab({
                   <div className={styles.mrpackSummaryColumn}>
                     <div className={styles.versionSummaryCard}>
                       <div className={styles.licenseHeader}>
-                        <span className={styles.modsCountTitle}>{t('create.mrpack.info_title')}</span>
+                        <span className={styles.modsCountTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Package size={16} />
+                          {t('create.mrpack.info_title')}
+                        </span>
                       </div>
                       <div className={styles.detailRow}>
                         <span className={styles.label}>{t('create.label.version')}</span>
@@ -90,21 +96,17 @@ export function LocalImportTab({
                   <div className={styles.mrpackModsColumn}>
                     <div className={styles.licenseConfirmContainer}>
                       <div className={styles.licenseHeader}>
-                        <span className={styles.modsCountTitle}>
+                        <span className={styles.modsCountTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Wrench size={16} />
                           {t('create.mrpack.select_mods_title', { selected: selectedMods.size, total: mrpackDetails.mods.length })}
                         </span>
                         <div className={styles.toggleAllContainer}>
-                          <label className={styles.checkboxLabel}>
-                            <input
-                              type="checkbox"
-                              checked={selectedMods.size === mrpackDetails.mods.length}
-                              ref={(el) => {
-                                if (el) el.indeterminate = selectedMods.size > 0 && selectedMods.size < mrpackDetails.mods.length;
-                              }}
-                              onChange={(e) => toggleAllMods(e.target.checked, mrpackDetails.mods)}
-                            />
-                            <span>{t('create.mrpack.select_all')}</span>
-                          </label>
+                          <Checkbox
+                            checked={selectedMods.size === mrpackDetails.mods.length}
+                            indeterminate={selectedMods.size > 0 && selectedMods.size < mrpackDetails.mods.length}
+                            onChange={(checked) => toggleAllMods(checked, mrpackDetails.mods)}
+                            label={t('create.mrpack.select_all')}
+                          />
                         </div>
                       </div>
 
@@ -117,13 +119,10 @@ export function LocalImportTab({
                               className={`${styles.modItemSelectable} ${isChecked ? styles.checked : ''}`}
                               onClick={() => toggleModSelection(mod.id)}
                             >
-                              <label className={styles.checkboxLabel} onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => toggleModSelection(mod.id)}
-                                />
-                              </label>
+                              <Checkbox
+                                checked={isChecked}
+                                onChange={() => toggleModSelection(mod.id)}
+                              />
                               <div className={styles.modMain}>
                                 <div className={styles.modNameRow}>
                                   <span className={styles.modName}>{mod.name}</span>

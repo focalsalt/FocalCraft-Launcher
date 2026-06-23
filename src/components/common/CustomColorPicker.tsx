@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useI18n } from '../../utils/i18n';
 import styles from './CustomColorPicker.module.css';
 
@@ -8,19 +8,16 @@ interface CustomColorPickerProps {
   onChange: (val: string | null) => void;
 }
 
-const PRESET_COLORS = [
-  { hex: '#3C8527', name: 'Green' },   // Minecraft Green
-  { hex: '#2EA0D8', name: 'Blue' },    // Ocean Blue
-  { hex: '#9C27B0', name: 'Purple' },  // Royal Purple
-  { hex: '#D8A32E', name: 'Orange' },  // Sunset Orange
-  { hex: '#D83030', name: 'Red' },     // Lava Red
-  { hex: '#00BCD4', name: 'Cyan' }     // Ender Cyan
-];
-
 export function CustomColorPicker({ value, onChange }: CustomColorPickerProps) {
   const { t } = useI18n();
   const activeColor = value || '#3C8527';
   const isDefaultColor = !value || value.toUpperCase() === '#3C8527';
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // HSL state
   const [hsl, setHsl] = useState({ h: 107, s: 55, l: 34 });
@@ -42,6 +39,52 @@ export function CustomColorPicker({ value, onChange }: CustomColorPickerProps) {
       setHexInputText(activeColor);
     }
   }, [value]);
+
+  // Click outside to close popover
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const clickedTrigger = wrapperRef.current && wrapperRef.current.contains(target);
+      const clickedDropdown = dropdownRef.current && dropdownRef.current.contains(target);
+      if (!clickedTrigger && !clickedDropdown) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Update coords dynamically on scroll/resize
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const updateCoords = () => {
+      if (wrapperRef.current) {
+        const swatch = wrapperRef.current.querySelector(`.${styles.triggerSwatch}`);
+        if (swatch) {
+          const rect = swatch.getBoundingClientRect();
+          setCoords({
+            top: rect.bottom + 8,
+            left: rect.left
+          });
+        }
+      }
+    };
+
+    updateCoords();
+
+    window.addEventListener('resize', updateCoords);
+    window.addEventListener('scroll', updateCoords, true);
+
+    return () => {
+      window.removeEventListener('resize', updateCoords);
+      window.removeEventListener('scroll', updateCoords, true);
+    };
+  }, [isOpen]);
 
   const updateColorFromHsl = (h: number, s: number, l: number) => {
     const hex = hslToHex(h, s, l);
@@ -98,10 +141,6 @@ export function CustomColorPicker({ value, onChange }: CustomColorPickerProps) {
     }
   };
 
-  const handlePresetSelect = (hex: string) => {
-    onChange(hex);
-  };
-
   const handleReset = () => {
     onChange(null);
   };
@@ -116,175 +155,172 @@ export function CustomColorPicker({ value, onChange }: CustomColorPickerProps) {
   const blueTrackBg = `linear-gradient(to right, rgb(${rgb.r}, ${rgb.g}, 0), rgb(${rgb.r}, ${rgb.g}, 255))`;
 
   return (
-    <div className={styles.container}>
-      {/* 預設配色 */}
-      <div className={styles.section}>
-        <div className={styles.label}>{t('settings.theme.presets')}</div>
-        <div className={styles.presetsRow}>
-          {PRESET_COLORS.map((preset) => {
-            const isActive = activeColor.toUpperCase() === preset.hex.toUpperCase();
-            return (
-              <button
-                key={preset.hex}
-                className={`${styles.presetBtn} ${isActive ? styles.presetBtnActive : ''}`}
-                style={{ backgroundColor: preset.hex }}
-                onClick={() => handlePresetSelect(preset.hex)}
-                title={preset.name}
-              >
-                {isActive && <Check className={styles.presetCheckmark} size={14} strokeWidth={3} />}
-              </button>
-            );
-          })}
-        </div>
+    <div className={styles.pickerWrapper} ref={wrapperRef}>
+      {/* 常駐橫列 */}
+      <div className={styles.colorInputWrapper}>
+        <div
+          className={`${styles.triggerSwatch} ${isOpen ? styles.triggerSwatchActive : ''}`}
+          style={{ backgroundColor: activeColor }}
+          onClick={() => setIsOpen(!isOpen)}
+          title={t('settings.theme.custom_adjust')}
+        />
+        <input
+          type="text"
+          className={styles.hexInput}
+          value={hexInputText}
+          onChange={(e) => handleHexInputChange(e.target.value)}
+          placeholder="#3C8527"
+        />
+        {!isDefaultColor && (
+          <button className={styles.resetBtn} onClick={handleReset}>
+            {t('settings.btn.restore') || '恢復預設'}
+          </button>
+        )}
       </div>
 
-      {/* 色彩調整滑桿 */}
-      <div className={styles.section}>
-        <div className={styles.label}>
-          <span>{t('settings.theme.custom_adjust')}</span>
-          <div className={styles.modeToggleGroup}>
-            <button
-              className={`${styles.modeToggleBtn} ${mode === 'hsl' ? styles.modeToggleBtnActive : ''}`}
-              onClick={() => setMode('hsl')}
-            >
-              HSL
-            </button>
-            <button
-              className={`${styles.modeToggleBtn} ${mode === 'rgb' ? styles.modeToggleBtnActive : ''}`}
-              onClick={() => setMode('rgb')}
-            >
-              RGB
-            </button>
+      {/* 彈出式面板 (使用 Portal 掛載到 body) */}
+      {isOpen && createPortal(
+        <div
+          className={styles.dropdown}
+          ref={dropdownRef}
+          style={{
+            position: 'fixed',
+            top: `${coords.top}px`,
+            left: `${coords.left}px`,
+            zIndex: 99999
+          }}
+        >
+          {/* 色彩調整滑桿 */}
+          <div className={styles.section}>
+            <div className={styles.label}>
+              <span>{t('settings.theme.custom_adjust')}</span>
+              <div className={styles.modeToggleGroup}>
+                <button
+                  className={`${styles.modeToggleBtn} ${mode === 'hsl' ? styles.modeToggleBtnActive : ''}`}
+                  onClick={() => setMode('hsl')}
+                >
+                  HSL
+                </button>
+                <button
+                  className={`${styles.modeToggleBtn} ${mode === 'rgb' ? styles.modeToggleBtnActive : ''}`}
+                  onClick={() => setMode('rgb')}
+                >
+                  RGB
+                </button>
+              </div>
+            </div>
+            <div className={styles.sliderGroup}>
+              {mode === 'hsl' ? (
+                <>
+                  {/* Hue Slider */}
+                  <div className={styles.sliderRow}>
+                    <div className={styles.label}>
+                      <span>{t('settings.theme.hue')}</span>
+                      <span className={styles.valueSpan}>{hsl.h}°</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      value={hsl.h}
+                      onChange={(e) => handleHueChange(parseInt(e.target.value))}
+                      className={`${styles.slider} ${styles.hueTrack}`}
+                    />
+                  </div>
+
+                  {/* Saturation Slider */}
+                  <div className={styles.sliderRow}>
+                    <div className={styles.label}>
+                      <span>{t('settings.theme.saturation')}</span>
+                      <span className={styles.valueSpan}>{hsl.s}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={hsl.s}
+                      onChange={(e) => handleSatChange(parseInt(e.target.value))}
+                      className={styles.slider}
+                      style={{ background: satTrackBg }}
+                    />
+                  </div>
+
+                  {/* Lightness Slider */}
+                  <div className={styles.sliderRow}>
+                    <div className={styles.label}>
+                      <span>{t('settings.theme.lightness')}</span>
+                      <span className={styles.valueSpan}>{hsl.l}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={hsl.l}
+                      onChange={(e) => handleLightChange(parseInt(e.target.value))}
+                      className={styles.slider}
+                      style={{ background: lightTrackBg }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Red Slider */}
+                  <div className={styles.sliderRow}>
+                    <div className={styles.label}>
+                      <span>{t('settings.theme.red')}</span>
+                      <span className={styles.valueSpan}>{rgb.r}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="255"
+                      value={rgb.r}
+                      onChange={(e) => handleRedChange(parseInt(e.target.value))}
+                      className={styles.slider}
+                      style={{ background: redTrackBg }}
+                    />
+                  </div>
+
+                  {/* Green Slider */}
+                  <div className={styles.sliderRow}>
+                    <div className={styles.label}>
+                      <span>{t('settings.theme.green')}</span>
+                      <span className={styles.valueSpan}>{rgb.g}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="255"
+                      value={rgb.g}
+                      onChange={(e) => handleGreenChange(parseInt(e.target.value))}
+                      className={styles.slider}
+                      style={{ background: greenTrackBg }}
+                    />
+                  </div>
+
+                  {/* Blue Slider */}
+                  <div className={styles.sliderRow}>
+                    <div className={styles.label}>
+                      <span>{t('settings.theme.blue')}</span>
+                      <span className={styles.valueSpan}>{rgb.b}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="255"
+                      value={rgb.b}
+                      onChange={(e) => handleBlueChange(parseInt(e.target.value))}
+                      className={styles.slider}
+                      style={{ background: blueTrackBg }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        <div className={styles.sliderGroup}>
-          {mode === 'hsl' ? (
-            <>
-              {/* Hue Slider */}
-              <div className={styles.sliderRow}>
-                <div className={styles.label}>
-                  <span>{t('settings.theme.hue')}</span>
-                  <span className={styles.valueSpan}>{hsl.h}°</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="360"
-                  value={hsl.h}
-                  onChange={(e) => handleHueChange(parseInt(e.target.value))}
-                  className={`${styles.slider} ${styles.hueTrack}`}
-                />
-              </div>
-
-              {/* Saturation Slider */}
-              <div className={styles.sliderRow}>
-                <div className={styles.label}>
-                  <span>{t('settings.theme.saturation')}</span>
-                  <span className={styles.valueSpan}>{hsl.s}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={hsl.s}
-                  onChange={(e) => handleSatChange(parseInt(e.target.value))}
-                  className={styles.slider}
-                  style={{ background: satTrackBg }}
-                />
-              </div>
-
-              {/* Lightness Slider */}
-              <div className={styles.sliderRow}>
-                <div className={styles.label}>
-                  <span>{t('settings.theme.lightness')}</span>
-                  <span className={styles.valueSpan}>{hsl.l}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={hsl.l}
-                  onChange={(e) => handleLightChange(parseInt(e.target.value))}
-                  className={styles.slider}
-                  style={{ background: lightTrackBg }}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Red Slider */}
-              <div className={styles.sliderRow}>
-                <div className={styles.label}>
-                  <span>{t('settings.theme.red')}</span>
-                  <span className={styles.valueSpan}>{rgb.r}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="255"
-                  value={rgb.r}
-                  onChange={(e) => handleRedChange(parseInt(e.target.value))}
-                  className={styles.slider}
-                  style={{ background: redTrackBg }}
-                />
-              </div>
-
-              {/* Green Slider */}
-              <div className={styles.sliderRow}>
-                <div className={styles.label}>
-                  <span>{t('settings.theme.green')}</span>
-                  <span className={styles.valueSpan}>{rgb.g}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="255"
-                  value={rgb.g}
-                  onChange={(e) => handleGreenChange(parseInt(e.target.value))}
-                  className={styles.slider}
-                  style={{ background: greenTrackBg }}
-                />
-              </div>
-
-              {/* Blue Slider */}
-              <div className={styles.sliderRow}>
-                <div className={styles.label}>
-                  <span>{t('settings.theme.blue')}</span>
-                  <span className={styles.valueSpan}>{rgb.b}</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="255"
-                  value={rgb.b}
-                  onChange={(e) => handleBlueChange(parseInt(e.target.value))}
-                  className={styles.slider}
-                  style={{ background: blueTrackBg }}
-                />
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* 顏色預覽與輸入 */}
-      <div className={styles.previewRow}>
-        <div className={styles.previewSwatch} style={{ backgroundColor: activeColor }}></div>
-        <div className={styles.colorInputWrapper}>
-          <input
-            type="text"
-            className={styles.hexInput}
-            value={hexInputText}
-            onChange={(e) => handleHexInputChange(e.target.value)}
-            placeholder="#3C8527"
-          />
-          {!isDefaultColor && (
-            <button className={styles.resetBtn} onClick={handleReset}>
-              {t('settings.btn.restore') || '恢復預設'}
-            </button>
-          )}
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, ArrowRight } from 'lucide-react';
 import { ModItem } from '../../types';
 import { useI18n } from '../../utils/i18n';
+import { Checkbox } from '../../components/common/Checkbox';
 import styles from './BatchUpdateModal.module.css';
 
 interface BatchUpdateModalProps {
@@ -76,14 +77,11 @@ export function BatchUpdateModal({
 
         {updateableMods.length > 0 && (
           <div className={styles.selectAllRow}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={isAllSelected}
-                onChange={handleToggleSelectAll}
-              />
-              <span className={styles.checkboxText}>{t('detail.modal.batch_update.select_all')}</span>
-            </label>
+            <Checkbox
+              checked={isAllSelected}
+              onChange={handleToggleSelectAll}
+              label={t('detail.modal.batch_update.select_all')}
+            />
             <span className={styles.countInfo}>
               {selectedSha1s.size} / {updateableMods.length}
             </span>
@@ -106,11 +104,10 @@ export function BatchUpdateModal({
                     className={`${styles.item} ${isSelected ? styles.itemSelected : ''}`}
                     onClick={() => handleToggleMod(mod.sha1)}
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={isSelected}
-                      onChange={() => {}} // Handled by item onClick
-                      onClick={(e) => e.stopPropagation()}
+                      disabled={false}
+                      className={styles.itemCheckbox}
                     />
                     <div className={styles.modInfo}>
                       <div className={styles.modName}>{mod.name}</div>
@@ -129,11 +126,11 @@ export function BatchUpdateModal({
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.cancelBtn} onClick={onClose}>
+          <button className="btn-text" onClick={onClose}>
             {t('common.cancel')}
           </button>
           <button
-            className={styles.confirmBtn}
+            className="btn-filled"
             onClick={handleConfirm}
             disabled={selectedSha1s.size === 0}
           >

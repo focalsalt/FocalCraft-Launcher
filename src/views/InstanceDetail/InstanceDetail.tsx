@@ -198,51 +198,62 @@ export function InstanceDetail({ instanceId }: Props) {
     let unlistenFn: (() => void) | undefined;
 
     const setupWatcher = async () => {
-      // 開始監聽
-      await watchInstanceFolders(instanceId);
-      if (!active) return;
+      try {
+        // 開始監聽
+        await watchInstanceFolders(instanceId);
+        if (!active) return;
 
-      // 變動事件處理
-      const unlisten = await listen<{ folder: string; instanceId: string }>('folder-change', async (event) => {
-        if (event.payload.instanceId !== instanceId) return;
-        
-        console.log(`Received folder change event: ${event.payload.folder}`);
-        const loadId = ++lastLoadIdRef.current;
-        
-        if (event.payload.folder === 'mods') {
-          try {
-            const list = await invoke<ModItem[]>('get_installed_mods', { instanceId });
-            if (loadId === lastLoadIdRef.current) {
-              setMods(list);
-              if (checkModsUpdatesRef.current) {
-                checkModsUpdatesRef.current(list, false);
+        // 變動事件處理
+        const unlisten = await listen<{ folder: string; instanceId: string }>('folder-change', async (event) => {
+          if (event.payload.instanceId !== instanceId) return;
+          
+          console.log(`Received folder change event: ${event.payload.folder}`);
+          const loadId = ++lastLoadIdRef.current;
+          
+          if (event.payload.folder === 'mods') {
+            try {
+              const list = await invoke<ModItem[]>('get_installed_mods', { instanceId });
+              if (loadId === lastLoadIdRef.current) {
+                setMods(list);
+                if (checkModsUpdatesRef.current) {
+                  checkModsUpdatesRef.current(list, false);
+                }
               }
+            } catch (err) {
+              console.error('Failed to reload mods:', err);
             }
-          } catch (err) {
-            console.error('Failed to reload mods:', err);
-          }
-        } else if (event.payload.folder === 'saves') {
-          try {
-            const list = await invoke<WorldItem[]>('get_installed_worlds', { instanceId });
-            if (loadId === lastLoadIdRef.current) {
-              setWorlds(list);
+          } else if (event.payload.folder === 'saves') {
+            try {
+              const list = await invoke<WorldItem[]>('get_installed_worlds', { instanceId });
+              if (loadId === lastLoadIdRef.current) {
+                setWorlds(list);
+              }
+            } catch (err) {
+              console.error('Failed to reload worlds:', err);
             }
-          } catch (err) {
-            console.error('Failed to reload worlds:', err);
+          } else if (event.payload.folder === 'screenshots') {
+            loadScreenshots(loadId);
+          } else if (event.payload.folder === 'datapacks') {
+            if (activeWorldForDatapacks) {
+              refreshDatapacks(activeWorldForDatapacks.folderName);
+            }
           }
-        } else if (event.payload.folder === 'screenshots') {
-          loadScreenshots(loadId);
-        } else if (event.payload.folder === 'datapacks') {
-          if (activeWorldForDatapacks) {
-            refreshDatapacks(activeWorldForDatapacks.folderName);
-          }
-        }
-      });
+        });
 
-      if (!active) {
-        unlisten();
-      } else {
-        unlistenFn = unlisten;
+        if (!active) {
+          unlisten();
+        } else {
+          unlistenFn = unlisten;
+        }
+      } catch (err) {
+        console.error('Failed to setup folder watcher:', err);
+        addNotification({
+          type: 'error',
+          title: t('detail.notification.instance_not_found.title'),
+          message: t('detail.notification.instance_not_found.msg')
+        });
+        await loadInstances();
+        setCurrentView('instances_overview');
       }
     };
 
@@ -291,6 +302,59 @@ export function InstanceDetail({ instanceId }: Props) {
       setDatapacks([]);
     }
   }, [activeWorldForDatapacks]);
+
+  // 檢查模組更新
+  const handleCheckModsUpdates = async (modList: ModItem[] = mods, showNotification = true) => {
+    if (modList.length === 0 || !instance) {
+      setModsUpdates({});
+      return;
+    }
+    setIsCheckingModsUpdates(true);
+    try {
+      const hashes = modList.map(m => m.sha1).filter(h => h !== '');
+      const res = await fetch('https://api.modrinth.com/v2/version_files/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'focal-craft-launcher' },
+        body: JSON.stringify({
+          hashes,
+          algorithm: 'sha1',
+          loaders: [instance.modloader.toLowerCase()],
+          game_versions: [instance.version],
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const filteredData: Record<string, any> = {};
+        const localHashesSet = new Set(hashes);
+        
+        Object.entries(data).forEach(([key, val]: [string, any]) => {
+          if (val && val.files) {
+            const hasSameHash = val.files.some((f: any) => f.hashes?.sha1 && localHashesSet.has(f.hashes.sha1));
+            if (!hasSameHash) {
+              filteredData[key] = val;
+            }
+          }
+        });
+
+        setModsUpdates(filteredData);
+        if (showNotification) {
+          addNotification({
+            type: 'success',
+            title: t('detail.notification.mods_check.title'),
+            message: t('detail.notification.mods_check.msg', { count: Object.keys(filteredData).length })
+          });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsCheckingModsUpdates(false);
+    }
+  };
+
+  useEffect(() => {
+    checkModsUpdatesRef.current = handleCheckModsUpdates;
+  }, [handleCheckModsUpdates]);
 
   if (!instance) {
     return <div className={styles.notFound}>{t('detail.not_found')}</div>;
@@ -629,58 +693,7 @@ export function InstanceDetail({ instanceId }: Props) {
     }
   };
 
-  // 檢查模組更新
-  const handleCheckModsUpdates = async (modList: ModItem[] = mods, showNotification = true) => {
-    if (modList.length === 0 || !instance) {
-      setModsUpdates({});
-      return;
-    }
-    setIsCheckingModsUpdates(true);
-    try {
-      const hashes = modList.map(m => m.sha1).filter(h => h !== '');
-      const res = await fetch('https://api.modrinth.com/v2/version_files/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'focal-craft-launcher' },
-        body: JSON.stringify({
-          hashes,
-          algorithm: 'sha1',
-          loaders: [instance.modloader.toLowerCase()],
-          game_versions: [instance.version],
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const filteredData: Record<string, any> = {};
-        const localHashesSet = new Set(hashes);
-        
-        Object.entries(data).forEach(([key, val]: [string, any]) => {
-          if (val && val.files) {
-            const hasSameHash = val.files.some((f: any) => f.hashes?.sha1 && localHashesSet.has(f.hashes.sha1));
-            if (!hasSameHash) {
-              filteredData[key] = val;
-            }
-          }
-        });
 
-        setModsUpdates(filteredData);
-        if (showNotification) {
-          addNotification({
-            type: 'success',
-            title: t('detail.notification.mods_check.title'),
-            message: t('detail.notification.mods_check.msg', { count: Object.keys(filteredData).length })
-          });
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsCheckingModsUpdates(false);
-    }
-  };
-
-  useEffect(() => {
-    checkModsUpdatesRef.current = handleCheckModsUpdates;
-  }, [handleCheckModsUpdates]);
 
   const executeUpdateMod = async (mod: ModItem, updateObj: any) => {
     try {
@@ -1080,7 +1093,7 @@ export function InstanceDetail({ instanceId }: Props) {
             onClick={handlePlay}
             disabled={isBtnDisabled}
           >
-            {isBtnDisabled && !isRunning ? <Loader className="animate-spin" size={20} /> : <Play size={20} fill="white" />}
+            {isBtnDisabled && !isRunning ? <Loader className="animate-spin" size={20} /> : <Play size={20} fill="currentColor" />}
             <span>{phaseText}</span>
           </button>
         </div>

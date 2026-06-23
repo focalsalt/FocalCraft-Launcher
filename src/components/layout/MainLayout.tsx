@@ -6,7 +6,7 @@ import { useAccountStore } from '../../store/accountStore';
 import { InstancesOverview } from '../../views/InstancesOverview/InstancesOverview';
 import { InstanceDetail } from '../../views/InstanceDetail/InstanceDetail';
 import { GlobalSettings } from '../../views/GlobalSettings/GlobalSettings';
-import { AccountInfoView } from '../../views/AccountInfo/AccountInfoView';
+import { AccountInfo } from '../../views/AccountInfo/AccountInfo';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { NotificationSystem } from './NotificationSystem';
@@ -47,7 +47,7 @@ export function MainLayout() {
     }
 
     if (currentView === 'account_info') {
-      return <AccountInfoView key={selectedAccountId || 'none'} />;
+      return <AccountInfo key={selectedAccountId || 'none'} />;
     }
 
     // 預設詳細頁

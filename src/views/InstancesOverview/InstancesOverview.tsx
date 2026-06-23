@@ -4,11 +4,12 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useI18n } from '../../utils/i18n';
 import { getInstanceIconSrc } from '../../utils/versionUtils';
 import { invoke } from '@tauri-apps/api/core';
-import { Plus, Package, Trash2 } from 'lucide-react';
+import { Plus, Package } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CreateInstanceModal } from './CreateInstanceModal';
 import { CustomConfirmModal } from '../../components/common/CustomConfirmModal';
 import { SafeImage } from '../../components/common/SafeImage';
+import { InstanceCard } from './InstanceCard';
 import styles from './InstancesOverview.module.css';
 
 export function InstancesOverview() {
@@ -24,8 +25,6 @@ export function InstancesOverview() {
   const settingsConfig = useSettingsStore((state) => state.config);
 
   const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<any | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
 
   // 拖放狀態
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -176,25 +175,13 @@ export function InstancesOverview() {
   };
 
   // 重新命名處理
-  const handleStartRename = (e: React.MouseEvent, id: string, name: string) => {
-    e.stopPropagation();
-    setEditingId(id);
-    setEditName(name);
-  };
-
-  const handleSaveRename = async (id: string, instance: any) => {
-    if (!editName.trim()) {
-      setEditingId(null);
-      return;
-    }
-    if (editName.trim() === instance.name) {
-      setEditingId(null);
-      return;
-    }
+  const handleRename = async (id: string, newName: string) => {
+    const instance = instances.find(i => i.id === id);
+    if (!instance) return;
     try {
       await updateInstanceConfig(
         id,
-        editName.trim(),
+        newName,
         instance.version,
         instance.modloader,
         instance.loaderVersion || undefined,
@@ -204,7 +191,7 @@ export function InstancesOverview() {
       addNotification({
         type: 'success',
         title: t('overview.notification.rename.title'),
-        message: t('overview.notification.rename.msg', { name: editName.trim() })
+        message: t('overview.notification.rename.msg', { name: newName })
       });
     } catch (err) {
       addNotification({
@@ -212,16 +199,6 @@ export function InstancesOverview() {
         title: t('overview.notification.rename_failed.title'),
         message: String(err)
       });
-    } finally {
-      setEditingId(null);
-    }
-  };
-
-  const handleRenameKeyDown = (e: React.KeyboardEvent, id: string, instance: any) => {
-    if (e.key === 'Enter') {
-      handleSaveRename(id, instance);
-    } else if (e.key === 'Escape') {
-      setEditingId(null);
     }
   };
 
@@ -251,86 +228,24 @@ export function InstancesOverview() {
         </div>
       ) : (
         <div className={styles.grid}>
-          {instances.filter(i => i && i.id).map((instance, index) => {
-            const iconSrc = getInstanceIconSrc(instance, baseDir, settingsConfig.instancesPath);
-            const instState = instanceStates[instance.id];
-            const isRunning = instState?.isRunning;
-            const isDownloading = instState?.isDownloading || instState?.isLaunching;
-            const isCrashed = instState?.isCrashed;
-            const isDragging = instance.id === activeDragId && isMouseDragging;
-            const isHoveredDrop = index === hoveredIndex && isMouseDragging && index !== dragStartIndex;
-
-            return (
-              <div
-                key={instance.id}
-                className={`${styles.card} ${isRunning ? styles.cardRunning : ''} ${isCrashed ? styles.cardCrashed : ''} ${isDragging ? styles.cardDragging : ''} ${isHoveredDrop ? styles.cardHoveredDrop : ''}`}
-                onMouseDown={(e) => !isRunning && !isDownloading && handleCardMouseDown(e, instance.id, index)}
-                onMouseEnter={() => handleCardMouseEnter(index)}
-              >
-                {/* 刪除按鈕 */}
-                {!isRunning && !isDownloading && (
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={(e) => handleDeleteClick(e, instance)}
-                    title={t('overview.delete.tooltip')}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-
-                {/* 狀態標籤 */}
-                {isRunning && <span className={`${styles.statusBadge} ${styles.runningBadge}`} title={t('overview.status.running')}>●</span>}
-                {isDownloading && !isRunning && (
-                  <span className={`${styles.statusBadge} ${styles.downloadingBadge}`} title={t('overview.status.loading')}>
-                    <span className={`${styles.spinnerDot} animate-spin`} />
-                  </span>
-                )}
-                {isCrashed && !isRunning && !isDownloading && (
-                  <span className={`${styles.statusBadge} ${styles.crashedBadge}`} title={t('overview.status.crashed')}>!</span>
-                )}
-
-                <div className={styles.iconPlaceholder}>
-                  {instance.icon && iconSrc ? (
-                    <SafeImage 
-                      src={iconSrc} 
-                      alt="Icon" 
-                      className={styles.instanceIcon} 
-                      fallbackEmoji="📦"
-                    />
-                  ) : (
-                    <div className={styles.emojiIcon}>
-                      {instance.icon || '📦'}
-                    </div>
-                  )}
-                </div>
-                <div className={styles.cardInfo}>
-                  {editingId === instance.id ? (
-                    <input
-                      type="text"
-                      className={styles.cardNameInput}
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onBlur={() => handleSaveRename(instance.id, instance)}
-                      onKeyDown={(e) => handleRenameKeyDown(e, instance.id, instance)}
-                      onClick={(e) => e.stopPropagation()}
-                      autoFocus
-                    />
-                  ) : (
-                    <div 
-                      className={styles.cardName}
-                      onClick={(e) => handleStartRename(e, instance.id, instance.name)}
-                      title={t('overview.rename.tooltip')}
-                    >
-                      {instance.name || t('overview.unnamed')}
-                    </div>
-                  )}
-                  <div className={styles.cardVersion}>
-                    {instance.version || t('overview.unknown_version')} • {instance.modloader === 'Custom' ? t('overview.custom') : (instance.modloader || 'Vanilla')} {instance.loaderVersion ? `(${instance.loaderVersion})` : ''}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {instances.filter(i => i && i.id).map((instance, index) => (
+            <InstanceCard
+              key={instance.id}
+              instance={instance}
+              index={index}
+              baseDir={baseDir}
+              instancesPath={settingsConfig.instancesPath || undefined}
+              instState={instanceStates[instance.id]}
+              activeDragId={activeDragId}
+              isMouseDragging={isMouseDragging}
+              hoveredIndex={hoveredIndex}
+              dragStartIndex={dragStartIndex}
+              onCardMouseDown={handleCardMouseDown}
+              onCardMouseEnter={handleCardMouseEnter}
+              onDeleteClick={handleDeleteClick}
+              onRename={handleRename}
+            />
+          ))}
         </div>
       )}
 

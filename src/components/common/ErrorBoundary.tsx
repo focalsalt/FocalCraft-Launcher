@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { useSettingsStore } from "../../store/settingsStore";
 import { getActiveLanguage, translations } from "../../utils/i18n";
+import { AlertTriangle } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -81,14 +82,16 @@ export class ErrorBoundary extends Component<Props, State> {
             userSelect: "text",
             WebkitUserSelect: "text"
           }}>
-            <span style={{ fontSize: "48px" }}>⚠️</span>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <AlertTriangle size={48} style={{ color: '#ff5252' }} />
+            </div>
             <h1 style={{ fontSize: "24px", margin: "16px 0 8px 0", color: "#ff5252" }}>
               {t('error_boundary.title')}
             </h1>
             <p style={{ color: "#aaaaaa", fontSize: "14px", marginBottom: "24px" }}>
               {t('error_boundary.desc')}
             </p>
-            
+
             <div style={{
               textAlign: "left",
               backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -135,7 +138,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <button
                 onClick={this.handleReload}
                 style={{
-                  backgroundColor: "var(--accent-green)",
+                  backgroundColor: "var(--main-color)",
                   color: "#ffffff",
                   border: "none",
                   padding: "10px 24px",
@@ -144,8 +147,8 @@ export class ErrorBoundary extends Component<Props, State> {
                   cursor: "pointer",
                   transition: "background-color 0.2s"
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-green-hover)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-green)")}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--main-color-hover)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--main-color)")}
               >
                 {t('error_boundary.btn.reload')}
               </button>

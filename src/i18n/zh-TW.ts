@@ -206,6 +206,8 @@ export const zhTW = {
   "detail.notification.cannot_launch.account_missing": "找不到已選取的帳號資訊，請重新登入！",
   "detail.notification.preparing_launch": "準備啟動 {name}...",
   "detail.notification.cannot_open_folder": "無法開啟資料夾",
+  "detail.notification.instance_not_found.title": "實例資料夾不存在",
+  "detail.notification.instance_not_found.msg": "實例資料夾可能已被外部更名或刪除！",
   "detail.notification.icon_updated.title": "圖示更新成功",
   "detail.notification.icon_updated.local_msg": "本機圖示已更新！",
   "detail.notification.icon_updated.url_msg": "網路圖示已設定！",

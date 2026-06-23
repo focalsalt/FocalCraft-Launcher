@@ -49,6 +49,7 @@
 }
 
 .card {
+  position: relative;
   background-color: rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -141,11 +142,11 @@
 .btnIconSec {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: var(--border-radius-md);
+  gap: 0.375rem;
+  padding: 0.625rem 1rem;
+  border-radius: var(--border-radius-md, 0.5rem);
   font-weight: 500;
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: all var(--transition-fast);
   border: none;
@@ -153,7 +154,7 @@
 
 .btnIcon {
   background-color: var(--main-color);
-  color: white;
+  color: var(--main-color-text, #ffffff);
 }
 
 .btnIcon:hover {
@@ -225,24 +226,24 @@
 }
 
 .saveBtn {
-  background-color: var(--accent-green);
-  color: white;
+  background-color: var(--main-color);
+  color: var(--main-color-text, #ffffff);
   border: none;
-  padding: 12px 32px;
+  padding: 0.75rem 2rem;
   border-radius: var(--border-radius-md);
   font-weight: 600;
-  font-size: 15px;
+  font-size: 0.9375rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.25);
+  box-shadow: 0 4px 12px rgba(var(--main-color-rgb), 0.25);
 }
 
 .saveBtn:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(var(--accent-green-rgb), 0.4);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 4px 16px rgba(var(--main-color-rgb), 0.4);
   transform: translateY(-1px);
 }
 
@@ -333,4 +334,47 @@
 .appDesc {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.presetsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.presetBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  position: relative;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  padding: 0;
+  outline: none;
+  background-clip: content-box;
+}
+
+.presetBtn:hover {
+  transform: scale(1.15);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.presetBtnActive {
+  transform: scale(1.1);
+  border-color: #ffffff;
+  box-shadow: 0 0 10px var(--main-color);
+}
+
+.presetCheckmark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }

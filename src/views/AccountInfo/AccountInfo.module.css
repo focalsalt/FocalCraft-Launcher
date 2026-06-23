@@ -21,47 +21,199 @@
 }
 
 /* 載入中與錯誤狀態 */
-.loadingContainer,
-.errorContainer {
+.previewErrorOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  height: 100%;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+  z-index: 5;
+  animation: fadeInOverlay 0.3s ease-out;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.previewErrorIcon {
+  color: var(--danger-red);
+  filter: drop-shadow(0 0 0.5rem rgba(var(--danger-red-rgb), 0.4));
+  animation: pulseIcon 2s infinite ease-in-out;
+}
+
+.previewErrorText {
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--text-secondary);
-  gap: 1rem;
+  line-height: 1.4;
+}
+
+@keyframes pulseIcon {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+    filter: drop-shadow(0 0 0.75rem rgba(var(--danger-red-rgb), 0.6));
+  }
 }
 
 .spin {
   color: var(--main-color);
 }
 
-.errorTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--danger-red);
-}
-
-.errorMessage {
-  font-size: 0.875rem;
-  max-width: 400px;
+.errorCard {
+  background: linear-gradient(135deg, rgba(var(--danger-red-rgb), 0.03) 0%, rgba(var(--danger-red-rgb), 0.01) 100%);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.15);
+  border-radius: var(--border-radius-lg, 0.75rem);
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  color: var(--text-muted);
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: cardSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.retryButton {
-  background-color: var(--accent-green);
-  color: #fff;
-  padding: 0.625rem 1.25rem;
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.errorCardIconContainer {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(var(--danger-red-rgb), 0.1);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--danger-red);
+  filter: drop-shadow(0 0.25rem 0.75rem rgba(var(--danger-red-rgb), 0.15));
+  margin-bottom: 0.25rem;
+}
+
+.errorCardIcon {
+  animation: shakeIcon 0.5s ease-in-out;
+}
+
+@keyframes shakeIcon {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+.errorCardTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.errorCardMessage {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  max-width: 450px;
+  line-height: 1.6;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  font-family: var(--font-mono, monospace);
+  word-break: break-all;
+}
+
+.errorCardRetryBtn {
+  background: linear-gradient(135deg, var(--main-color) 0%, var(--main-color-hover) 100%);
+  color: var(--main-color-text, #ffffff);
+  padding: 0.75rem 2rem;
   border-radius: var(--border-radius-md);
   font-weight: 600;
   font-size: 0.875rem;
-  transition: background-color var(--transition-fast);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--main-color-rgb), 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.retryButton:hover {
-  background-color: var(--accent-green-hover);
+.errorCardRetryBtn:hover {
+  transform: translateY(-0.0625rem);
+  box-shadow: 0 0.375rem 1rem rgba(var(--main-color-rgb), 0.4);
+  filter: brightness(1.1);
+}
+
+.errorCardRetryBtn:active {
+  transform: translateY(0);
+}
+
+.loadingContainerCard {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: cardSlideUp 0.3s ease-out;
+}
+
+.loadingPulseCircle {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: loadingPulse 2s infinite ease-in-out;
+}
+
+@keyframes loadingPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(60, 133, 39, 0.1);
+    border-color: rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(60, 133, 39, 0);
+    border-color: rgba(60, 133, 39, 0.3);
+  }
+}
+
+.loadingText {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 /* 左側：3D 預覽面板 */
@@ -131,7 +283,7 @@
 }
 
 .checkbox {
-  accent-color: var(--accent-green);
+  accent-color: var(--main-color);
   cursor: pointer;
 }
 
@@ -161,7 +313,7 @@
 
 .controlBtnActive {
   background: var(--main-color) !important;
-  color: #fff !important;
+  color: var(--main-color-text, #ffffff) !important;
 }
 
 .resetBtn {
@@ -438,9 +590,9 @@
 }
 
 .submitButton {
-  background-color: var(--accent-green);
-  color: #fff;
-  border-radius: var(--border-radius-md);
+  background-color: var(--main-color);
+  color: var(--main-color-text, #ffffff);
+  border-radius: var(--border-radius-md, 0.5rem);
   padding: 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
@@ -453,7 +605,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background-color: var(--accent-green-hover);
+  background-color: var(--main-color-hover);
 }
 
 .submitButton:disabled {
@@ -603,19 +755,20 @@
 .equipBtn:hover {
   background: var(--main-color);
   border-color: var(--main-color);
-  color: #fff;
+  color: var(--main-color-text, #ffffff);
 }
 
 .unequipBtn {
-  background: rgba(var(--danger-red-rgb), 0.1);
+  background: rgba(var(--danger-red-rgb), 0.05);
   border: 1px solid rgba(var(--danger-red-rgb), 0.2);
   color: var(--danger-red);
 }
 
 .unequipBtn:hover {
-  background: var(--danger-red);
-  border-color: var(--danger-red);
-  color: #fff;
+  background: var(--danger-red-hover);
+  border-color: var(--danger-red-hover);
+  color: white;
+  box-shadow: 0 0.25rem 0.625rem rgba(var(--danger-red-rgb), 0.2);
 }
 
 .emptyMessage {
@@ -711,9 +864,9 @@
   gap: 0.5rem;
   width: 100%;
   padding: 0.25rem;
-  background: rgba(255, 77, 77, 0.05);
-  border: 1px dashed rgba(255, 77, 77, 0.2);
-  border-radius: var(--border-radius-sm);
+  background: rgba(var(--danger-red-rgb), 0.05);
+  border: 1px dashed rgba(var(--danger-red-rgb), 0.2);
+  border-radius: var(--border-radius-sm, 0.25rem);
   animation: fadeIn var(--transition-fast) ease-out;
 }
 
@@ -742,14 +895,16 @@
 }
 
 .confirmDeleteBtnYes {
-  background: var(--danger-red);
-  border: 1px solid var(--danger-red);
-  color: #fff;
+  background-color: var(--danger-red);
+  border: 1px solid transparent;
+  color: white !important;
+  box-shadow: 0 0.25rem 0.5rem rgba(var(--danger-red-rgb), 0.2);
 }
 
 .confirmDeleteBtnYes:hover {
-  background: var(--danger-red-hover);
-  border-color: var(--danger-red-hover);
+  background-color: var(--danger-red-hover);
+  border-color: transparent;
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--danger-red-rgb), 0.3);
 }
 
 .confirmDeleteBtnNo {
@@ -804,16 +959,22 @@
 
 .fallbackIconContainer {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
+  background: rgba(0, 0, 0, 0.2);
   color: var(--text-muted);
+  gap: 0.5rem;
+  border-radius: var(--border-radius-sm);
+  border: 1px dashed rgba(255, 255, 255, 0.05);
 }
 
 .fallbackIcon {
+  color: var(--danger-red);
   opacity: 0.6;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 0.125rem 0.25rem rgba(var(--danger-red-rgb), 0.2));
 }
 
 .avatarIcon {

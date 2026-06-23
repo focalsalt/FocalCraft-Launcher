@@ -225,6 +225,9 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         }
       }
     });
+
+    // 監聽總實例目錄變動
+    await listen<void>('instances-changed', () => get().loadInstances());
   },
 
   // 載入實例列表
@@ -232,6 +235,9 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     try {
       const list = await invoke<Instance[]>('get_instances');
       set({ instances: list });
+      await invoke('watch_instances_dir').catch(err => {
+        console.error('Failed to watch instances directory:', err);
+      });
     } catch (error) {
       console.error('Failed to load instances:', error);
     }
@@ -654,6 +660,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       await invoke('watch_instance_folders', { instanceId });
     } catch (error) {
       console.error('Failed to watch instance folders:', error);
+      throw error;
     }
   },
 

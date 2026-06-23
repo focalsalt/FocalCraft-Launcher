@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Loader, Save, CheckSquare, Square } from 'lucide-react';
+import { X, Loader, Save } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { useI18n } from '../../utils/i18n';
 import { useAppStore } from '../../store/appStore';
+import { Checkbox } from '../../components/common/Checkbox';
 import styles from './ExportInstanceModal.module.css';
 
 interface ModItem {
@@ -168,9 +169,10 @@ export function ExportInstanceModal({ isOpen, instanceId, instanceName, onClose 
               />
               <button
                 type="button"
-                className={styles.browseBtn}
+                className="btn-outline"
                 onClick={handleSelectDestPath}
                 disabled={isExporting}
+                style={{ height: '38px', padding: '0 16px' }}
               >
                 <Save size={16} />
                 <span>{t('settings.btn.browse')}</span>
@@ -185,18 +187,13 @@ export function ExportInstanceModal({ isOpen, instanceId, instanceName, onClose 
                 {t('export.select_mods', { selected: selectedMods.size, total: mods.length })}
               </span>
               {mods.length > 0 && (
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={selectedMods.size === mods.length}
-                    ref={(el) => {
-                      if (el) el.indeterminate = selectedMods.size > 0 && selectedMods.size < mods.length;
-                    }}
-                    onChange={(e) => handleToggleAll(e.target.checked)}
-                    disabled={isExporting}
-                  />
-                  <span>{t('create.mrpack.select_all')}</span>
-                </label>
+                <Checkbox
+                  checked={selectedMods.size === mods.length}
+                  indeterminate={selectedMods.size > 0 && selectedMods.size < mods.length}
+                  onChange={handleToggleAll}
+                  disabled={isExporting}
+                  label={t('create.mrpack.select_all')}
+                />
               )}
             </div>
 
@@ -217,9 +214,11 @@ export function ExportInstanceModal({ isOpen, instanceId, instanceName, onClose 
                       className={`${styles.modItem} ${isChecked ? styles.checkedMod : ''}`}
                       onClick={() => !isExporting && handleToggleMod(mod.fileName)}
                     >
-                      <div className={styles.checkbox}>
-                        {isChecked ? <CheckSquare size={16} className={styles.checkedIcon} /> : <Square size={16} />}
-                      </div>
+                      <Checkbox
+                        checked={isChecked}
+                        disabled={isExporting}
+                        className={styles.modItemCheckbox}
+                      />
                       <div className={styles.modInfo}>
                         <div className={styles.modName}>{mod.name || mod.fileName}</div>
                         <div className={styles.modVersion}>v{mod.version}</div>
@@ -233,12 +232,12 @@ export function ExportInstanceModal({ isOpen, instanceId, instanceName, onClose 
         </div>
 
         <div className={styles.footer}>
-          <button type="button" className={styles.cancelBtn} onClick={onClose} disabled={isExporting}>
+          <button type="button" className="btn-text" onClick={onClose} disabled={isExporting}>
             {t('common.cancel')}
           </button>
           <button
             type="button"
-            className={styles.exportBtn}
+            className="btn-filled"
             onClick={handleExport}
             disabled={isExporting || isLoadingMods}
           >

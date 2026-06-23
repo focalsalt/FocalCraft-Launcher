@@ -5,7 +5,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useI18n } from '../../utils/i18n';
 import { getInstanceIconSrc } from '../../utils/versionUtils';
 import { invoke } from '@tauri-apps/api/core';
-import { LayoutGrid, Settings, User, Loader, ArrowUpCircle } from 'lucide-react';
+import { LayoutGrid, Settings, User, Loader, ArrowUpCircle, AlertTriangle } from 'lucide-react';
 import { AccountDropdown } from './AccountDropdown';
 import { useAccountStore } from '../../store/accountStore';
 import { check } from '@tauri-apps/plugin-updater';
@@ -500,7 +500,8 @@ export function Sidebar() {
               />
               {updateError && (
                 <div className={styles.errorMessage}>
-                  ⚠️ {t('sidebar.update_error', { error: updateError })}
+                  <AlertTriangle className={styles.warningIcon} size={16} />
+                  <span>{t('sidebar.update_error', { error: updateError })}</span>
                 </div>
               )}
             </div>

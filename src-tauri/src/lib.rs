@@ -13,6 +13,10 @@ pub struct WatcherState {
     pub watcher: std::sync::Mutex<Option<(String, notify::RecommendedWatcher)>>,
 }
 
+pub struct RootWatcherState {
+    pub watcher: std::sync::Mutex<Option<notify::RecommendedWatcher>>,
+}
+
 pub struct ActiveSession {
     pub cancel_token: std::sync::Arc<std::sync::atomic::AtomicBool>,
     pub child: std::sync::Arc<std::sync::Mutex<Option<std::process::Child>>>,
@@ -883,6 +887,9 @@ pub fn run() {
         .manage(WatcherState {
             watcher: std::sync::Mutex::new(None),
         })
+        .manage(RootWatcherState {
+            watcher: std::sync::Mutex::new(None),
+        })
         .manage(SessionState {
             sessions: std::sync::Mutex::new(std::collections::HashMap::new()),
         })
@@ -959,6 +966,7 @@ pub fn run() {
             minecraft::toggle_mod,
             minecraft::watch_instance_folders,
             minecraft::unwatch_instance_folders,
+            minecraft::watch_instances_dir,
             minecraft::init_launch_session,
             minecraft::cancel_launch_session,
             minecraft::kill_launch_session,

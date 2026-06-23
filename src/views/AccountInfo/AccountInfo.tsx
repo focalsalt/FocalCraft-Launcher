@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { SkinViewer, WalkingAnimation, IdleAnimation } from 'skinview3d';
 import { useI18n } from '../../utils/i18n';
-import styles from './AccountInfoView.module.css';
+import styles from './AccountInfo.module.css';
 
 
 // 官方預設外觀
@@ -222,7 +222,7 @@ function detectSkinVariant(skinB64: string): Promise<'CLASSIC' | 'SLIM'> {
   });
 }
 
-export function AccountInfoView() {
+export function AccountInfo() {
   const { accounts, selectedAccountId, refreshAccountToken } = useAccountStore();
   const { activeDetailTab, addNotification } = useAppStore();
   const { t } = useI18n();
@@ -1022,19 +1022,6 @@ export function AccountInfoView() {
     }
   };
 
-  // 錯誤狀態
-  if (errorMsg) {
-    return (
-      <div className={styles.errorContainer}>
-        <AlertTriangle size={48} style={{ color: '#ff4d4d' }} />
-        <span className={styles.errorTitle}>{t('account.error.cannot_display')}</span>
-        <span className={styles.errorMessage}>{t('account.error.network_retry')}</span>
-        <button className={styles.retryButton} onClick={fetchProfileData}>
-          {t('account.btn.retry')}
-        </button>
-      </div>
-    );
-  }
 
   const activeCape = profile?.capes?.find(c => c.state === 'ACTIVE');
 
@@ -1047,6 +1034,12 @@ export function AccountInfoView() {
           {selectedCapeId && (
             <div className={styles.previewBadge}>
               {t('account.preview.cape_previewing')}
+            </div>
+          )}
+          {errorMsg && (
+            <div className={styles.previewErrorOverlay}>
+              <WifiOff className={styles.previewErrorIcon} size={28} />
+              <span className={styles.previewErrorText}>{t('account.status.no_account_info')}</span>
             </div>
           )}
         </div>
@@ -1152,11 +1145,24 @@ export function AccountInfoView() {
           </div>
         </div>
 
-        {/* 載入中狀態 */}
-        {isLoading && !profile ? (
-          <div className={styles.loadingContainer} style={{ minHeight: '200px' }}>
-            <Loader2 className={`${styles.spin} animate-spin`} size={32} />
-            <span>{t('account.status.syncing_mojang')}</span>
+        {/* 載入中 / 錯誤 / 正常內容 */}
+        {errorMsg ? (
+          <div className={styles.errorCard}>
+            <div className={styles.errorCardIconContainer}>
+              <AlertTriangle className={styles.errorCardIcon} size={36} />
+            </div>
+            <span className={styles.errorCardTitle}>{t('account.error.cannot_display')}</span>
+            <span className={styles.errorCardMessage}>{errorMsg}</span>
+            <button className={styles.errorCardRetryBtn} onClick={fetchProfileData}>
+              {t('account.btn.retry')}
+            </button>
+          </div>
+        ) : isLoading && !profile ? (
+          <div className={styles.loadingContainerCard}>
+            <div className={styles.loadingPulseCircle}>
+              <Loader2 className={`${styles.spin} animate-spin`} size={36} />
+            </div>
+            <span className={styles.loadingText}>{t('account.status.syncing_mojang')}</span>
           </div>
         ) : !profile ? (
           <div className={styles.emptyMessage}>

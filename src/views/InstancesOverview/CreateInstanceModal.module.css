@@ -499,53 +499,6 @@
   border-bottom-right-radius: var(--border-radius-lg);
 }
 
-.cancelButton {
-  padding: 10px 20px;
-  color: var(--text-secondary);
-  border-radius: var(--border-radius-sm);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.cancelButton:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
-  transform: translateY(-1px);
-}
-
-.cancelButton:active {
-  transform: translateY(0);
-}
-
-.createButton {
-  background-color: var(--accent-green);
-  color: white;
-  padding: 10px 28px;
-  border-radius: var(--border-radius-sm);
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.createButton:hover:not(:disabled) {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.35);
-  transform: translateY(-1px);
-}
-
-.createButton:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(var(--accent-green-rgb), 0.2);
-}
-
-.createButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .loadingSpinner {
   display: flex;
   flex-direction: column;
@@ -812,24 +765,24 @@
 }
 
 .confirmModpackButton {
-  background-color: var(--accent-green);
-  color: white;
-  padding: 12px 24px;
+  background-color: var(--main-color);
+  color: var(--main-color-text, #ffffff);
+  padding: 0.75rem 1.5rem;
   border-radius: var(--border-radius-md);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 0.875rem;
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
   text-align: center;
   align-self: flex-end;
-  margin-top: 12px;
-  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.2);
+  margin-top: 0.75rem;
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--main-color-rgb), 0.2);
 }
 
 .confirmModpackButton:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(var(--accent-green-rgb), 0.4);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 4px 16px rgba(var(--main-color-rgb), 0.4);
 }
 
 .backToDescButton {
@@ -857,21 +810,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(var(--accent-green-rgb), 0.2);
+  border: 1px solid rgba(var(--main-color-rgb), 0.2);
   border-radius: var(--border-radius-lg);
   padding: 40px 20px;
-  background-color: rgba(var(--accent-green-rgb), 0.03);
+  background-color: rgba(var(--main-color-rgb), 0.03);
   margin-top: 10px;
   gap: 16px;
   height: 100%;
 }
 
 .selectedFileCheck {
-  color: var(--accent-green);
-  background-color: rgba(var(--accent-green-rgb), 0.1);
+  color: var(--main-color);
+  background-color: rgba(var(--main-color-rgb), 0.1);
   padding: 12px;
   border-radius: 50%;
-  box-shadow: 0 0 20px rgba(var(--accent-green-rgb), 0.25);
+  box-shadow: 0 0 20px rgba(var(--main-color-rgb), 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -882,25 +835,6 @@
   color: var(--text-secondary);
   font-weight: 600;
   letter-spacing: 0.5px;
-}
-
-.reselectFooterButton {
-  margin-right: auto;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-secondary);
-  padding: 10px 20px;
-  border-radius: var(--border-radius-sm);
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.reselectFooterButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .versionSelectRow {
@@ -967,9 +901,9 @@
 
 .filterSegmentButton.active {
   background-color: var(--main-color);
-  color: white;
+  color: var(--main-color-text, #ffffff);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(var(--main-color-rgb), 0.3);
+  box-shadow: 0 0.125rem 0.5rem rgba(var(--main-color-rgb), 0.3);
 }
 
 .filterSegmentButton:disabled {
@@ -1025,33 +959,9 @@
 }
 
 .modItemSelectable.checked {
-  background-color: rgba(var(--accent-green-rgb), 0.05);
-  border-color: rgba(var(--accent-green-rgb), 0.2);
-  border-left: 3px solid var(--accent-green);
-}
-
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  user-select: none;
-}
-
-.checkboxLabel input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent-green);
-  cursor: pointer;
-}
-
-.toggleAllContainer {
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
+  background-color: rgba(var(--main-color-rgb), 0.05);
+  border-color: rgba(var(--main-color-rgb), 0.2);
+  border-left: 3px solid var(--main-color);
 }
 
 .backToDescRow {
@@ -1139,10 +1049,10 @@
 }
 
 .platformTab.active {
-  color: white;
-  background-color: var(--accent-green);
-  box-shadow: 0 2px 8px rgba(var(--accent-green-rgb), 0.35);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  color: var(--main-color-text, #ffffff);
+  background-color: var(--main-color);
+  box-shadow: 0 0.125rem 0.5rem rgba(var(--main-color-rgb), 0.35);
+  text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.2);
 }
 
 /* 手動下載模式 */
@@ -1170,14 +1080,14 @@
 }
 
 .manualDesc {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-muted);
   line-height: 1.5;
   margin: 0;
-  background: rgba(239, 83, 80, 0.05);
-  border: 1px dashed rgba(239, 83, 80, 0.3);
-  padding: 10px 14px;
-  border-radius: var(--border-radius-md);
+  background: rgba(var(--danger-red-rgb), 0.05);
+  border: 1px dashed rgba(var(--danger-red-rgb), 0.2);
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--border-radius-md, 0.5rem);
 }
 
 .manualList {
@@ -1259,41 +1169,6 @@
   display: flex;
   gap: 8px;
   flex-shrink: 0;
-}
-
-.openPageBtn {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.openPageBtn:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.importBtn {
-  background-color: var(--accent-green);
-  border: none;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: 0 2px 6px rgba(var(--accent-green-rgb), 0.25);
-}
-
-.importBtn:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 12px rgba(var(--accent-green-rgb), 0.45);
 }
 
 .importedTag {

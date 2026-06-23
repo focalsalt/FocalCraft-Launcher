@@ -207,6 +207,8 @@ export const enUS: Record<keyof typeof zhTW, string> = {
   "detail.notification.cannot_launch.account_missing": "Selected account info not found, please login again!",
   "detail.notification.preparing_launch": "Preparing to launch {name}...",
   "detail.notification.cannot_open_folder": "Cannot open folder",
+  "detail.notification.instance_not_found.title": "Instance Directory Missing",
+  "detail.notification.instance_not_found.msg": "The instance folder may have been renamed or deleted!",
   "detail.notification.icon_updated.title": "Icon Updated",
   "detail.notification.icon_updated.local_msg": "Local icon has been updated!",
   "detail.notification.icon_updated.url_msg": "Web icon has been updated!",

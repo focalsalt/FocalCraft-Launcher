@@ -357,30 +357,30 @@
 
 .selectBtn,
 .unselectBtn {
-  width: 120px;
+  width: 7.5rem;
   justify-content: center;
-  padding: 10px 20px;
-  border-radius: var(--border-radius-sm);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--border-radius-sm, 0.25rem);
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
 .selectBtn {
   background-color: var(--main-color);
-  color: white;
+  color: var(--main-color-text, #ffffff);
 }
 
 .selectBtn:hover:not(:disabled) {
   background-color: var(--main-color-hover);
-  box-shadow: 0 0 12px rgba(var(--main-color-rgb), 0.4);
-  transform: translateY(-1px);
+  box-shadow: 0 0 0.75rem rgba(var(--main-color-rgb), 0.4);
+  transform: translateY(-0.0625rem);
 }
 
 .selectBtn:disabled {
@@ -389,16 +389,17 @@
 }
 
 .unselectBtn {
-  background-color: rgba(239, 83, 80, 0.1);
-  border: 1px solid rgba(239, 83, 80, 0.3);
-  color: #ef5350;
+  background-color: rgba(var(--danger-red-rgb), 0.05);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.2);
+  color: var(--danger-red);
 }
 
 .unselectBtn:hover {
-  background-color: rgba(239, 83, 80, 0.2);
-  border-color: rgba(239, 83, 80, 0.5);
-  box-shadow: 0 0 12px rgba(239, 83, 80, 0.2);
-  transform: translateY(-1px);
+  background-color: var(--danger-red-hover);
+  border-color: var(--danger-red-hover);
+  color: white;
+  box-shadow: 0 0 0.75rem rgba(var(--danger-red-rgb), 0.2);
+  transform: translateY(-0.0625rem);
 }
 
 .detailContent {
@@ -540,15 +541,15 @@
 .cancelBtn,
 .nextBtn,
 .confirmInstallBtn {
-  padding: 8px 20px;
-  border-radius: var(--border-radius-sm);
-  font-size: 13px;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--border-radius-sm, 0.25rem);
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .cancelBtn {
@@ -564,15 +565,15 @@
 
 .nextBtn,
 .confirmInstallBtn {
-  background-color: var(--accent-green);
+  background-color: var(--main-color);
   border: none;
-  color: white;
+  color: var(--main-color-text, #ffffff);
 }
 
 .nextBtn:hover:not(:disabled),
 .confirmInstallBtn:hover:not(:disabled) {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 0 12px rgba(var(--accent-green-rgb), 0.3);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 0 0.75rem rgba(var(--main-color-rgb), 0.3);
 }
 
 .nextBtn:disabled,
@@ -635,17 +636,17 @@
 }
 
 .confirmItem.checked {
-  background-color: rgba(var(--accent-green-rgb), 0.04);
-  border-color: rgba(var(--accent-green-rgb), 0.15);
-  border-left: 3px solid var(--accent-green);
-  box-shadow: 0 0 10px rgba(var(--accent-green-rgb), 0.25);
+  background-color: rgba(var(--main-color-rgb), 0.04);
+  border-color: rgba(var(--main-color-rgb), 0.15);
+  border-left: 3px solid var(--main-color);
+  box-shadow: 0 0 10px rgba(var(--main-color-rgb), 0.25);
 }
 
 .confirmItem.incompatible {
   opacity: 0.5;
   cursor: not-allowed;
-  border-left: 3px solid #ef5350;
-  background-color: rgba(239, 83, 80, 0.02);
+  border-left: 0.1875rem solid var(--danger-red);
+  background-color: rgba(var(--danger-red-rgb), 0.02);
 }
 
 .confirmIcon {
@@ -685,13 +686,13 @@
 }
 
 .errorText {
-  color: #ef5350;
+  color: var(--danger-red);
 }
 
 .errorTag {
-  background-color: rgba(239, 83, 80, 0.15);
-  color: #ff8a80;
-  border: 1px solid rgba(239, 83, 80, 0.3);
+  background-color: rgba(var(--danger-red-rgb), 0.15);
+  color: var(--danger-red-light, #ef9a9a);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.3);
 }
 
 /* Install Progress Overlay */

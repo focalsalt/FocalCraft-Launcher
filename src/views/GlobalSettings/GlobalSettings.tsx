@@ -3,11 +3,20 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useAppStore } from '../../store/appStore';
 import { useI18n, getTranslation } from '../../utils/i18n';
 import { invoke } from '@tauri-apps/api/core';
-import { Loader, FolderOpen, RefreshCw, Save } from 'lucide-react';
+import { Loader, FolderOpen, RefreshCw, Save, Check } from 'lucide-react';
 import { getVersion } from '@tauri-apps/api/app';
 import { CustomSelect } from '../../components/common/CustomSelect';
 import { CustomColorPicker } from '../../components/common/CustomColorPicker';
 import styles from './GlobalSettings.module.css';
+
+const PRESET_COLORS = [
+  { hex: '#3C8527', name: 'Green' },   // Minecraft Green
+  { hex: '#2EA0D8', name: 'Blue' },    // Ocean Blue
+  { hex: '#9C27B0', name: 'Purple' },  // Royal Purple
+  { hex: '#D8A32E', name: 'Orange' },  // Sunset Orange
+  { hex: '#D83030', name: 'Red' },     // Lava Red
+  { hex: '#00BCD4', name: 'Cyan' }     // Ender Cyan
+];
 
 export function GlobalSettings() {
   const { config, loadConfig, saveConfig, isSaving, isLoading } = useSettingsStore();
@@ -127,7 +136,7 @@ export function GlobalSettings() {
 
       <div className={styles.content}>
         <div className={styles.scrollArea}>
-          <div className={styles.card}>
+          <div className={styles.card} style={{ zIndex: 5 }}>
             <h2 className={styles.cardTitle}>{t('settings.card.storage')}</h2>
             <div className={styles.formGroup}>
               <label>{t('settings.label.storage_path')}</label>
@@ -157,7 +166,7 @@ export function GlobalSettings() {
 
 
 
-          <div className={styles.card}>
+          <div className={styles.card} style={{ zIndex: 4 }}>
             <h2 className={styles.cardTitle}>{t('settings.card.launch')}</h2>
 
             <div className={styles.formGroup}>
@@ -203,7 +212,7 @@ export function GlobalSettings() {
             </div>
           </div>
 
-          <div className={styles.card}>
+          <div className={styles.card} style={{ zIndex: 3 }}>
             <h2 className={styles.cardTitle}>{t('settings.card.language')}</h2>
             <div className={styles.formGroup}>
               <label style={{ marginBottom: '8px', display: 'block' }}>{t('settings.label.language')}</label>
@@ -218,8 +227,28 @@ export function GlobalSettings() {
               />
             </div>
           </div>
-          <div className={styles.card}>
+          <div className={styles.card} style={{ zIndex: 2 }}>
             <h2 className={styles.cardTitle}>{t('settings.card.theme')}</h2>
+            <div className={styles.formGroup}>
+              <label>{t('settings.theme.presets')}</label>
+              <div className={styles.presetsRow}>
+                {PRESET_COLORS.map((preset) => {
+                  const activeColor = mainColor || '#3C8527';
+                  const isActive = activeColor.toUpperCase() === preset.hex.toUpperCase();
+                  return (
+                    <button
+                      key={preset.hex}
+                      className={`${styles.presetBtn} ${isActive ? styles.presetBtnActive : ''}`}
+                      style={{ backgroundColor: preset.hex }}
+                      onClick={() => setMainColor(preset.hex)}
+                      title={preset.name}
+                    >
+                      {isActive && <Check className={styles.presetCheckmark} size={14} strokeWidth={3} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className={styles.formGroup}>
               <label>{t('settings.label.main_color')}</label>
               <CustomColorPicker
@@ -231,7 +260,7 @@ export function GlobalSettings() {
               </span>
             </div>
           </div>
-          <div className={styles.card}>
+          <div className={styles.card} style={{ zIndex: 1 }}>
             <h2 className={styles.cardTitle}>{t('settings.card.about')}</h2>
             <div className={styles.aboutRow}>
               <div className={styles.aboutInfo}>

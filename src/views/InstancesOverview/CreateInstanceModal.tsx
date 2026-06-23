@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X, Package } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useInstanceStore } from '../../store/instanceStore';
@@ -1188,7 +1188,9 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                   
                   return (
                     <div key={item.fileId} className={`${styles.manualItem} ${isDetected && !isImported ? styles.detected : ''}`}>
-                      <span className={styles.manualItemIcon}>📦</span>
+                      <span className={styles.manualItemIcon} style={{ display: 'flex', alignItems: 'center' }}>
+                        <Package size={16} />
+                      </span>
                       <div className={styles.manualItemMain}>
                         <span className={styles.manualItemTitle}>{item.fileName}</span>
                         <span className={styles.manualItemFile}>SHA-1: {item.sha1}</span>
@@ -1198,7 +1200,8 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                           <span className={styles.importedTag}>{t('create.manual.imported')}</span>
                         ) : isDetected ? (
                           <button 
-                            className={styles.importBtn}
+                            className="btn-filled"
+                            style={{ padding: '4px 12px', fontSize: '11px' }}
                             onClick={() => handleImportSingleBlocked(item)}
                             type="button"
                           >
@@ -1211,7 +1214,8 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                         )}
                         {!isImported && (
                           <button 
-                            className={styles.openPageBtn}
+                            className="btn-outline"
+                            style={{ padding: '4px 12px', fontSize: '11px' }}
                             onClick={() => invoke('open_in_browser', { url: `https://www.curseforge.com/projects/${item.projectId}/download/${item.fileId}` })}
                             type="button"
                           >
@@ -1338,7 +1342,8 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
           {isManualImportMode ? (
             <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
               <button 
-                className={styles.openPageBtn} 
+                className="btn-outline" 
+                style={{ padding: '8px 16px', fontSize: '12px' }}
                 onClick={handleImportAllDetected}
                 disabled={!blockedModsList.some(item => detectedImportFiles[item.sha1] && !importedImportItems.has(item.sha1))}
                 type="button"
@@ -1347,7 +1352,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
               </button>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
-                  className={styles.createButton} 
+                  className="btn-filled" 
                   onClick={handleFinishManualImport}
                   type="button"
                 >
@@ -1359,7 +1364,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
             <>
               {activeTab === 'mrpack' && mrpackDetails && (
                 <button 
-                  className={styles.reselectFooterButton} 
+                  className="btn-outline" 
                   onClick={handleSelectLocalMrpack}
                   disabled={isActionLoading || isImporting}
                   type="button"
@@ -1368,13 +1373,13 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
                 </button>
               )}
               
-              <button className={styles.cancelButton} onClick={handleClose} disabled={isActionLoading || isImporting} type="button">
+              <button className="btn-text" onClick={handleClose} disabled={isActionLoading || isImporting} type="button">
                 {t('common.cancel')}
               </button>
               
               {activeTab === 'custom' && (
                 <button 
-                  className={styles.createButton} 
+                  className="btn-filled" 
                   onClick={handleCustomCreate}
                   disabled={
                     isActionLoading || 
@@ -1388,7 +1393,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
               {(activeTab === 'modrinth' || activeTab === 'curseforge') && selectedModpack && !isModpackConfirmed && (
                 <button 
-                  className={styles.createButton} 
+                  className="btn-filled" 
                   onClick={handleConfirmModpack}
                   disabled={loadingDetails}
                   type="button"
@@ -1399,7 +1404,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
               {(activeTab === 'modrinth' || activeTab === 'curseforge') && modpackDetails && isModpackConfirmed && (
                 <button 
-                  className={styles.createButton} 
+                  className="btn-filled" 
                   onClick={() => handleImportModpack(modpackDetails, downloadedMrpackPath)}
                   disabled={isActionLoading || isImporting || selectedMods.size === 0}
                   type="button"
@@ -1410,7 +1415,7 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
 
               {activeTab === 'mrpack' && mrpackDetails && (
                 <button 
-                  className={styles.createButton} 
+                  className="btn-filled" 
                   onClick={() => handleImportModpack(mrpackDetails, mrpackPath)}
                   disabled={isActionLoading || isImporting || selectedMods.size === 0}
                   type="button"

@@ -1,30 +1,31 @@
 .container {
-  padding: 32px;
+  padding: 2rem;
   height: 100%;
   overflow-y: auto;
+  animation: fadeIn var(--transition-normal, 0.3s) ease-out;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 2rem;
 }
 
 .header h1 {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
 .addButton {
   background-color: var(--main-color);
-  color: white;
-  padding: 10px 20px;
+  color: var(--main-color-text, #ffffff);
+  padding: 0.625rem 1.25rem;
   border-radius: var(--border-radius-md);
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   transition: background-color var(--transition-fast);
 }
 
@@ -34,20 +35,20 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 1.5rem;
   justify-content: start;
 }
 
 .card {
   background-color: var(--bg-sidebar);
-  border: 1px solid var(--border-color);
+  border: 0.0625rem solid var(--border-color);
   border-radius: var(--border-radius-lg);
-  padding: 20px;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 1rem;
   cursor: pointer;
   position: relative;
   transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -55,9 +56,9 @@
 }
 
 .card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-0.25rem);
   border-color: var(--main-color);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
 }
 
 .cardRunning {
@@ -73,11 +74,11 @@
 /* 狀態標籤 */
 .statusBadge {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  font-size: 10px;
-  width: 22px;
-  height: 22px;
+  top: 0.75rem;
+  left: 0.75rem;
+  font-size: 0.625rem;
+  width: 1.375rem;
+  height: 1.375rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -93,7 +94,7 @@
 .crashedBadge {
   background-color: rgba(var(--danger-red-rgb), 0.15);
   color: var(--danger-red);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .downloadingBadge {
@@ -102,9 +103,9 @@
 }
 
 .spinnerDot {
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--info-blue);
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 0.125rem solid var(--info-blue);
   border-top-color: transparent;
   border-radius: 50%;
 }
@@ -116,45 +117,45 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 80px 40px;
+  padding: 5rem 2.5rem;
   border-radius: var(--border-radius-lg);
-  max-width: 580px;
-  margin: 40px auto 0 auto;
+  max-width: 36.25rem;
+  margin: 2.5rem auto 0 auto;
   animation: fadeIn 0.4s ease-out;
 }
 
 .emptyIcon {
-  width: 96px;
-  height: 96px;
+  width: 6rem;
+  height: 6rem;
   border-radius: 50%;
   background-color: var(--bg-main);
   color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
-  border: 1px solid var(--border-color);
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+  border: 0.0625rem solid var(--border-color);
+  box-shadow: inset 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
 }
 
 .emptyTitle {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
 }
 
 .emptyDesc {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: 28px;
+  margin-bottom: 1.75rem;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(0.625rem);
   }
 
   to {
@@ -164,10 +165,10 @@
 }
 
 .iconPlaceholder {
-  width: 64px;
-  height: 64px;
+  width: 4rem;
+  height: 4rem;
   background-color: var(--bg-main);
-  border-radius: 12px;
+  border-radius: 0.75rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -178,11 +179,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 0.75rem;
 }
 
 .emojiIcon {
-  font-size: 32px;
+  font-size: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,8 +195,8 @@
 
 .cardName {
   font-weight: 600;
-  font-size: 16px;
-  margin-bottom: 4px;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
   color: var(--text-primary);
   word-break: break-all;
   display: -webkit-box;
@@ -205,13 +206,13 @@
 }
 
 .cardVersion {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-secondary);
 }
 
 /* 自訂滾動條 */
 .container::-webkit-scrollbar {
-  width: 8px;
+  width: 0.5rem;
 }
 
 .container::-webkit-scrollbar-track {
@@ -220,26 +221,26 @@
 
 .container::-webkit-scrollbar-thumb {
   background: var(--border-color);
-  border-radius: 4px;
+  border-radius: 0.25rem;
 }
 
 /* 拖曳、刪除與重新命名樣式 */
 .cardDragging {
   opacity: 0.15;
-  border: 2px dashed rgba(var(--main-color-rgb), 0.4) !important;
+  border: 0.125rem dashed rgba(var(--main-color-rgb), 0.4) !important;
   background-color: rgba(0, 0, 0, 0.1) !important;
   box-shadow: none !important;
 }
 
 .deleteBtn {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
+  top: 0.625rem;
+  right: 0.625rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: 50%;
   background-color: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 0.0625rem solid rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -258,42 +259,42 @@
   background-color: rgba(var(--danger-red-rgb), 0.9);
   color: white;
   border-color: rgba(var(--danger-red-rgb), 0.2);
-  box-shadow: 0 0 10px rgba(var(--danger-red-rgb), 0.4);
+  box-shadow: 0 0 0.625rem rgba(var(--danger-red-rgb), 0.4);
 }
 
 .cardNameInput {
   background-color: rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--main-color);
-  border-radius: 4px;
+  border: 0.0625rem solid var(--main-color);
+  border-radius: 0.25rem;
   color: white;
-  padding: 2px 6px;
-  font-size: 14px;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.875rem;
   font-family: inherit;
   width: 90%;
   outline: none;
-  box-shadow: 0 0 8px rgba(var(--main-color-rgb), 0.3);
+  box-shadow: 0 0 0.5rem rgba(var(--main-color-rgb), 0.3);
   text-align: center;
 }
 
 .cardHoveredDrop {
   border-color: var(--main-color);
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 8px 24px rgba(var(--main-color-rgb), 0.3);
+  transform: translateY(-0.25rem) scale(1.02);
+  box-shadow: 0 0.5rem 1.5rem rgba(var(--main-color-rgb), 0.3);
 }
 
 .dragPreview {
-  width: 200px;
+  width: 12.5rem;
   background-color: rgba(30, 30, 30, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--main-color);
+  backdrop-filter: blur(1rem);
+  -webkit-backdrop-filter: blur(1rem);
+  border: 0.0625rem solid var(--main-color);
   border-radius: var(--border-radius-lg);
-  padding: 16px;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 15px rgba(var(--main-color-rgb), 0.2);
+  gap: 0.75rem;
+  box-shadow: 0 0.75rem 2.25rem rgba(0, 0, 0, 0.6), 0 0 0.9375rem rgba(var(--main-color-rgb), 0.2);
   transform: scale(0.9);
   opacity: 0.9;
   pointer-events: none;

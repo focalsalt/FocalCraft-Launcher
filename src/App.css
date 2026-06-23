@@ -30,6 +30,7 @@
   --main-color-active-rgb: var(--accent-green-active-rgb);
   --main-color-light: var(--accent-green-light);
   --main-color-dark: var(--accent-green-dark);
+  --main-color-text: #ffffff;
 
   --danger-red: #d83030;
   --danger-red-rgb: 216, 48, 48;
@@ -176,4 +177,163 @@ textarea:focus,
 select:focus,
 button:focus {
   outline: none !important;
+}
+
+/* 全域統一按鈕風格 */
+.btn-filled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--main-color-text, #ffffff) !important;
+  background-color: var(--main-color);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--main-color-rgb), 0.2);
+}
+
+.btn-filled:hover:not(:disabled) {
+  background-color: var(--main-color-hover);
+  box-shadow: 0 0.25rem 1rem rgba(var(--main-color-rgb), 0.4);
+}
+
+.btn-filled:active:not(:disabled) {
+  background-color: var(--main-color-active);
+}
+
+.btn-filled:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: white !important;
+  background-color: var(--danger-red);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--danger-red-rgb), 0.2);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--danger-red-hover);
+  box-shadow: 0 0.25rem 1rem rgba(var(--danger-red-rgb), 0.4);
+}
+
+.btn-danger:active:not(:disabled) {
+  background-color: var(--danger-red-active);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-outline-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--danger-red) !important;
+  background-color: rgba(var(--danger-red-rgb), 0.05);
+  border: 1px solid rgba(var(--danger-red-rgb), 0.2);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+  background-color: var(--danger-red-hover);
+  border-color: var(--danger-red-hover);
+  color: white !important;
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--danger-red-rgb), 0.2);
+}
+
+.btn-outline-danger:active:not(:disabled) {
+  background-color: var(--danger-red-active);
+  border-color: var(--danger-red-active);
+}
+
+.btn-outline-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary) !important;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: var(--text-primary) !important;
+}
+
+.btn-outline:active:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary) !important;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-text:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary) !important;
+}
+
+.btn-text:active:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.btn-text:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

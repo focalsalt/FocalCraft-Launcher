@@ -1,7 +1,8 @@
-import { Loader } from 'lucide-react';
+import { Loader, Package, Wrench } from 'lucide-react';
 import { marked } from 'marked';
 import { CustomSelect } from '../../../components/common/CustomSelect';
 import { SafeImage } from '../../../components/common/SafeImage';
+import { Checkbox } from '../../../components/common/Checkbox';
 import { useI18n } from '../../../utils/i18n';
 import styles from '../CreateInstanceModal.module.css';
 
@@ -111,7 +112,7 @@ export function ModrinthTab({
                   src={hit.icon_url}
                   alt={hit.title}
                   className={styles.modpackIcon}
-                  fallbackEmoji="📦"
+                  fallbackIcon={Package}
                 />
                 <div className={styles.modpackInfo}>
                   <div className={styles.modpackTitle}>{hit.title}</div>
@@ -149,7 +150,7 @@ export function ModrinthTab({
                       src={selectedModpack.icon_url}
                       alt={selectedModpack.title}
                       className={styles.detailIcon}
-                      fallbackEmoji="📦"
+                      fallbackIcon={Package}
                     />
                     <div className={styles.detailHeaderInfo}>
                       <h3 className={styles.detailTitle}>{selectedModpack.title}</h3>
@@ -197,7 +198,10 @@ export function ModrinthTab({
                     <div className={styles.versionDetailsContainer}>
                       <div className={styles.versionSummaryCard}>
                         <div className={styles.licenseHeader}>
-                          <span className={styles.modsCountTitle}>📦 {t('create.mrpack.info_title')}</span>
+                          <span className={styles.modsCountTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Package size={16} />
+                            {t('create.mrpack.info_title')}
+                          </span>
                         </div>
                         <div className={styles.detailRow}>
                           <span className={styles.label}>{t('create.label.version')}</span>
@@ -215,21 +219,17 @@ export function ModrinthTab({
 
                       <div className={styles.licenseConfirmContainer}>
                         <div className={styles.licenseHeader}>
-                          <span className={styles.modsCountTitle}>
-                            🛠️ {t('create.mrpack.select_mods_title', { selected: selectedMods.size, total: modpackDetails.mods.length })}
+                          <span className={styles.modsCountTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Wrench size={16} />
+                            {t('create.mrpack.select_mods_title', { selected: selectedMods.size, total: modpackDetails.mods.length })}
                           </span>
                           <div className={styles.toggleAllContainer}>
-                            <label className={styles.checkboxLabel}>
-                              <input
-                                type="checkbox"
-                                checked={selectedMods.size === modpackDetails.mods.length}
-                                ref={(el) => {
-                                  if (el) el.indeterminate = selectedMods.size > 0 && selectedMods.size < modpackDetails.mods.length;
-                                }}
-                                onChange={(e) => toggleAllMods(e.target.checked, modpackDetails.mods)}
-                              />
-                              <span>{t('create.mrpack.select_all')}</span>
-                            </label>
+                            <Checkbox
+                              checked={selectedMods.size === modpackDetails.mods.length}
+                              indeterminate={selectedMods.size > 0 && selectedMods.size < modpackDetails.mods.length}
+                              onChange={(checked) => toggleAllMods(checked, modpackDetails.mods)}
+                              label={t('create.mrpack.select_all')}
+                            />
                           </div>
                         </div>
 
@@ -242,13 +242,10 @@ export function ModrinthTab({
                                 className={`${styles.modItemSelectable} ${isChecked ? styles.checked : ''}`}
                                 onClick={() => toggleModSelection(mod.id)}
                               >
-                                <label className={styles.checkboxLabel} onClick={(e) => e.stopPropagation()}>
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => toggleModSelection(mod.id)}
-                                  />
-                                </label>
+                                <Checkbox
+                                  checked={isChecked}
+                                  onChange={() => toggleModSelection(mod.id)}
+                                />
                                 <div className={styles.modMain}>
                                   <div className={styles.modNameRow}>
                                     <span className={styles.modName}>{mod.name}</span>

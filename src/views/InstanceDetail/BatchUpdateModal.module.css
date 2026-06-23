@@ -29,8 +29,15 @@
 }
 
 @keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .header {
@@ -74,20 +81,6 @@
   justify-content: space-between;
   align-items: center;
 }
-
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-}
-
-.checkboxText {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
 .countInfo {
   font-size: 12px;
   color: var(--text-secondary);
@@ -143,8 +136,8 @@
   border-color: rgba(var(--main-color-rgb), 0.35);
 }
 
-.item input[type="checkbox"] {
-  cursor: pointer;
+.itemCheckbox {
+  pointer-events: none;
 }
 
 .modInfo {
@@ -200,45 +193,4 @@
   justify-content: flex-end;
   gap: 12px;
   background-color: rgba(0, 0, 0, 0.25);
-}
-
-.cancelBtn {
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  border-radius: var(--border-radius-sm);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.cancelBtn:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
-}
-
-.confirmBtn {
-  padding: 8px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  color: white;
-  background-color: var(--accent-green);
-  border-radius: var(--border-radius-sm);
-  border: none;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
-}
-
-.confirmBtn:hover:not(:disabled) {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
-}
-
-.confirmBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
 }

@@ -96,6 +96,12 @@ export function applyThemeColor(mainColor: string | null) {
         root.style.setProperty('--main-color-rgb-dark', darkRgb);
         root.style.setProperty('--main-color-light', `rgb(${lightRgb})`);
         root.style.setProperty('--main-color-dark', `rgb(${darkRgb})`);
+
+        // Calculate contrast text color (YIQ formula)
+        const yiq = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+        const mainColorText = yiq >= 186 ? '#111111' : '#ffffff';
+        root.style.setProperty('--main-color-text', mainColorText);
+
         if (hoverRgb) {
           root.style.setProperty('--main-color-hover', hover);
           root.style.setProperty('--main-color-hover-rgb', `${hoverRgb.r}, ${hoverRgb.g}, ${hoverRgb.b}`);
@@ -120,4 +126,5 @@ export function applyThemeColor(mainColor: string | null) {
   root.style.removeProperty('--main-color-hover-rgb');
   root.style.removeProperty('--main-color-active');
   root.style.removeProperty('--main-color-active-rgb');
+  root.style.removeProperty('--main-color-text');
 }

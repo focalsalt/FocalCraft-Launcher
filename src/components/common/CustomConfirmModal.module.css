@@ -29,8 +29,15 @@
 }
 
 @keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .header {
@@ -39,31 +46,31 @@
 }
 
 .header h3 {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   margin: 0;
-  color: #ff5252;
+  color: var(--danger-red);
 }
 
 .body {
-  padding: 20px;
-  font-size: 14px;
+  padding: 1.25rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .footer {
-  padding: 14px 20px;
+  padding: 0.875rem 1.25rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 0.75rem;
   background-color: rgba(0, 0, 0, 0.25);
 }
 
 .cancelBtn {
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-secondary);
   border-radius: var(--border-radius-sm);
@@ -79,21 +86,21 @@
 }
 
 .confirmBtn {
-  padding: 8px 20px;
-  font-size: 13px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: white;
-  background-color: #ff5252;
+  background-color: var(--danger-red);
   border-radius: var(--border-radius-sm);
   border: none;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2);
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--danger-red-rgb), 0.2);
 }
 
 .confirmBtn:hover {
-  background-color: #ff7373;
-  box-shadow: 0 4px 16px rgba(244, 67, 54, 0.4);
+  background-color: var(--danger-red-hover);
+  box-shadow: 0 0.25rem 1rem rgba(var(--danger-red-rgb), 0.4);
 }
 
 .typeUpdate .header h3 {
@@ -101,11 +108,12 @@
 }
 
 .typeUpdate .confirmBtn {
-  background-color: var(--accent-green);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+  background-color: var(--main-color);
+  color: var(--main-color-text, #ffffff);
+  box-shadow: 0 0.25rem 0.75rem rgba(var(--main-color-rgb), 0.2);
 }
 
 .typeUpdate .confirmBtn:hover {
-  background-color: var(--accent-green-hover);
-  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
+  background-color: var(--main-color-hover);
+  box-shadow: 0 0.25rem 1rem rgba(var(--main-color-rgb), 0.4);
 }

@@ -5,6 +5,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useAppStore } from '../../store/appStore';
 import { CustomSelect } from '../../components/common/CustomSelect';
+import { Checkbox } from '../../components/common/Checkbox';
 import { getMajorVersionGroup, sortModVersions, cleanQueryName } from '../../utils/versionUtils';
 import { useI18n, translateVersionGroup } from '../../utils/i18n';
 import styles from './InstanceDetail.module.css';
@@ -421,7 +422,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
 
       // Map mod files to their project IDs
       const modProjectMap: Record<string, string> = {}; // fileName to project_id
-      
+
       matchedModsFromHash.forEach(m => {
         modProjectMap[m.fileName] = fileLookupResponse[m.sha1.toLowerCase()].project_id;
       });
@@ -666,27 +667,24 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
             <div className="global-scrollbar" style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', paddingRight: '4px' }}>
               {modsToUpdate.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'var(--accent-green)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'var(--main-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '8px', verticalAlign: 'middle' }}>●</span>
                     {t('version_edit.compatibility.to_update', { count: modsToUpdate.length })}
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {modsToUpdate.map((item, idx) => (
                       <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 'var(--border-radius-sm)', fontSize: '12px' }}>
-                        <label className={styles.checkboxLabel} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', color: 'white', fontWeight: 505, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '50%' }}>
-                          <input
-                            type="checkbox"
-                            checked={item.shouldUpdate}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setModsToUpdate(prev => prev.map(m => m.localMod.fileName === item.localMod.fileName ? { ...m, shouldUpdate: checked } : m));
-                            }}
-                            style={{ cursor: 'pointer' }}
-                          />
-                          <span style={{ opacity: item.shouldUpdate ? 1 : 0.6 }}>
-                            {item.localMod.name || item.localMod.fileName}
-                          </span>
-                        </label>
+                        <Checkbox
+                          checked={item.shouldUpdate}
+                          onChange={(checked) => {
+                            setModsToUpdate(prev => prev.map(m => m.localMod.fileName === item.localMod.fileName ? { ...m, shouldUpdate: checked } : m));
+                          }}
+                          label={
+                            <span style={{ opacity: item.shouldUpdate ? 1 : 0.6, color: 'white', fontWeight: 505 }}>
+                              {item.localMod.name || item.localMod.fileName}
+                            </span>
+                          }
+                        />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ color: 'var(--text-muted)' }}>{item.localMod.version} →</span>
                           <div className={styles.compactSelectWrapper} style={{ width: '180px' }}>
@@ -718,21 +716,18 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {modsToDisable.map((item, idx) => (
                       <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 'var(--border-radius-sm)', fontSize: '12px' }}>
-                        <label className={styles.checkboxLabel} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', color: 'white', fontWeight: 505, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
-                          <input
-                            type="checkbox"
-                            checked={!item.shouldDisable}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setModsToDisable(prev => prev.map(m => m.localMod.fileName === item.localMod.fileName ? { ...m, shouldDisable: !checked } : m));
-                            }}
-                            style={{ cursor: 'pointer' }}
-                          />
-                          <span style={{ textDecoration: item.shouldDisable ? 'line-through' : 'none', opacity: item.shouldDisable ? 0.6 : 1 }}>
-                            {item.localMod.name || item.localMod.fileName}
-                          </span>
-                        </label>
-                        <span style={{ color: item.shouldDisable ? '#ef4444' : 'var(--accent-green)', fontSize: '11px', backgroundColor: item.shouldDisable ? 'rgba(239, 68, 68, 0.1)' : 'rgba(var(--accent-green-rgb), 0.1)', padding: '2px 8px', borderRadius: '10px' }}>
+                        <Checkbox
+                          checked={!item.shouldDisable}
+                          onChange={(checked) => {
+                            setModsToDisable(prev => prev.map(m => m.localMod.fileName === item.localMod.fileName ? { ...m, shouldDisable: !checked } : m));
+                          }}
+                          label={
+                            <span style={{ textDecoration: item.shouldDisable ? 'line-through' : 'none', opacity: item.shouldDisable ? 0.6 : 1, color: 'white', fontWeight: 505 }}>
+                              {item.localMod.name || item.localMod.fileName}
+                            </span>
+                          }
+                        />
+                        <span style={{ color: item.shouldDisable ? '#ef4444' : 'var(--main-color)', fontSize: '11px', backgroundColor: item.shouldDisable ? 'rgba(239, 68, 68, 0.1)' : 'rgba(var(--main-color-rgb), 0.1)', padding: '2px 8px', borderRadius: '10px' }}>
                           {item.shouldDisable ? t('version_edit.compatibility.no_updates') : t('version_edit.compatibility.keep_enabled')}
                         </span>
                       </div>
@@ -743,8 +738,8 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
             </div>
           </div>
           <div className={styles.versionEditFooter}>
-            <button className={styles.cancelBtn} onClick={() => setStep('form')}>{t('version_edit.compatibility.cancel')}</button>
-            <button className={styles.saveBtn} onClick={executeMigration} style={{ backgroundColor: 'var(--accent-green)', boxShadow: '0 4px 12px rgba(var(--accent-green-rgb), 0.2)' }}>
+            <button className="btn-text" onClick={() => setStep('form')}>{t('version_edit.compatibility.cancel')}</button>
+            <button className="btn-filled" onClick={executeMigration}>
               {t('version_edit.compatibility.confirm')}
             </button>
           </div>
@@ -890,8 +885,8 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
           )}
         </div>
         <div className={styles.versionEditFooter}>
-          <button className={styles.cancelBtn} onClick={onClose}>{t('version_edit.cancel')}</button>
-          <button className={styles.saveBtn} onClick={handleSaveVersion}>{t('version_edit.save')}</button>
+          <button className="btn-text" onClick={onClose}>{t('version_edit.cancel')}</button>
+          <button className="btn-filled" onClick={handleSaveVersion}>{t('version_edit.save')}</button>
         </div>
       </div>
     </div>
