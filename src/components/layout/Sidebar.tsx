@@ -286,6 +286,7 @@ export function Sidebar() {
   const accounts = useAccountStore((state) => state.accounts);
   const [baseDir, setBaseDir] = useState('');
   const [appVersion, setAppVersion] = useState('1.0.0');
+  const [rawVersion, setRawVersion] = useState('1.0.0');
   const settingsConfig = useSettingsStore((state) => state.config);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -294,7 +295,10 @@ export function Sidebar() {
   // 初始化路徑與版本
   useEffect(() => {
     invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
-    getVersion().then(v => setAppVersion(v.replace(/^(\d+)\.(\d+)\./, '$1$2.'))).catch(console.error);
+    getVersion().then(v => {
+      setRawVersion(v);
+      setAppVersion(v.replace(/^(\d+)\.(\d+)\./, '$1$2.'));
+    }).catch(console.error);
   }, []);
 
   const checkUpdateRef = useRef(handleCheckUpdate);
@@ -494,7 +498,7 @@ export function Sidebar() {
                 className={styles.updateNotes}
                 dangerouslySetInnerHTML={{
                   __html: updateInfo.body
-                    ? (marked.parse(filterChangelog(updateInfo.body, appVersion)) as string)
+                    ? (marked.parse(filterChangelog(updateInfo.body, rawVersion)) as string)
                     : t('sidebar.no_changelog')
                 }}
               />
