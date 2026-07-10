@@ -99,6 +99,7 @@ export function InstanceDetail({ instanceId }: Props) {
   const [isEditingVersion, setIsEditingVersion] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const prevTabRef = useRef(activeTab);
+  const [modDownloadProgress, setModDownloadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
 
   const [jvmArgs, setJvmArgs] = useState('');
   const [maxMemory, setMaxMemory] = useState(4096);
@@ -702,6 +703,12 @@ export function InstanceDetail({ instanceId }: Props) {
 
       addNotification({ type: 'info', title: t('detail.notification.mod_update.downloading', { name: '' }).split('...')[0], message: t('detail.notification.mod_update.downloading', { name: mod.name }) });
 
+      setModDownloadProgress({
+        current: 1,
+        total: 1,
+        name: mod.name
+      });
+
       await invoke('download_and_replace_file', {
         instanceId: instance.id,
         folderName: 'mods',
@@ -714,6 +721,8 @@ export function InstanceDetail({ instanceId }: Props) {
       loadTabData();
     } catch (err) {
       addNotification({ type: 'error', title: t('detail.notification.mod_update.failed'), message: String(err) });
+    } finally {
+      setModDownloadProgress(null);
     }
   };
 
@@ -732,29 +741,41 @@ export function InstanceDetail({ instanceId }: Props) {
 
     let successCount = 0;
     let failCount = 0;
+    const totalCount = selectedUpdates.length;
 
-    for (const { mod, updateObj } of selectedUpdates) {
-      try {
-        const file = updateObj.files.find((f: any) => f.primary) || updateObj.files[0];
-        if (!file) continue;
+    try {
+      for (let i = 0; i < totalCount; i++) {
+        const { mod, updateObj } = selectedUpdates[i];
+        setModDownloadProgress({
+          current: i + 1,
+          total: totalCount,
+          name: mod.name
+        });
 
-        await invoke('download_and_replace_file', {
-          instanceId: instance.id,
-          folderName: 'mods',
-          downloadUrl: file.url,
-          newFilename: file.filename,
-          oldFilename: mod.fileName
-        });
-        successCount++;
-      } catch (err) {
-        console.error(`Failed to update mod ${mod.name}:`, err);
-        failCount++;
-        addNotification({
-          type: 'error',
-          title: t('detail.notification.mod_update.failed'),
-          message: `${mod.name}: ${String(err)}`
-        });
+        try {
+          const file = updateObj.files.find((f: any) => f.primary) || updateObj.files[0];
+          if (!file) continue;
+
+          await invoke('download_and_replace_file', {
+            instanceId: instance.id,
+            folderName: 'mods',
+            downloadUrl: file.url,
+            newFilename: file.filename,
+            oldFilename: mod.fileName
+          });
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to update mod ${mod.name}:`, err);
+          failCount++;
+          addNotification({
+            type: 'error',
+            title: t('detail.notification.mod_update.failed'),
+            message: `${mod.name}: ${String(err)}`
+          });
+        }
       }
+    } finally {
+      setModDownloadProgress(null);
     }
 
     loadTabData();
@@ -1065,19 +1086,8 @@ export function InstanceDetail({ instanceId }: Props) {
             : launchPhase === 'launching'
               ? t('detail.btn.launching')
               : t('detail.btn.play');
-
-    const showProgress = (isLaunching || isDownloading) && !isRunning;
-
     return (
       <div className={`${styles.playBtnWrapper} ${position === 'right' ? styles.playBtnWrapperRight : styles.playBtnWrapperCenter}`}>
-        {showProgress && (
-          <div className={styles.launchProgressBar}>
-            <div
-              className={styles.launchProgressFill}
-              style={{ width: `${Math.max(5, Math.round(downloadProgress))}%` }}
-            />
-          </div>
-        )}
         <div className={styles.playBtnGroup}>
           {isRunning && (
             <button
@@ -1118,6 +1128,38 @@ export function InstanceDetail({ instanceId }: Props) {
       <div className={styles.content}>
         {/* 主面板區塊 */}
         <div className={`${styles.mainPanel} ${isAnimating ? styles.animating : ''} ${isScrollableTab ? '' : styles.mainPanelNoScroll}`}>
+          {/* 模組下載/更新進度遮罩 */}
+          {modDownloadProgress && (
+            <div className={styles.hudOverlay}>
+              <div className={styles.hudCard}>
+                <div className={styles.hudHeader}>
+                  <Loader className={`${styles.hudSpinner} animate-spin`} size={24} />
+                  <span className={styles.hudTitle}>
+                    {t('detail.notification.batch_update.starting') || '開始批次更新'}
+                  </span>
+                </div>
+                <div className={styles.hudDetail}>
+                  {t('version_edit.downloading_mod', {
+                    current: modDownloadProgress.current,
+                    total: modDownloadProgress.total,
+                    name: modDownloadProgress.name
+                  })}
+                </div>
+                <div className={styles.hudProgressContainer}>
+                  <div className={styles.hudProgressBar}>
+                    <div
+                      className={styles.hudProgressFill}
+                      style={{ width: `${Math.round((modDownloadProgress.current / modDownloadProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <span className={styles.hudPercent}>
+                    {Math.round((modDownloadProgress.current / modDownloadProgress.total) * 100)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 啟動進度遮罩 */}
           {(isLaunching || isDownloading) && (
             <div className={styles.hudOverlay}>

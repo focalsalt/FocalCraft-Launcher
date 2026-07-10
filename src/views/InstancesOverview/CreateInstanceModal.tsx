@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Package } from 'lucide-react';
+import { X, Package, AlertTriangle } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useInstanceStore } from '../../store/instanceStore';
@@ -1168,7 +1168,10 @@ export function CreateInstanceModal({ isOpen, onClose }: Props) {
           ) : isManualImportMode ? (
             <div className={styles.manualContainer}>
               <div className={styles.manualHeader}>
-                <span className={styles.manualTitle}>{t('create.manual.title')}</span>
+                <span className={styles.manualTitle}>
+                  <AlertTriangle size={16} />
+                  <span>{t('create.manual.title')}</span>
+                </span>
                 <button 
                   className={styles.openPageBtn}
                   onClick={openAllBlockedPages}

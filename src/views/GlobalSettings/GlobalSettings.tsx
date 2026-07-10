@@ -3,7 +3,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import { useAppStore } from '../../store/appStore';
 import { useI18n, getTranslation } from '../../utils/i18n';
 import { invoke } from '@tauri-apps/api/core';
-import { Loader, FolderOpen, RefreshCw, Save, Check } from 'lucide-react';
+import { Loader, FolderOpen, RefreshCw, Save, Check, Sliders, Globe, Palette, Info } from 'lucide-react';
 import { getVersion } from '@tauri-apps/api/app';
 import { CustomSelect } from '../../components/common/CustomSelect';
 import { CustomColorPicker } from '../../components/common/CustomColorPicker';
@@ -42,7 +42,7 @@ export function GlobalSettings() {
       }
       try {
         const version = await getVersion();
-        setAppVersion(version);
+        setAppVersion(version.startsWith('0.') ? version.substring(2) : version);
       } catch (err) {
         console.error('Failed to get app version:', err);
       }
@@ -137,7 +137,10 @@ export function GlobalSettings() {
       <div className={styles.content}>
         <div className={styles.scrollArea}>
           <div className={styles.card} style={{ zIndex: 5 }}>
-            <h2 className={styles.cardTitle}>{t('settings.card.storage')}</h2>
+            <h2 className={styles.cardTitle}>
+              <FolderOpen size={18} />
+              <span>{t('settings.card.storage')}</span>
+            </h2>
             <div className={styles.formGroup}>
               <label>{t('settings.label.storage_path')}</label>
               <div className={styles.inputGroup}>
@@ -167,7 +170,10 @@ export function GlobalSettings() {
 
 
           <div className={styles.card} style={{ zIndex: 4 }}>
-            <h2 className={styles.cardTitle}>{t('settings.card.launch')}</h2>
+            <h2 className={styles.cardTitle}>
+              <Sliders size={18} />
+              <span>{t('settings.card.launch')}</span>
+            </h2>
 
             <div className={styles.formGroup}>
               <div className={styles.labelRow}>
@@ -213,7 +219,10 @@ export function GlobalSettings() {
           </div>
 
           <div className={styles.card} style={{ zIndex: 3 }}>
-            <h2 className={styles.cardTitle}>{t('settings.card.language')}</h2>
+            <h2 className={styles.cardTitle}>
+              <Globe size={18} />
+              <span>{t('settings.card.language')}</span>
+            </h2>
             <div className={styles.formGroup}>
               <label style={{ marginBottom: '8px', display: 'block' }}>{t('settings.label.language')}</label>
               <CustomSelect
@@ -228,7 +237,10 @@ export function GlobalSettings() {
             </div>
           </div>
           <div className={styles.card} style={{ zIndex: 2 }}>
-            <h2 className={styles.cardTitle}>{t('settings.card.theme')}</h2>
+            <h2 className={styles.cardTitle}>
+              <Palette size={18} />
+              <span>{t('settings.card.theme')}</span>
+            </h2>
             <div className={styles.formGroup}>
               <label>{t('settings.theme.presets')}</label>
               <div className={styles.presetsRow}>
@@ -261,7 +273,10 @@ export function GlobalSettings() {
             </div>
           </div>
           <div className={styles.card} style={{ zIndex: 1 }}>
-            <h2 className={styles.cardTitle}>{t('settings.card.about')}</h2>
+            <h2 className={styles.cardTitle}>
+              <Info size={18} />
+              <span>{t('settings.card.about')}</span>
+            </h2>
             <div className={styles.aboutRow}>
               <div className={styles.aboutInfo}>
                 <div className={styles.appName}>Focal Craft Launcher</div>

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ViewState, AppNotification, DetailTabType } from '../types';
+import { translateBackendError } from '../utils/i18n';
 
 interface AppState {
   currentView: ViewState;
@@ -28,8 +29,13 @@ export const useAppStore = create<AppState>((set) => ({
   // 新增通知 (預設 5 秒後移除)
   addNotification: (notification) => {
     const id = Math.random().toString(36).substring(2, 9);
+    const translatedNotification = {
+      ...notification,
+      title: notification.title ? translateBackendError(notification.title) : undefined,
+      message: notification.message ? translateBackendError(notification.message) : undefined
+    };
     set((state) => ({
-      notifications: [...state.notifications, { ...notification, id }]
+      notifications: [...state.notifications, { ...translatedNotification, id } as AppNotification]
     }));
     
     setTimeout(() => {

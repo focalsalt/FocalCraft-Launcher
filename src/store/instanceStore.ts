@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
+import { instanceService } from '../services/instanceService';
 import { listen, emit } from '@tauri-apps/api/event';
 import { Instance, InstanceStateDetail } from '../types';
 import { useAppStore } from './appStore';
 import { useAccountStore } from './accountStore';
-import { getTranslation } from '../utils/i18n';
+import { getTranslation, getActiveLanguage, translateBackendStatus } from '../utils/i18n';
+import { useSettingsStore } from './settingsStore';
 
 
 interface ProgressPayload {
@@ -12,6 +13,8 @@ interface ProgressPayload {
   status: string;
   progress: number;
   detail: string;
+  statusCode?: string;
+  statusParams?: Record<string, string>;
 }
 
 interface GameStatusPayload {
@@ -130,6 +133,15 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     // 下載進度監聽
     await listen<ProgressPayload>('download-progress', (event) => {
       const targetId = event.payload.instanceId;
+      const configLang = useSettingsStore.getState().config.language;
+      const activeLang = getActiveLanguage(configLang);
+      const translatedDetail = translateBackendStatus(
+        event.payload.detail,
+        activeLang,
+        event.payload.statusCode,
+        event.payload.statusParams
+      );
+
       if (targetId) {
         set((state) => {
           const s = state.instanceStates[targetId] || getInitialInstanceState();
@@ -139,7 +151,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
               [targetId]: {
                 ...s,
                 downloadProgress: event.payload.progress,
-                downloadStatusText: event.payload.detail
+                downloadStatusText: translatedDetail
               }
             }
           };
@@ -155,7 +167,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
                 [activeId]: {
                   ...s,
                   downloadProgress: event.payload.progress,
-                  downloadStatusText: event.payload.detail
+                  downloadStatusText: translatedDetail
                 }
               }
             };
@@ -166,7 +178,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       // 相容舊版欄位
       set({
         downloadProgress: event.payload.progress,
-        downloadStatusText: event.payload.detail
+        downloadStatusText: translatedDetail
       });
     });
 
@@ -233,9 +245,9 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 載入實例列表
   loadInstances: async () => {
     try {
-      const list = await invoke<Instance[]>('get_instances');
+      const list = await instanceService.getInstances();
       set({ instances: list });
-      await invoke('watch_instances_dir').catch(err => {
+      await instanceService.watchInstancesDir().catch(err => {
         console.error('Failed to watch instances directory:', err);
       });
     } catch (error) {
@@ -246,16 +258,16 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 建立實例
   createInstance: async (id, name, version, modloader, loaderVersion, icon, modrinthProjectId, modrinthVersionId) => {
     try {
-      const created = await invoke<Instance>('create_instance', {
+      const created = await instanceService.createInstance(
         id,
         name,
         version,
         modloader,
-        loaderVersion,
-        icon,
+        loaderVersion || "",
+        icon || "",
         modrinthProjectId,
-        modrinthVersionId,
-      });
+        modrinthVersionId
+      );
       await get().loadInstances();
       return created;
     } catch (error) {
@@ -267,7 +279,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 刪除實例
   deleteInstance: async (id) => {
     try {
-      await invoke('delete_instance', { id });
+      await instanceService.deleteInstance(id);
       set(state => {
         const nextStates = { ...state.instanceStates };
         delete nextStates[id];
@@ -285,7 +297,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 更新啟動設定
   updateInstanceSettings: async (id, jvmArgs, maxMemory, javaPath) => {
     try {
-      await invoke('update_instance_settings', { id, jvmArgs, maxMemory, javaPath: javaPath || null });
+      await instanceService.updateInstanceSettings(id, jvmArgs || "", maxMemory || 0, javaPath || null);
       await get().loadInstances();
     } catch (error) {
       console.error('Failed to update instance settings:', error);
@@ -296,15 +308,15 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 更新基礎設定
   updateInstanceConfig: async (id, name, version, modloader, loaderVersion, modrinthProjectId, modrinthVersionId) => {
     try {
-      await invoke('update_instance_config', {
+      await instanceService.updateInstanceConfig(
         id,
         name,
         version,
         modloader,
-        loaderVersion,
+        loaderVersion || "",
         modrinthProjectId,
         modrinthVersionId
-      });
+      );
       await get().loadInstances();
     } catch (error) {
       console.error('Failed to update instance config:', error);
@@ -332,7 +344,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       };
     });
     try {
-      const blocked = await invoke<any[]>('import_pack', { instanceId, filePath, selectedMods: selectedMods || null });
+      const blocked = await instanceService.importPack(instanceId, filePath, selectedMods || null);
       await get().loadInstances();
       return blocked || [];
     } catch (error) {
@@ -398,7 +410,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
 
     try {
       // 初始化後端啟動 Session
-      await invoke('init_launch_session', { instanceId: id });
+      await instanceService.initLaunchSession(id);
       const instance = get().instances.find(i => i.id === id);
       if (!instance) throw new Error(getTranslation('detail.not_found'));
 
@@ -436,7 +448,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
       logInfo(getTranslation('instance.launch.log.version', { version: instance.version }));
       logInfo(`Mod Loader: ${instance.modloader} ${instance.loaderVersion ? `(${instance.loaderVersion})` : ''}`);
 
-      const reqVersion = await invoke<number>('get_required_java_version', { instanceId: id });
+      const reqVersion = await instanceService.getRequiredJavaVersion(id);
       let javaPath = '';
 
       // 準備 Java 環境
@@ -466,7 +478,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
             }
           };
         });
-        const javaInstalls = await invoke<{ path: string; version: string; major: number }[]>('detect_java');
+        const javaInstalls = await instanceService.detectJava();
 
         const exactMatch = javaInstalls.find(j => j.major === reqVersion);
         const foundJava = exactMatch;
@@ -506,7 +518,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
               }
             };
           });
-          javaPath = await invoke<string>('download_java', { majorVersion: reqVersion, instanceId: id });
+          javaPath = await instanceService.downloadJava(reqVersion, id);
           logInfo(getTranslation('instance.launch.log.java_download_complete', { version: reqVersion, path: javaPath }));
           set((state) => {
             const s = state.instanceStates[id] || getInitialInstanceState();
@@ -543,7 +555,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
           }
         };
       });
-      await invoke('install_instance_files', { instanceId: id, javaPath });
+      await instanceService.installInstanceFiles(id, javaPath);
       logInfo(getTranslation('instance.launch.log.files_ready'));
       set((state) => {
         const s = state.instanceStates[id] || getInitialInstanceState();
@@ -576,7 +588,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
           }
         };
       });
-      await invoke('launch_instance', { instanceId: id, javaPath, accountJson: finalAccountJson });
+      await instanceService.launchInstance(id, javaPath, finalAccountJson);
       logInfo(getTranslation('instance.launch.log.launch_sent'));
 
       set((state) => {
@@ -648,7 +660,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
         return val_a - val_b;
       });
       set({ instances: sorted });
-      await invoke('save_instance_order', { order });
+      await instanceService.saveInstanceOrder(order);
     } catch (error) {
       console.error('Failed to save instance order:', error);
     }
@@ -657,7 +669,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 監聽目錄變動
   watchInstanceFolders: async (instanceId) => {
     try {
-      await invoke('watch_instance_folders', { instanceId });
+      await instanceService.watchInstanceFolders(instanceId);
     } catch (error) {
       console.error('Failed to watch instance folders:', error);
       throw error;
@@ -667,7 +679,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 取消監聽目錄變動
   unwatchInstanceFolders: async () => {
     try {
-      await invoke('unwatch_instance_folders');
+      await instanceService.unwatchInstanceFolders();
     } catch (error) {
       console.error('Failed to unwatch instance folders:', error);
     }
@@ -676,7 +688,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 取消啟動
   cancelLaunch: async (instanceId) => {
     try {
-      await invoke('cancel_launch_session', { instanceId });
+      await instanceService.cancelLaunchSession(instanceId);
     } catch (error) {
       console.error('Failed to cancel launch:', error);
     }
@@ -707,7 +719,7 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   // 強制結束遊戲
   killGame: async (instanceId) => {
     try {
-      await invoke('kill_launch_session', { instanceId });
+      await instanceService.killLaunchSession(instanceId);
       set((state) => {
         const s = state.instanceStates[instanceId] || getInitialInstanceState();
         return {

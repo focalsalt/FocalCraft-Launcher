@@ -294,7 +294,7 @@ export function Sidebar() {
   // 初始化路徑與版本
   useEffect(() => {
     invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
-    getVersion().then(setAppVersion).catch(console.error);
+    getVersion().then(v => setAppVersion(v.startsWith('0.') ? v.substring(2) : v)).catch(console.error);
   }, []);
 
   const checkUpdateRef = useRef(handleCheckUpdate);

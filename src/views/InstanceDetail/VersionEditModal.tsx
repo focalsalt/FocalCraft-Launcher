@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Upload, Loader } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -67,10 +67,17 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
   const [step, setStep] = useState<'form' | 'checking' | 'compatibility' | 'updating'>('form');
   const [modsToUpdate, setModsToUpdate] = useState<ModToUpdate[]>([]);
   const [modsToDisable, setModsToDisable] = useState<ModToDisable[]>([]);
+  const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number; name: string } | null>(null);
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     if (!isOpen) {
       setIsDragOverCustom(false);
+      isSavingRef.current = false;
+      return;
+    }
+
+    if (isSavingRef.current) {
       return;
     }
 
@@ -88,6 +95,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
     setStep('form');
     setModsToUpdate([]);
     setModsToDisable([]);
+    setDownloadProgress(null);
 
     const initVersions = async () => {
       try {
@@ -334,9 +342,12 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
       return;
     }
 
+    isSavingRef.current = true;
+
     const isVersionOrLoaderChanged = mcVersion !== instance.version || loaderType !== instance.modloader || loaderVersion !== (instance.loaderVersion ?? '');
 
     if (!isVersionOrLoaderChanged) {
+      isSavingRef.current = false;
       onClose();
       return;
     }
@@ -544,6 +555,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
         title: t('version_edit.notification.success.title'),
         message: t('version_edit.notification.success.msg')
       });
+      isSavingRef.current = false;
       onSaveComplete();
     } catch (err) {
       addNotification({
@@ -551,6 +563,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
         title: t('version_edit.notification.failed.title'),
         message: String(err)
       });
+      isSavingRef.current = false;
       setStep('form');
     }
   };
@@ -581,6 +594,10 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
       }
 
       // 2. 更新相容模組
+      const modsToDownload = modsToUpdate.filter(item => item.shouldUpdate);
+      const totalToDownload = modsToDownload.length;
+      let currentDownloadIndex = 0;
+
       for (const item of modsToUpdate) {
         if (!item.shouldUpdate) continue;
 
@@ -589,6 +606,13 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
 
         const file = selectedVer.files.find((f: any) => f.primary) || selectedVer.files[0];
         if (file) {
+          currentDownloadIndex++;
+          setDownloadProgress({
+            current: currentDownloadIndex,
+            total: totalToDownload,
+            name: item.localMod.name || item.localMod.fileName
+          });
+
           await invoke('download_and_replace_file', {
             instanceId: instance.id,
             folderName: 'mods',
@@ -615,6 +639,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
         title: t('version_edit.notification.migration_success.title'),
         message: t('version_edit.notification.migration_success.msg')
       });
+      isSavingRef.current = false;
       onSaveComplete();
     } catch (err) {
       console.error(err);
@@ -623,7 +648,10 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
         title: t('version_edit.notification.migration_failed.title'),
         message: String(err)
       });
+      isSavingRef.current = false;
       setStep('form');
+    } finally {
+      setDownloadProgress(null);
     }
   };
 
@@ -631,10 +659,15 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
 
   if (step === 'checking') {
     return (
-      <div className={styles.versionEditOverlay}>
-        <div className={styles.versionEditModal} style={{ width: '400px', padding: '40px 20px', alignItems: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Loader className="animate-spin" size={48} style={{ color: 'var(--main-color)' }} />
-          <h3 style={{ margin: 0, fontSize: '16px', color: 'white' }}>{t('version_edit.checking')}</h3>
+      <div className={styles.hudOverlay} style={{ zIndex: 3000 }}>
+        <div className={styles.hudCard}>
+          <div className={styles.hudHeader}>
+            <Loader className={`${styles.hudSpinner} animate-spin`} size={24} />
+            <span className={styles.hudTitle}>{t('version_edit.checking')}</span>
+          </div>
+          <div className={styles.hudDetail}>
+            {t('sidebar.checking_updates') || '正在檢查更新...'}
+          </div>
         </div>
       </div>
     );
@@ -642,10 +675,37 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
 
   if (step === 'updating') {
     return (
-      <div className={styles.versionEditOverlay}>
-        <div className={styles.versionEditModal} style={{ width: '400px', padding: '40px 20px', alignItems: 'center', justifyContent: 'center', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Loader className="animate-spin" size={48} style={{ color: 'var(--main-color)' }} />
-          <h3 style={{ margin: 0, fontSize: '16px', color: 'white' }}>{t('version_edit.updating')}</h3>
+      <div className={styles.hudOverlay} style={{ zIndex: 3000 }}>
+        <div className={styles.hudCard}>
+          <div className={styles.hudHeader}>
+            <Loader className={`${styles.hudSpinner} animate-spin`} size={24} />
+            <span className={styles.hudTitle}>
+              {downloadProgress ? t('detail.notification.batch_update.starting') : t('version_edit.updating')}
+            </span>
+          </div>
+          <div className={styles.hudDetail}>
+            {downloadProgress 
+              ? t('version_edit.downloading_mod', { 
+                  current: downloadProgress.current, 
+                  total: downloadProgress.total, 
+                  name: downloadProgress.name 
+                })
+              : t('version_edit.updating')
+            }
+          </div>
+          {downloadProgress && (
+            <div className={styles.hudProgressContainer}>
+              <div className={styles.hudProgressBar}>
+                <div
+                  className={styles.hudProgressFill}
+                  style={{ width: `${Math.round((downloadProgress.current / downloadProgress.total) * 100)}%` }}
+                />
+              </div>
+              <span className={styles.hudPercent}>
+                {Math.round((downloadProgress.current / downloadProgress.total) * 100)}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -738,7 +798,7 @@ export function VersionEditModal({ isOpen, onClose, instance, onSaveComplete }: 
             </div>
           </div>
           <div className={styles.versionEditFooter}>
-            <button className="btn-text" onClick={() => setStep('form')}>{t('version_edit.compatibility.cancel')}</button>
+            <button className="btn-text" onClick={() => { setStep('form'); isSavingRef.current = false; }}>{t('version_edit.compatibility.cancel')}</button>
             <button className="btn-filled" onClick={executeMigration}>
               {t('version_edit.compatibility.confirm')}
             </button>

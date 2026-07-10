@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader } from 'lucide-react';
+import { Loader, Package } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { marked } from 'marked';
 import { useAppStore } from '../../store/appStore';
@@ -826,7 +826,7 @@ export function CurseForgeDownloadModal({
 
               return (
                 <div key={item.project.project_id} className={`${styles.confirmItem} ${isDetected && !isImported ? styles.checked : ''}`} style={{ cursor: 'default' }}>
-                  <span style={{ fontSize: '18px' }}>📦</span>
+                  <span style={{ fontSize: '18px', display: 'flex', alignItems: 'center' }}><Package size={18} /></span>
                   <div className={styles.confirmItemMain}>
                     <span className={styles.confirmTitle}>{item.project.title}</span>
                     <span className={styles.confirmDesc}>{item.version.files[0]?.filename}</span>
@@ -960,12 +960,23 @@ export function CurseForgeDownloadModal({
             <div className={styles.hudOverlay}>
               <div className={styles.hudCard}>
                 <div className={styles.hudHeader}>
-                  <Loader className="animate-spin" size={20} />
-                  <span>
+                  <Loader className={`${styles.hudSpinner} animate-spin`} size={24} />
+                  <span className={styles.hudTitle}>
                     {t('downloader.status.downloading_index', { current: installProgress.current, total: installProgress.total })}
                   </span>
                 </div>
                 <div className={styles.hudDetail}>{installProgress.name}</div>
+                <div className={styles.hudProgressContainer}>
+                  <div className={styles.hudProgressBar}>
+                    <div
+                      className={styles.hudProgressFill}
+                      style={{ width: `${Math.round((installProgress.current / installProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <span className={styles.hudPercent}>
+                    {Math.round((installProgress.current / installProgress.total) * 100)}%
+                  </span>
+                </div>
               </div>
             </div>
           )}

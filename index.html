@@ -169,13 +169,22 @@
       <div class="splash-bar-track">
         <div class="splash-bar-fill"></div>
       </div>
-      <div class="splash-text">正在載入...</div>
+      <div class="splash-text" id="splash-text">正在載入...</div>
     </div>
   </div>
 
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   <script>
+    // Set splash text language based on system locale before React loads
+    document.addEventListener('DOMContentLoaded', function () {
+      var sysLang = navigator.language || '';
+      var el = document.getElementById('splash-text');
+      if (el) {
+        el.textContent = sysLang.toLowerCase().startsWith('zh') ? '正在載入...' : 'Loading...';
+      }
+    });
+
     // Hide splash screen once React has mounted
     window.__hideSplash = function () {
       var splash = document.getElementById('splash');

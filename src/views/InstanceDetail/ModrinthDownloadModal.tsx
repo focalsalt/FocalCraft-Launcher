@@ -730,12 +730,23 @@ export function ModrinthDownloadModal({
             <div className={styles.hudOverlay}>
               <div className={styles.hudCard}>
                 <div className={styles.hudHeader}>
-                  <Loader className="animate-spin" size={20} />
-                  <span>
+                  <Loader className={`${styles.hudSpinner} animate-spin`} size={24} />
+                  <span className={styles.hudTitle}>
                     {t('downloader.status.downloading_index', { current: installProgress.current, total: installProgress.total })}
                   </span>
                 </div>
                 <div className={styles.hudDetail}>{installProgress.name}</div>
+                <div className={styles.hudProgressContainer}>
+                  <div className={styles.hudProgressBar}>
+                    <div
+                      className={styles.hudProgressFill}
+                      style={{ width: `${Math.round((installProgress.current / installProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <span className={styles.hudPercent}>
+                    {Math.round((installProgress.current / installProgress.total) * 100)}%
+                  </span>
+                </div>
               </div>
             </div>
           )}

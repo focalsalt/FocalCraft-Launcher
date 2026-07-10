@@ -584,26 +584,27 @@
 .updateStatusInfo {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: 0.375rem;
+  font-size: 0.84375rem;
   color: var(--text-secondary);
   background-color: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 6px 12px;
+  padding: 0.5rem 1rem;
   border-radius: var(--border-radius-md);
-  margin-left: 8px;
+  transform: translateY(0.0625rem);
 }
 
 .updateStatusInfoClickable {
   cursor: pointer;
   transition: all var(--transition-fast);
   user-select: none;
+  transform: translateY(0.0625rem);
 }
 
 .updateStatusInfoClickable:hover {
   background-color: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
+  transform: translateY(0);
 }
 
 .updateStatusInfoClickable:active {
@@ -1690,7 +1691,7 @@
 
 /* premium Launch Progress HUD */
 .hudOverlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -1701,8 +1702,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
-  border-radius: var(--border-radius-lg);
+  z-index: 3000;
+  border-radius: 0;
   animation: fadeIn 0.25s ease-out;
 }
 

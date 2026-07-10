@@ -67,7 +67,23 @@ export function translateVersionGroup(g: string, t: (key: TranslationKeys) => st
 }
 
 // 翻譯後端狀態
-export function translateBackendStatus(detail: string, lang: Language): string {
+export function translateBackendStatus(
+  detail: string,
+  lang: Language,
+  statusCode?: string,
+  statusParams?: Record<string, string>
+): string {
+  if (statusCode) {
+    const currentTranslations = translations[lang] || translations['zh-TW'];
+    let value = currentTranslations[statusCode as TranslationKeys] || translations['zh-TW'][statusCode as TranslationKeys] || detail;
+    if (statusParams) {
+      Object.entries(statusParams).forEach(([k, v]) => {
+        value = value.replace(`{${k}}`, String(v));
+      });
+    }
+    return value;
+  }
+
   if (lang === 'zh-TW') {
     return detail;
   }
@@ -161,4 +177,80 @@ export function translateBackendStatus(detail: string, lang: Language): string {
   }
 
   return detail;
+}
+
+// 翻譯後端常見中文錯誤與一般字串
+export function translateBackendError(err: string): string {
+  const configLang = useSettingsStore.getState().config.language;
+  const activeLang = getActiveLanguage(configLang);
+  if (activeLang === 'zh-TW') {
+    return err;
+  }
+
+  // 英文翻譯對照表
+  if (err.includes('實例資料夾或設定檔不存在，可能已被更名或刪除')) {
+    return 'The instance folder or configuration file does not exist, it may have been renamed or deleted.';
+  }
+  if (err.includes('找不到該實例的設定檔')) {
+    return 'Cannot find the configuration file for this instance.';
+  }
+  if (err.includes('無法讀取 instance.cfg')) {
+    return err.replace('無法讀取 instance.cfg', 'Failed to read instance.cfg');
+  }
+  if (err.includes('無法解析 instance.cfg')) {
+    return err.replace('無法解析 instance.cfg', 'Failed to parse instance.cfg');
+  }
+  if (err.includes('未知的 Minecraft 版本')) {
+    return err.replace('未知的 Minecraft 版本', 'Unknown Minecraft version');
+  }
+  if (err.includes('未知的基礎 Minecraft 版本')) {
+    return err.replace('未知的基礎 Minecraft 版本', 'Unknown base Minecraft version');
+  }
+  if (err.includes('取得版本 JSON 失敗')) {
+    return err.replace('取得版本 JSON 失敗', 'Failed to get version JSON');
+  }
+  if (err.includes('解析版本 JSON 失敗')) {
+    return err.replace('解析版本 JSON 失敗', 'Failed to parse version JSON');
+  }
+  if (err.includes('無法取得 APPDATA 環境變數')) {
+    return 'Failed to get APPDATA environment variable.';
+  }
+  if (err.includes('取得 Mojang 版本清單失敗')) {
+    return err.replace('取得 Mojang 版本清單失敗', 'Failed to get Mojang version list');
+  }
+  if (err.includes('解析 Mojang 版本清單失敗')) {
+    return err.replace('解析 Mojang 版本清單失敗', 'Failed to parse Mojang version list');
+  }
+  if (err.includes('該版本無可用的 Fabric Loader')) {
+    return 'No available Fabric Loader for this version.';
+  }
+  if (err.includes('未指定')) {
+    return err.replace('未指定', 'Not specified').replace('版本', 'version');
+  }
+  if (err.includes('解密資料過短，缺少 Nonce 標頭')) {
+    return 'Decrypted data is too short, missing Nonce header.';
+  }
+  if (err.includes('密鑰解密失敗')) {
+    return 'Failed to decrypt credentials.';
+  }
+  if (err.includes('讀取本地 Fallback 密鑰失敗')) {
+    return err.replace('讀取本地 Fallback 密鑰失敗', 'Failed to read local fallback key');
+  }
+  if (err.includes('寫入本地 Fallback 密鑰失敗')) {
+    return err.replace('寫入本地 Fallback 密鑰失敗', 'Failed to write local fallback key');
+  }
+  if (err.includes('無法建立檔案監聽器')) {
+    return err.replace('無法建立檔案監聽器', 'Failed to create file watcher');
+  }
+  if (err.includes('監聽資料夾失敗')) {
+    return err.replace('監聽資料夾失敗', 'Failed to watch folder');
+  }
+  if (err.includes('無法建立目錄監聽器')) {
+    return err.replace('無法建立目錄監聽器', 'Failed to create directory watcher');
+  }
+  if (err.includes('監聽實例目錄失敗')) {
+    return err.replace('監聽實例目錄失敗', 'Failed to watch instances directory');
+  }
+  
+  return err;
 }

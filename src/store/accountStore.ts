@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
 import { Account } from '../types';
+import { accountService } from '../services/accountService';
 
 interface AccountState {
   accounts: Account[];
@@ -25,11 +25,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
   loadAccounts: async () => {
     set({ isLoading: true });
     try {
-      const accountsJson = await invoke<string>('load_accounts');
-      const loadedAccounts = (JSON.parse(accountsJson) as Account[]).map(a => ({
-        ...a,
-        avatarUrl: a.avatarUrl ? a.avatarUrl.replace('mc-heads.net', 'minotar.net') : `https://minotar.net/avatar/${a.id}`
-      }));
+      const loadedAccounts = await accountService.loadAccounts();
       
       if (loadedAccounts.length > 0) {
         const initialStatuses: Record<string, 'idle' | 'updating' | 'failed'> = {};
@@ -38,7 +34,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
         });
         set({ 
           accounts: loadedAccounts,
-          selectedAccountId: loadedAccounts[0].id, // 預設選取第一個
+          selectedAccountId: loadedAccounts[0].id,
           refreshStatuses: initialStatuses
         });
 
@@ -81,7 +77,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     }));
 
     try {
-      await invoke('save_accounts', { accountsJson: JSON.stringify(reorderedAccounts) });
+      await accountService.saveAccounts(reorderedAccounts);
     } catch (error) {
       console.error('Failed to save accounts after add:', error);
     }
@@ -107,7 +103,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     });
 
     try {
-      await invoke('save_accounts', { accountsJson: JSON.stringify(newAccounts) });
+      await accountService.saveAccounts(newAccounts);
     } catch (error) {
       console.error('Failed to save accounts after remove:', error);
     }
@@ -129,7 +125,7 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     });
 
     try {
-      await invoke('save_accounts', { accountsJson: JSON.stringify(reorderedAccounts) });
+      await accountService.saveAccounts(reorderedAccounts);
     } catch (error) {
       console.error('Failed to save accounts after select:', error);
     }
@@ -152,34 +148,28 @@ export const useAccountStore = create<AccountState>((set, get) => ({
 
     while (attempt < maxRetries) {
       try {
-        const refreshed: Account = await invoke('refresh_minecraft_account', { 
-          refreshToken: targetAccount.msRefreshToken 
-        });
+        const refreshed = await accountService.refreshMinecraftAccount(targetAccount.msRefreshToken);
         refreshedAccount = refreshed;
-        break; // 成功
+        break;
       } catch (error) {
         attempt++;
         lastError = error;
         console.warn(`Attempt ${attempt} to refresh token for ${id} failed:`, error);
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // 延遲重試
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
 
     if (refreshedAccount) {
-      const mappedRefreshed = {
-        ...refreshedAccount,
-        avatarUrl: refreshedAccount.avatarUrl ? refreshedAccount.avatarUrl.replace('mc-heads.net', 'minotar.net') : `https://minotar.net/avatar/${refreshedAccount.id}`
-      };
-      const updatedAccounts = get().accounts.map(a => a.id === id ? mappedRefreshed : a);
+      const updatedAccounts = get().accounts.map(a => a.id === id ? refreshedAccount! : a);
 
       set(state => ({
         accounts: updatedAccounts,
         refreshStatuses: { ...state.refreshStatuses, [id]: 'idle' }
       }));
-      await invoke('save_accounts', { accountsJson: JSON.stringify(updatedAccounts) });
-      return mappedRefreshed;
+      await accountService.saveAccounts(updatedAccounts);
+      return refreshedAccount;
     } else {
       console.error(`Failed to refresh token for account ${id} after ${maxRetries} attempts:`, lastError);
       set(state => ({

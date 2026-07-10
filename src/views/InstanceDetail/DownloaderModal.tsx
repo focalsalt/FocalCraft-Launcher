@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { useI18n } from '../../utils/i18n';
 import { ModrinthDownloadModal } from './ModrinthDownloadModal';
 import { CurseForgeDownloadModal } from './CurseForgeDownloadModal';
@@ -80,14 +80,19 @@ export function DownloaderModal({
                 CurseForge
               </button>
             </div>
+          ) : headerState.isManualMode ? (
+            <div className={styles.headerTitleContainer}>
+              <AlertTriangle className={styles.warningIcon} size={18} />
+              <h2 className={styles.headerTitle}>
+                {t('downloader.manual_mode_title')}
+              </h2>
+            </div>
           ) : (
             <h2 className={styles.headerTitle}>
-              {headerState.isManualMode
-                ? t('downloader.manual_mode_title')
-                : t('downloader.confirm_title', {
-                    confirmed: headerState.confirmedSelectionSize,
-                    total: headerState.confirmModsCount,
-                  })}
+              {t('downloader.confirm_title', {
+                confirmed: headerState.confirmedSelectionSize,
+                total: headerState.confirmModsCount,
+              })}
             </h2>
           )}
           <button className={styles.closeBtn} onClick={onClose} type="button">

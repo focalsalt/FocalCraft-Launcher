@@ -3,6 +3,7 @@ use std::fs;
 use std::path::PathBuf;
 
 mod minecraft;
+mod security;
 
 const MICROSOFT_CLIENT_ID: &str = match option_env!("MICROSOFT_CLIENT_ID") {
     Some(id) => id,
@@ -146,11 +147,22 @@ struct MinecraftProfileResponse {
 // Tauri Commands
 // ==========================================
 
+fn get_app_dir() -> Result<PathBuf, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let appdata = std::env::var("APPDATA").map_err(|_| "無法取得 APPDATA 環境變數".to_string())?;
+        Ok(PathBuf::from(appdata).join("focal-craft-launcher"))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let home = std::env::var("HOME").map_err(|_| "無法取得 HOME 環境變數".to_string())?;
+        Ok(PathBuf::from(home).join(".focal-craft-launcher"))
+    }
+}
+
 #[tauri::command]
 fn init_app_dirs() -> Result<String, String> {
-    // 取得 APPDATA 路徑
-    let appdata = std::env::var("APPDATA").map_err(|_| "無法取得 APPDATA 環境變數".to_string())?;
-    let base_dir = PathBuf::from(appdata).join("focal-craft-launcher");
+    let base_dir = get_app_dir()?;
 
     let dirs_to_create = vec![
         base_dir.clone(),
@@ -180,39 +192,17 @@ fn init_app_dirs() -> Result<String, String> {
     Ok(base_dir.to_string_lossy().into_owned())
 }
 
-#[cfg(target_os = "windows")]
-fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
-    windows_dpapi::encrypt_data(data, windows_dpapi::Scope::User)
-        .map_err(|e| format!("DPAPI 加密失敗: {:?}", e))
-}
-
-#[cfg(target_os = "windows")]
-fn decrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
-    windows_dpapi::decrypt_data(data, windows_dpapi::Scope::User)
-        .map_err(|e| format!("DPAPI 解密失敗: {:?}", e))
-}
-
-#[cfg(not(target_os = "windows"))]
-fn encrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
-    Ok(data.to_vec())
-}
-
-#[cfg(not(target_os = "windows"))]
-fn decrypt_data(data: &[u8]) -> Result<Vec<u8>, String> {
-    Ok(data.to_vec())
-}
+use security::{encrypt_data, decrypt_data};
 
 #[tauri::command]
 fn load_accounts() -> Result<String, String> {
-    let appdata = std::env::var("APPDATA").map_err(|_| "無法取得 APPDATA 環境變數".to_string())?;
-    let accounts_cfg = PathBuf::from(appdata)
-        .join("focal-craft-launcher")
-        .join("accounts.cfg");
+    let base_dir = get_app_dir()?;
+    let accounts_cfg = base_dir.join("accounts.cfg");
 
     if accounts_cfg.exists() {
         let bytes = fs::read(&accounts_cfg).map_err(|e| format!("讀取 accounts.cfg 失敗: {}", e))?;
         
-        // 嘗試使用 DPAPI 解密
+        // 嘗試解密
         match decrypt_data(&bytes) {
             Ok(decrypted_bytes) => {
                 String::from_utf8(decrypted_bytes).map_err(|e| format!("解析帳號字串為 UTF-8 失敗: {}", e))
@@ -226,7 +216,7 @@ fn load_accounts() -> Result<String, String> {
                         if let Err(e) = save_accounts(plain_text.clone()) {
                             eprintln!("自動升級加密帳號設定檔失敗: {}", e);
                         } else {
-                            println!("成功自動將帳號設定檔升級為 DPAPI 安全加密格式！");
+                            println!("成功自動將帳號設定檔升級為安全加密格式！");
                         }
                         return Ok(plain_text);
                     }
@@ -241,18 +231,29 @@ fn load_accounts() -> Result<String, String> {
 
 #[tauri::command]
 fn save_accounts(accounts_json: String) -> Result<(), String> {
-    let appdata = std::env::var("APPDATA").map_err(|_| "無法取得 APPDATA 環境變數".to_string())?;
-    let accounts_cfg = PathBuf::from(appdata)
-        .join("focal-craft-launcher")
-        .join("accounts.cfg");
+    let base_dir = get_app_dir()?;
+    let accounts_cfg = base_dir.join("accounts.cfg");
 
     let encrypted_bytes = encrypt_data(accounts_json.as_bytes())?;
     fs::write(&accounts_cfg, encrypted_bytes).map_err(|e| format!("寫入 accounts.cfg 失敗: {}", e))
 }
 
+use std::sync::OnceLock;
+
+pub fn get_client() -> &'static reqwest::Client {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    CLIENT.get_or_init(|| {
+        reqwest::Client::builder()
+            .tcp_keepalive(Some(std::time::Duration::from_secs(60)))
+            .pool_max_idle_per_host(30)
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new())
+    })
+}
+
 #[tauri::command]
 async fn get_device_code() -> Result<DeviceCodeResponse, String> {
-    let client = reqwest::Client::new();
+    let client = get_client();
     let params = [
         ("client_id", MICROSOFT_CLIENT_ID),
         ("scope", "XboxLive.signin offline_access"),
@@ -279,7 +280,7 @@ async fn get_device_code() -> Result<DeviceCodeResponse, String> {
 
 #[tauri::command]
 async fn poll_device_token(device_code: String) -> Result<MicrosoftTokenResponse, String> {
-    let client = reqwest::Client::new();
+    let client = get_client();
     let params = [
         ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
         ("client_id", MICROSOFT_CLIENT_ID),
@@ -312,14 +313,10 @@ async fn poll_device_token(device_code: String) -> Result<MicrosoftTokenResponse
     }
 }
 
-#[tauri::command]
-async fn login_minecraft_with_ms_token(
-    ms_access_token: String,
-    ms_refresh_token: String,
-) -> Result<Account, String> {
-    let client = reqwest::Client::new();
-
-    // 驗證 Xbox Live
+async fn authenticate_xbox_live(
+    client: &reqwest::Client,
+    ms_access_token: &str,
+) -> Result<(String, String), String> {
     let xbl_req = XboxLiveAuthRequest {
         properties: XboxLiveAuthProperties {
             auth_method: "RPS".to_string(),
@@ -355,11 +352,17 @@ async fn login_minecraft_with_ms_token(
         .uhs
         .clone();
 
-    // 授權 XSTS
+    Ok((xbl_token, uhs))
+}
+
+async fn authorize_xsts(
+    client: &reqwest::Client,
+    xbl_token: &str,
+) -> Result<String, String> {
     let xsts_req = XstsAuthRequest {
         properties: XstsAuthProperties {
             sandbox_id: "RETAIL".to_string(),
-            user_tokens: vec![xbl_token],
+            user_tokens: vec![xbl_token.to_string()],
         },
         relying_party: "rp://api.minecraftservices.com/".to_string(),
         token_type: "JWT".to_string(),
@@ -399,9 +402,14 @@ async fn login_minecraft_with_ms_token(
         .await
         .map_err(|e| format!("解析 XSTS 回應失敗: {}", e))?;
 
-    let xsts_token = xsts_data.token;
+    Ok(xsts_data.token)
+}
 
-    // 登入 Minecraft 服務
+async fn login_minecraft_services(
+    client: &reqwest::Client,
+    uhs: &str,
+    xsts_token: &str,
+) -> Result<(String, u64), String> {
     let mc_login_req = MinecraftLoginRequest {
         identity_token: format!("XBL3.0 x={};{}", uhs, xsts_token),
     };
@@ -425,17 +433,16 @@ async fn login_minecraft_with_ms_token(
         .await
         .map_err(|e| format!("解析 Minecraft 登入回應失敗: {}", e))?;
 
-    let mc_token = mc_login_data.access_token;
-    let expires_at = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis() as u64
-        + (mc_login_data.expires_in * 1000);
+    Ok((mc_login_data.access_token, mc_login_data.expires_in))
+}
 
-    // 檢查遊戲所有權
+async fn check_minecraft_ownership(
+    client: &reqwest::Client,
+    mc_token: &str,
+) -> Result<bool, String> {
     let entitlements_res = client
         .get("https://api.minecraftservices.com/entitlements/mcstore")
-        .bearer_auth(&mc_token)
+        .bearer_auth(mc_token)
         .send()
         .await
         .map_err(|e| format!("檢查遊戲所有權失敗: {}", e))?;
@@ -453,14 +460,17 @@ async fn login_minecraft_with_ms_token(
         .items
         .iter()
         .any(|item| item.name == "game_minecraft");
-    if !has_game {
-        return Err("NO_MINECRAFT_LICENSE".to_string());
-    }
 
-    // 取得遊戲角色資訊
+    Ok(has_game)
+}
+
+async fn get_minecraft_profile_data(
+    client: &reqwest::Client,
+    mc_token: &str,
+) -> Result<(String, String), String> {
     let profile_res = client
         .get("https://api.minecraftservices.com/minecraft/profile")
-        .bearer_auth(&mc_token)
+        .bearer_auth(mc_token)
         .send()
         .await
         .map_err(|e| format!("取得 Minecraft Profile 失敗: {}", e))?;
@@ -477,11 +487,43 @@ async fn login_minecraft_with_ms_token(
         .await
         .map_err(|e| format!("解析 Minecraft Profile 失敗: {}", e))?;
 
-    let avatar_url = format!("https://minotar.net/avatar/{}", profile_data.id);
+    Ok((profile_data.id, profile_data.name))
+}
+
+#[tauri::command]
+async fn login_minecraft_with_ms_token(
+    ms_access_token: String,
+    ms_refresh_token: String,
+) -> Result<Account, String> {
+    let client = get_client();
+
+    // 1. 驗證 Xbox Live
+    let (xbl_token, uhs) = authenticate_xbox_live(client, &ms_access_token).await?;
+
+    // 2. 授權 XSTS
+    let xsts_token = authorize_xsts(client, &xbl_token).await?;
+
+    // 3. 登入 Minecraft 服務
+    let (mc_token, expires_in) = login_minecraft_services(client, &uhs, &xsts_token).await?;
+    let expires_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
+        + (expires_in * 1000);
+
+    // 4. 檢查遊戲所有權
+    let has_game = check_minecraft_ownership(client, &mc_token).await?;
+    if !has_game {
+        return Err("NO_MINECRAFT_LICENSE".to_string());
+    }
+
+    // 5. 取得遊戲角色資訊
+    let (id, mc_id) = get_minecraft_profile_data(client, &mc_token).await?;
+    let avatar_url = format!("https://minotar.net/avatar/{}", id);
 
     Ok(Account {
-        id: profile_data.id,
-        mc_id: profile_data.name,
+        id,
+        mc_id,
         avatar_url,
         ms_refresh_token,
         mc_access_token: mc_token,
@@ -489,9 +531,10 @@ async fn login_minecraft_with_ms_token(
     })
 }
 
+
 #[tauri::command]
 async fn refresh_minecraft_account(refresh_token: String) -> Result<Account, String> {
-    let client = reqwest::Client::new();
+    let client = get_client();
     let params = [
         ("grant_type", "refresh_token"),
         ("client_id", MICROSOFT_CLIENT_ID),
@@ -549,7 +592,7 @@ pub struct MojangCape {
 
 #[tauri::command]
 async fn get_minecraft_profile(mc_access_token: String) -> Result<MojangProfile, String> {
-    let client = reqwest::Client::new();
+    let client = get_client();
     let res = client
         .get("https://api.minecraftservices.com/minecraft/profile")
         .bearer_auth(&mc_access_token)
@@ -580,7 +623,7 @@ async fn upload_minecraft_skin(
     variant: String,
     file_path: String,
 ) -> Result<(), String> {
-    let client = reqwest::Client::new();
+    let client = get_client();
 
     let file_bytes = if file_path.starts_with("http://") || file_path.starts_with("https://") {
         client.get(&file_path)
@@ -624,8 +667,7 @@ async fn upload_minecraft_skin(
 
 #[tauri::command]
 async fn set_active_cape(mc_access_token: String, cape_id: String) -> Result<(), String> {
-    let client = reqwest::Client::new();
-
+    let client = get_client();
     #[derive(Serialize)]
     #[serde(rename_all = "camelCase")]
     struct ActiveCapePayload {
@@ -651,7 +693,7 @@ async fn set_active_cape(mc_access_token: String, cape_id: String) -> Result<(),
 
 #[tauri::command]
 async fn deactivate_cape(mc_access_token: String) -> Result<(), String> {
-    let client = reqwest::Client::new();
+    let client = get_client();
     let res = client
         .delete("https://api.minecraftservices.com/minecraft/profile/capes/active")
         .bearer_auth(&mc_access_token)
@@ -670,8 +712,7 @@ async fn deactivate_cape(mc_access_token: String) -> Result<(), String> {
 
 #[tauri::command]
 async fn get_image_base64(url: String) -> Result<String, String> {
-    let client = reqwest::Client::new();
-
+    let client = get_client();
     let secure_url = if url.starts_with("http://textures.minecraft.net") {
         url.replace(
             "http://textures.minecraft.net",
@@ -721,10 +762,8 @@ struct WardrobeSkin {
 
 #[tauri::command]
 async fn save_skin_to_wardrobe(file_path: String, _variant: String) -> Result<(), String> {
-    let appdata = std::env::var("APPDATA").map_err(|_| "無法取得 APPDATA 環境變數".to_string())?;
-    let skins_dir = PathBuf::from(appdata)
-        .join("focal-craft-launcher")
-        .join("skins");
+    let base_dir = get_app_dir()?;
+    let skins_dir = base_dir.join("skins");
 
     if !skins_dir.exists() {
         fs::create_dir_all(&skins_dir).map_err(|e| format!("建立 skins 資料夾失敗: {}", e))?;
@@ -741,7 +780,6 @@ async fn save_skin_to_wardrobe(file_path: String, _variant: String) -> Result<()
         .map(|d| d.as_secs())
         .unwrap_or(0);
 
-    // [時間戳記].png
     let dest_filename = format!("{}.png", timestamp);
     let dest_path = skins_dir.join(&dest_filename);
 
@@ -749,12 +787,47 @@ async fn save_skin_to_wardrobe(file_path: String, _variant: String) -> Result<()
     Ok(())
 }
 
+fn parse_skin_filename(stem: &str) -> (String, String, u64) {
+    let parts: Vec<&str> = stem.split('_').collect();
+    let mut variant = "CLASSIC".to_string();
+    let mut timestamp = 0;
+    let mut name = stem.to_string();
+
+    if parts.len() >= 3 {
+        let ts_str = parts[parts.len() - 1];
+        let var_str = parts[parts.len() - 2];
+
+        if let Ok(ts) = ts_str.parse::<u64>() {
+            timestamp = ts;
+            variant = if var_str.to_lowercase() == "slim" {
+                "SLIM".to_string()
+            } else {
+                "CLASSIC".to_string()
+            };
+            name = parts[0..parts.len() - 2].join("_");
+            return (name, variant, timestamp);
+        }
+    }
+
+    if parts.len() == 2 {
+        let var_str = parts[1];
+        if var_str.to_lowercase() == "slim" || var_str.to_lowercase() == "classic" {
+            variant = var_str.to_uppercase();
+            name = parts[0].to_string();
+        }
+    } else if parts.len() == 1 {
+        if let Ok(ts) = stem.parse::<u64>() {
+            timestamp = ts;
+        }
+    }
+
+    (name, variant, timestamp)
+}
+
 #[tauri::command]
 async fn get_wardrobe_skins() -> Result<Vec<WardrobeSkin>, String> {
-    let appdata = std::env::var("APPDATA").map_err(|_| "無法取得 APPDATA 環境變數".to_string())?;
-    let skins_dir = PathBuf::from(appdata)
-        .join("focal-craft-launcher")
-        .join("skins");
+    let base_dir = get_app_dir()?;
+    let skins_dir = base_dir.join("skins");
 
     if !skins_dir.exists() {
         return Ok(vec![]);
@@ -769,38 +842,8 @@ async fn get_wardrobe_skins() -> Result<Vec<WardrobeSkin>, String> {
         if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("png") {
             let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
 
-            // 解析皮膚檔名資訊
             let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-            let parts: Vec<&str> = stem.split('_').collect();
-
-            let mut variant = "CLASSIC".to_string();
-            let mut timestamp = 0;
-            let mut name = stem.to_string();
-
-            if parts.len() >= 3 {
-                let ts_str = parts[parts.len() - 1];
-                let var_str = parts[parts.len() - 2];
-
-                if let Ok(ts) = ts_str.parse::<u64>() {
-                    timestamp = ts;
-                    variant = if var_str.to_lowercase() == "slim" {
-                        "SLIM".to_string()
-                    } else {
-                        "CLASSIC".to_string()
-                    };
-                    name = parts[0..parts.len() - 2].join("_");
-                }
-            } else if parts.len() == 2 {
-                let var_str = parts[1];
-                if var_str.to_lowercase() == "slim" || var_str.to_lowercase() == "classic" {
-                    variant = var_str.to_uppercase();
-                    name = parts[0].to_string();
-                }
-            } else if parts.len() == 1 {
-                if let Ok(ts) = stem.parse::<u64>() {
-                    timestamp = ts;
-                }
-            }
+            let (name, variant, timestamp) = parse_skin_filename(stem);
 
             // 讀取圖片轉換為 base64
             let bytes =
@@ -824,6 +867,7 @@ async fn get_wardrobe_skins() -> Result<Vec<WardrobeSkin>, String> {
 
     Ok(skins)
 }
+
 
 #[tauri::command]
 async fn delete_skin_from_wardrobe(file_path: String) -> Result<(), String> {
@@ -893,6 +937,7 @@ pub fn run() {
         .manage(SessionState {
             sessions: std::sync::Mutex::new(std::collections::HashMap::new()),
         })
+        .manage(reqwest::Client::new())
         .setup(|_app| {
             // 在啟動時自動初始化資料夾
             match init_app_dirs() {
@@ -993,6 +1038,39 @@ mod tests {
         assert_ne!(test_data.to_vec(), encrypted);
         let decrypted = decrypt_data(&encrypted).expect("Decryption failed");
         assert_eq!(test_data.to_vec(), decrypted);
+    }
+
+    #[test]
+    fn test_parse_skin_filename_formats() {
+        // 格式 1: name_variant_timestamp (>= 3 parts)
+        let (name, variant, ts) = parse_skin_filename("steve_slim_1719600000");
+        assert_eq!(name, "steve");
+        assert_eq!(variant, "SLIM");
+        assert_eq!(ts, 1719600000);
+
+        // 格式 1-1: 含有底線的 name
+        let (name, variant, ts) = parse_skin_filename("cool_steve_classic_1719600001");
+        assert_eq!(name, "cool_steve");
+        assert_eq!(variant, "CLASSIC");
+        assert_eq!(ts, 1719600001);
+
+        // 格式 2: name_variant (2 parts)
+        let (name, variant, ts) = parse_skin_filename("alex_slim");
+        assert_eq!(name, "alex");
+        assert_eq!(variant, "SLIM");
+        assert_eq!(ts, 0);
+
+        // 格式 3: timestamp (1 part)
+        let (name, variant, ts) = parse_skin_filename("1719600002");
+        assert_eq!(name, "1719600002");
+        assert_eq!(variant, "CLASSIC");
+        assert_eq!(ts, 1719600002);
+
+        // 格式 4: 一般不符合規格的檔名
+        let (name, variant, ts) = parse_skin_filename("just_random_name");
+        assert_eq!(name, "just_random_name");
+        assert_eq!(variant, "CLASSIC");
+        assert_eq!(ts, 0);
     }
 
     #[test]

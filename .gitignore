@@ -1,5 +1,5 @@
 # 專案文件
-*Guide.md
+CHANGELOG.md
 
 # Logs
 logs
@@ -26,4 +26,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-*.code-workspace

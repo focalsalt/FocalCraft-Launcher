@@ -1077,6 +1077,9 @@
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .manualDesc {

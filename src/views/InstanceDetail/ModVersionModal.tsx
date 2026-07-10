@@ -176,6 +176,35 @@ export function ModVersionModal({
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        {isUpdating && (
+          <div className={styles.hudOverlay}>
+            <div className={styles.hudCard}>
+              <div className={styles.hudHeader}>
+                <Loader className={`${styles.hudSpinner} animate-spin`} size={24} />
+                <span className={styles.hudTitle}>
+                  {t('mod_version.title') || '更變模組版本'}
+                </span>
+              </div>
+              <div className={styles.hudDetail}>
+                {t('version_edit.downloading_mod', {
+                  current: 1,
+                  total: 1,
+                  name: mod?.name || ''
+                })}
+              </div>
+              <div className={styles.hudProgressContainer}>
+                <div className={styles.hudProgressBar}>
+                  <div
+                    className={styles.hudProgressFill}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <span className={styles.hudPercent}>100%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className={styles.header}>
           <h2>{t('mod_version.title')}</h2>
           <button className={styles.closeBtn} onClick={onClose}>
