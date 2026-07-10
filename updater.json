@@ -5,11 +5,11 @@
   "platforms": {
     "windows-x86_64-msi": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcm1qRjZlMWFPdnlBYlpxVlhHcnNwVGkxZWpDMk1jVFVtTlM2RGpQbmJLVi80a05jN0czRUJpdUEwNVBFVnVhOEJwUklpQ200NS9XM0dhaXhWZXA5d3cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNzAwNDU3CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMjAuMjYuMV94NjRfZW4tVVMubXNpCjA2MnFrK2Z2eEp1U3N4SW9HMVk4OVhDMXhxSW1LVzEyZUpQNDVKZnQ2M0tEV1IrR0xxMlNlbFVSdEJ5bk8vTVd4YjExSU5OOHdWSWpobm41OXp4MEFBPT0K",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v2026.1/Focal.Craft.Launcher_x64_en-US.msi"
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v20.26.1/Focal.Craft.Launcher_x64_en-US.msi"
     },
     "windows-x86_64-nsis": {
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcmxwT0Q4UUJhZFk1QThjSGliSUwvZW9lc1dSNGtLWVlUdk5aWnVDcEtFNUNrdmIwNjc0Vy9hdkV2b0tGVTM1QkE3Z0xyYU85TjNrOW96MjNFZXUwSlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNzAwNDU3CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMjAuMjYuMV94NjQtc2V0dXAuZXhlCldpeGQ3Q0FzeFdWZU5SeElPdjdZYVVGZ3lyREJROGtkRmJTd0hPWXJ4RWNBN2ZLUkxxMTFnQzZOQjg0RFo5djFqYk0zbEpDelBCN2QzTlU3TEZqM0FBPT0K",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v2026.1/Focal.Craft.Launcher_x64-setup.exe"
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v20.26.1/Focal.Craft.Launcher_x64-setup.exe"
     }
   }
 }
