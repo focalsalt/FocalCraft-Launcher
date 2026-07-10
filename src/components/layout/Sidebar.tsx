@@ -18,10 +18,10 @@ import styles from './Sidebar.module.css';
 function isVersionGreater(v1: string, v2: string): boolean {
   const clean1 = v1.replace(/^v/, '');
   const clean2 = v2.replace(/^v/, '');
-  
+
   const parts1 = clean1.split('.').map(Number);
   const parts2 = clean2.split('.').map(Number);
-  
+
   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
     const p1 = parts1[i] || 0;
     const p2 = parts2[i] || 0;
@@ -38,7 +38,7 @@ function filterChangelog(body: string, currentVersion: string): string {
   let lastIndex = 0;
   let match;
   let currentVer = '';
-  
+
   while ((match = headerRegex.exec(body)) !== null) {
     const matchIndex = match.index;
     if (currentVer) {
@@ -50,19 +50,19 @@ function filterChangelog(body: string, currentVersion: string): string {
     currentVer = match[2];
     lastIndex = matchIndex;
   }
-  
+
   if (currentVer) {
     sections.push({
       version: currentVer,
       content: body.slice(lastIndex)
     });
   }
-  
+
   if (sections.length === 0) return body;
-  
+
   const filteredSections = sections.filter(sec => isVersionGreater(sec.version, currentVersion));
   if (filteredSections.length === 0) return body;
-  
+
   return filteredSections.map(sec => sec.content).join('\n\n').trim();
 }
 
@@ -294,7 +294,7 @@ export function Sidebar() {
   // 初始化路徑與版本
   useEffect(() => {
     invoke<string>('init_app_dirs').then(setBaseDir).catch(console.error);
-    getVersion().then(v => setAppVersion(v.startsWith('0.') ? v.substring(2) : v)).catch(console.error);
+    getVersion().then(v => setAppVersion(v.replace(/^(\d+)\.(\d+)\./, '$1$2.'))).catch(console.error);
   }, []);
 
   const checkUpdateRef = useRef(handleCheckUpdate);
@@ -310,20 +310,20 @@ export function Sidebar() {
 
     const getMsUntilNextSchedule = (): number => {
       const now = new Date();
-      
+
       const time0 = new Date(now);
       time0.setHours(0, 0, 0, 0);
-      
+
       const time12 = new Date(now);
       time12.setHours(12, 0, 0, 0);
-      
+
       const timeNextDay0 = new Date(now);
       timeNextDay0.setDate(now.getDate() + 1);
       timeNextDay0.setHours(0, 0, 0, 0);
-      
+
       const candidates = [time0, time12, timeNextDay0];
       const futureCandidates = candidates.filter(t => t.getTime() > now.getTime());
-      
+
       futureCandidates.sort((a, b) => a.getTime() - b.getTime());
       return futureCandidates[0].getTime() - now.getTime();
     };
@@ -484,17 +484,17 @@ export function Sidebar() {
                 <span>{t('sidebar.new_version', { version: updateInfo.version })}</span>
               </div>
             </div>
-            
+
             <div className={styles.modalBody}>
               {updateInfo.date && (
                 <div className={styles.updateDate}>{t('sidebar.release_date', { date: updateInfo.date })}</div>
               )}
               <div className={styles.notesTitle}>{t('sidebar.changelog')}</div>
-              <div 
+              <div
                 className={styles.updateNotes}
-                dangerouslySetInnerHTML={{ 
-                  __html: updateInfo.body 
-                    ? (marked.parse(filterChangelog(updateInfo.body, appVersion)) as string) 
+                dangerouslySetInnerHTML={{
+                  __html: updateInfo.body
+                    ? (marked.parse(filterChangelog(updateInfo.body, appVersion)) as string)
                     : t('sidebar.no_changelog')
                 }}
               />
@@ -509,14 +509,14 @@ export function Sidebar() {
             <div className={styles.modalFooter}>
               {!isUpdating ? (
                 <>
-                  <button 
-                    className={styles.cancelBtn} 
+                  <button
+                    className={styles.cancelBtn}
                     onClick={() => setIsUpdateModalOpen(false)}
                   >
                     {t('sidebar.btn.later')}
                   </button>
-                  <button 
-                    className={styles.confirmBtn} 
+                  <button
+                    className={styles.confirmBtn}
                     onClick={handleApplyUpdate}
                   >
                     {t('sidebar.btn.update')}

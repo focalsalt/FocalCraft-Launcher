@@ -42,7 +42,7 @@ export function GlobalSettings() {
       }
       try {
         const version = await getVersion();
-        setAppVersion(version.startsWith('0.') ? version.substring(2) : version);
+        setAppVersion(version.replace(/^(\d+)\.(\d+)\./, '$1$2.'));
       } catch (err) {
         console.error('Failed to get app version:', err);
       }
