@@ -1,15 +1,15 @@
 {
-  "version": "1.2.3",
-  "notes": "全新版本發布！\n- 實例概覽列表元件化重構\n- 實例更名防重建，新增實例目錄自動更新\n- 顏色選擇器重構為彈出式設計",
-  "pub_date": "2026-06-23T13:35:00Z",
+  "version": "2026.1",
+  "notes": "全新版本發布！\n- 新增版本號與更新資訊顯示 \n- 優化功能，提升使用者體驗",
+  "pub_date": "2026-07-10T11:48:00Z",
   "platforms": {
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcm8zVkdMZ0lzd2o5SWF0c3I2Vk5odDZ6WUQ1ZGh0SzAwMFV5VEpaV1BNa1J3dk5HRTFXZ3dXTHVGcmtod0tSMkpjbHZmSW5kaG1uUmVQSDhDODdsOHdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMjIyMjY3CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4yLjNfeDY0X2VuLVVTLm1zaQpPMUs1aFRCWTRjRDE1V01GV2dBWG5GNFJia0ZxSXRhSzdPZ0pIWmZFdHRkZUtnQkw2cUtDYk5lazcyS3hvcW5Db3YrVGJ4MmY0ZnFmaTExeE15dWZDUT09Cg==",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.2.3/Focal.Craft.Launcher_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcm1qRjZlMWFPdnlBYlpxVlhHcnNwVGkxZWpDMk1jVFVtTlM2RGpQbmJLVi80a05jN0czRUJpdUEwNVBFVnVhOEJwUklpQ200NS9XM0dhaXhWZXA5d3cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNzAwNDU3CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMjAuMjYuMV94NjRfZW4tVVMubXNpCjA2MnFrK2Z2eEp1U3N4SW9HMVk4OVhDMXhxSW1LVzEyZUpQNDVKZnQ2M0tEV1IrR0xxMlNlbFVSdEJ5bk8vTVd4YjExSU5OOHdWSWpobm41OXp4MEFBPT0K",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v2026.1/Focal.Craft.Launcher_x64_en-US.msi"
     },
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcm5UM1hnRHdENEg2RzkzWlV5RXpMMHZNdnZ0YXdOc1dmSUI1R1cvWmhocUdteGVmYkw2MElVU2xnSG1KeXE1RVFQamRIMHlmSmUvdDlNclZ2K3pjVkFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgyMjIyMjY3CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMS4yLjNfeDY0LXNldHVwLmV4ZQpTT1YxTDJTVUdiZGZ1WGdxOVBvMmM0T3MvZDdlWXZpOHpZaGlzeDloYU0rZ0FSSDV4cjU3R2NRZFFacnNKYU5YTDhxODVDT1dZY1pXclRvTk9LMGVDQT09Cg==",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v1.2.3/Focal.Craft.Launcher_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcmxwT0Q4UUJhZFk1QThjSGliSUwvZW9lc1dSNGtLWVlUdk5aWnVDcEtFNUNrdmIwNjc0Vy9hdkV2b0tGVTM1QkE3Z0xyYU85TjNrOW96MjNFZXUwSlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNzAwNDU3CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMjAuMjYuMV94NjQtc2V0dXAuZXhlCldpeGQ3Q0FzeFdWZU5SeElPdjdZYVVGZ3lyREJROGtkRmJTd0hPWXJ4RWNBN2ZLUkxxMTFnQzZOQjg0RFo5djFqYk0zbEpDelBCN2QzTlU3TEZqM0FBPT0K",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v2026.1/Focal.Craft.Launcher_x64-setup.exe"
     }
   }
 }
