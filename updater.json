@@ -4,12 +4,12 @@
   "pub_date": "2026-07-10T11:48:00Z",
   "platforms": {
     "windows-x86_64-msi": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcm1qRjZlMWFPdnlBYlpxVlhHcnNwVGkxZWpDMk1jVFVtTlM2RGpQbmJLVi80a05jN0czRUJpdUEwNVBFVnVhOEJwUklpQ200NS9XM0dhaXhWZXA5d3cwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNzAwNDU3CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMjAuMjYuMV94NjRfZW4tVVMubXNpCjA2MnFrK2Z2eEp1U3N4SW9HMVk4OVhDMXhxSW1LVzEyZUpQNDVKZnQ2M0tEV1IrR0xxMlNlbFVSdEJ5bk8vTVd4YjExSU5OOHdWSWpobm41OXp4MEFBPT0K",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v20.26.1/Focal.Craft.Launcher_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcnVwWURLWG1TNDNBNDJoNERkNFBrQisxTXp4dHVqMGZEUUdqa3FsLys4SEh1V25rbjVNSTRJSGYvZkJ4MjJZL0NhS2MvOUpGa3BBeEY5MlpUYm13VVEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNzAyMDY1CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMjAuMjYuMV94NjRfZW4tVVMubXNpCmluYjZBUDRmNmdMeERvMmdsMk1TcjN5VEtGdEM5Ym1VWHJrd1U0dGIrRVhwL01LZ1BtbnphR2w1UGo5V0ZMN3ZOK29Ya1pJZEQ4RW44Mi81VThRcERRPT0K",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v2026.1/Focal.Craft.Launcher_x64_en-US.msi"
     },
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcmxwT0Q4UUJhZFk1QThjSGliSUwvZW9lc1dSNGtLWVlUdk5aWnVDcEtFNUNrdmIwNjc0Vy9hdkV2b0tGVTM1QkE3Z0xyYU85TjNrOW96MjNFZXUwSlFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNzAwNDU3CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMjAuMjYuMV94NjQtc2V0dXAuZXhlCldpeGQ3Q0FzeFdWZU5SeElPdjdZYVVGZ3lyREJROGtkRmJTd0hPWXJ4RWNBN2ZLUkxxMTFnQzZOQjg0RFo5djFqYk0zbEpDelBCN2QzTlU3TEZqM0FBPT0K",
-      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v20.26.1/Focal.Craft.Launcher_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUa1IrZ1pvUFJGcmgyL2hoSmI1aDhsYnVWZ2psTWdsTGo4SG9VK3U2eklNVmxocFdWZ1JVaWgvOVBBeVRXMWdpWG8xcjZxL0sxY1dIOUVpbW5lQStJa3YyaFV2ejZKOEFJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgzNzAyMDY1CWZpbGU6Rm9jYWwgQ3JhZnQgTGF1bmNoZXJfMjAuMjYuMV94NjQtc2V0dXAuZXhlCnZIQlVaVlpMbnJjVGl6RjVZWHNSNnl0L2ZtZWJ2eVVtQTloekQrVUhDLzNOb1B1TGNhNlJnQUtUUGhTSTJSN1pOU3hRbk1aTm5yWFZHeHNNT2FOckRBPT0K",
+      "url": "https://github.com/focalsalt/FocalCraft-Launcher/releases/download/v2026.1/Focal.Craft.Launcher_x64-setup.exe"
     }
   }
 }
